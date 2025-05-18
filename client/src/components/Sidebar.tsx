@@ -58,15 +58,17 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
         
         {/* User profile */}
         <div className="p-3">
-          <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-5">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-              {user.displayName.charAt(0)}
+          <Link href="/profile" onClick={onClose}>
+            <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-5 cursor-pointer hover:bg-gray-200 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+                {user.displayName.charAt(0)}
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">{user.displayName}</p>
+                <p className="text-xs text-gray-500">{user.cancerType || 'Not specified'} - {user.cancerStage || 'Not specified'}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-gray-800">{user.displayName}</p>
-              <p className="text-xs text-gray-500">{user.cancerType} - {user.cancerStage}</p>
-            </div>
-          </div>
+          </Link>
           
           {/* Navigation links */}
           <nav className="mt-3 space-y-1">
@@ -92,6 +94,9 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
         {/* Footer icons */}
         <div className="absolute bottom-0 w-full p-3 border-t">
           <div className="flex items-center justify-between text-gray-600 text-sm px-3">
+            <Link href="/profile" onClick={onClose} className="hover:text-primary">
+              <UserRound className="h-5 w-5" />
+            </Link>
             <button className="hover:text-primary">
               <Settings className="h-5 w-5" />
             </button>
