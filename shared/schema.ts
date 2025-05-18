@@ -11,6 +11,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   cancerType: text("cancer_type"),
   cancerStage: text("cancer_stage"),
+  bio: text("bio"),
+  diagnosis_date: date("diagnosis_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -21,7 +23,16 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   cancerType: true,
   cancerStage: true,
+  bio: true,
+  diagnosis_date: true,
 });
+
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  username: true,
+  password: true,
+  createdAt: true,
+}).partial();
 
 // Medical Tracking
 export const medicalRecords = pgTable("medical_records", {

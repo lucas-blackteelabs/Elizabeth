@@ -35,17 +35,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User endpoints
-  app.get("/api/user", (req, res) => {
-    const user = {
-      id: 1,
-      username: "liz",
-      displayName: "Liz",
-      email: "liz@example.com", 
-      cancerType: "Breast Cancer",
-      cancerStage: "Stage 2"
-    };
-    
-    return res.json(user);
+  app.get("/api/user", async (req, res) => {
+    try {
+      // For now, we'll return the default user
+      // In a production app, this would use authentication
+      let user = await storage.getUser(1);
+      
+      if (!user) {
+        // Create default user if not exists
+        user = await storage.createUser({
+          username: "liz",
+          password: "password123", // In a real app, this would be properly hashed
+          displayName: "Liz",
+          email: "liz@example.com",
+          cancerType: "breast",
+          cancerStage: "stage2",
+          bio: "I'm on a journey to healing through holistic wellness and conventional treatment.",
+          diagnosis_date: new Date("2023-01-15")
+        });
+      }
+      
+      return res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+  
+  // Update user profile
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = parseInt(id, 10);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      // Get the existing user
+      const existingUser = await storage.getUser(userId);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update the user with the provided fields
+      const updatedUser = await storage.updateUser(userId, req.body);
+      return res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return res.status(500).json({ error: "Failed to update user profile" });
+    }
   });
 
   // Medical tracking endpoints
