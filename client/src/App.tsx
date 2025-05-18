@@ -15,7 +15,7 @@ import Supplements from "@/pages/Supplements";
 import Community from "@/pages/Community";
 import SpiritualWellbeing from "@/pages/SpiritualWellbeing";
 import Calendar from "@/pages/Calendar";
-import Profile from "@/pages/Profile";
+import ProfileSimple from "@/pages/ProfileSimple";
 
 function Router() {
   return (
@@ -32,7 +32,7 @@ function Router() {
         <Route path="/community" component={Community} />
         <Route path="/spiritual" component={SpiritualWellbeing} />
         <Route path="/calendar" component={Calendar} />
-        <Route path="/profile" component={Profile} />
+        <Route path="/profile" component={ProfileSimple} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
