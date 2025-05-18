@@ -43,11 +43,20 @@ export default function Profile() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setIsLoading(true);
-      const updatedUser = await apiRequest(`/api/users/${user.id}`, {
+      // Use fetch directly since apiRequest doesn't support options parameter
+      const response = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(values),
       });
       
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+      
+      const updatedUser = await response.json();
       setUser({ ...user, ...updatedUser });
       
       toast({

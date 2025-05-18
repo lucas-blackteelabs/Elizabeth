@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cancerType: "breast",
           cancerStage: "stage2",
           bio: "I'm on a journey to healing through holistic wellness and conventional treatment.",
-          diagnosis_date: new Date("2023-01-15")
+          diagnosis_date: "2023-01-15"
         });
       }
       

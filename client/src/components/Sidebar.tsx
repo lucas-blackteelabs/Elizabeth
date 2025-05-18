@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, Settings, HelpCircle, LogOut } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, Settings, HelpCircle, LogOut, UserRound } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;

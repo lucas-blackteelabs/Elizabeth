@@ -5,8 +5,10 @@ interface User {
   username: string;
   displayName: string;
   email: string;
-  cancerType: string;
-  cancerStage: string;
+  cancerType: string | null;
+  cancerStage: string | null;
+  bio: string | null;
+  diagnosis_date: string | null;
 }
 
 interface UserContextType {
@@ -20,8 +22,10 @@ const defaultUser: User = {
   username: "liz",
   displayName: "Liz",
   email: "liz@example.com",
-  cancerType: "Breast Cancer",
-  cancerStage: "Stage 2"
+  cancerType: "breast",
+  cancerStage: "stage2",
+  bio: "I'm on a journey to healing through holistic wellness and conventional treatment.",
+  diagnosis_date: "2023-01-15"
 };
 
 // Create context with default values to avoid undefined checks
