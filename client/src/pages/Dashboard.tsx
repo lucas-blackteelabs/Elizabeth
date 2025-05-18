@@ -3,6 +3,7 @@ import DailySummary from "@/components/dashboard/DailySummary";
 import ProgressTracker from "@/components/dashboard/ProgressTracker";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import FeaturedResources from "@/components/dashboard/FeaturedResources";
+import QuickChat from "@/components/dashboard/QuickChat";
 import { useUser } from "@/contexts/UserContext";
 
 export default function Dashboard() {
@@ -26,7 +27,14 @@ export default function Dashboard() {
         </div>
       </div>
       
-      <FeaturedResources />
+      <div className="grid md:grid-cols-3 gap-6 mb-6">
+        <div className="md:col-span-2">
+          <FeaturedResources />
+        </div>
+        <div>
+          <QuickChat />
+        </div>
+      </div>
     </div>
   );
 }
