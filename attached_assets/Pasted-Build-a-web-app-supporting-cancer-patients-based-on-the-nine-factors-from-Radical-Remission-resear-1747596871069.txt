@@ -1,0 +1,62 @@
+Build a web app supporting cancer patients based on the nine factors from "Radical Remission" research. The app should combine practical tools with AI guidance while complementing conventional treatment.
+
+## Core Features
+
+### User System & Medical Tracking
+- Secure profiles with medical history input
+- Document upload for test results with AI interpretation
+- Progress tracking dashboard with visualizations
+
+### AI Health Assistant
+- Chatbot trained on oncology research and wellness practices
+- Personalized recommendations based on diagnosis
+- Daily/weekly guidance with empathetic tone
+
+### Nutrition Center
+- Anti-inflammatory diet plans and recipes
+- Shopping list generator
+- Meal planning and nutrition tracking
+
+### Mind-Body Tools
+- Meditation, breathing exercises, and stress-reduction techniques
+- Emotion tracking with sentiment analysis
+- Sleep optimization resources
+
+### Movement & Exercise
+- Customized exercise plans for different treatment stages
+- Video library of appropriate physical activities
+- Activity tracking based on energy levels
+
+### Supplements & Therapies
+- Evidence-based supplement database
+- Interaction checker with conventional treatments
+- Therapy educational resources
+
+### Community Support
+- Moderated forums by cancer type
+- Mentor matching with survivors
+- Resource sharing capabilities
+
+### Spiritual & Psychological Wellbeing
+- Reflective practices and purpose discovery tools
+- CBT-inspired exercises and mood tracking
+- AI support for emotional wellbeing
+
+### Integrated Calendar
+- Holistic scheduling for appointments, nutrition, and wellness
+- Reminder system with motivational messages
+- Treatment and activity coordination
+
+## Technical Requirements
+- React frontend, Node/Express backend, MongoDB
+- OpenAI API integration for chatbot
+- Calendar API integration
+- HIPAA-compliant data handling
+- Mobile-responsive design
+
+## Safety & Ethical Considerations
+- Clear disclaimers about complementary nature
+- Language about consulting healthcare providers
+- Evidence-based information with citations
+- Privacy-first data handling
+- Medical professional review process
