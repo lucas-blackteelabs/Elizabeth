@@ -16,7 +16,14 @@ export default function Dashboard() {
         description="Let's continue your healing journey today"
       />
       
-      <DailySummary />
+      <div className="grid md:grid-cols-3 gap-6 mb-6">
+        <div className="md:col-span-2">
+          <DailySummary />
+        </div>
+        <div>
+          <QuickChat />
+        </div>
+      </div>
       
       <div className="grid md:grid-cols-3 gap-6 mb-6">
         <div className="md:col-span-2">
@@ -27,14 +34,7 @@ export default function Dashboard() {
         </div>
       </div>
       
-      <div className="grid md:grid-cols-3 gap-6 mb-6">
-        <div className="md:col-span-2">
-          <FeaturedResources />
-        </div>
-        <div>
-          <QuickChat />
-        </div>
-      </div>
+      <FeaturedResources />
     </div>
   );
 }
