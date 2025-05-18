@@ -3,7 +3,7 @@ import DailySummary from "@/components/dashboard/DailySummary";
 import ProgressTracker from "@/components/dashboard/ProgressTracker";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import FeaturedResources from "@/components/dashboard/FeaturedResources";
-import QuickChat from "@/components/dashboard/QuickChat";
+import SimpleChat from "@/components/dashboard/SimpleChat";
 import { useUser } from "@/contexts/UserContext";
 
 export default function Dashboard() {
@@ -21,7 +21,7 @@ export default function Dashboard() {
           <DailySummary />
         </div>
         <div>
-          <QuickChat />
+          <SimpleChat />
         </div>
       </div>
       
