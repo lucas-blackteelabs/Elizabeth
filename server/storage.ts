@@ -1,7 +1,6 @@
-import { users, type User, type InsertUser, type ChatMessage } from "@shared/schema";
-
-// modify the interface with any CRUD methods
-// you might need
+import { users, chatMessages, type User, type InsertUser, type ChatMessage } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -10,46 +9,34 @@ export interface IStorage {
   addChatMessage(userId: number, role: "user" | "assistant", content: string): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private chatMessages: Map<number, ChatMessage[]>;
-  currentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.chatMessages = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: new Date()
+    // Make sure cancerType and cancerStage are not undefined
+    const userToInsert = {
+      ...insertUser,
+      cancerType: insertUser.cancerType || null,
+      cancerStage: insertUser.cancerStage || null
     };
-    this.users.set(id, user);
+
+    const [user] = await db
+      .insert(users)
+      .values(userToInsert)
+      .returning();
     return user;
   }
   
   async addChatMessage(userId: number, role: "user" | "assistant", content: string): Promise<void> {
-    if (!this.chatMessages.has(userId)) {
-      this.chatMessages.set(userId, []);
-    }
-    
-    const userMessages = this.chatMessages.get(userId)!;
-    userMessages.push({
-      id: userMessages.length + 1,
+    await db.insert(chatMessages).values({
       userId,
       role,
       content,
@@ -58,4 +45,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
