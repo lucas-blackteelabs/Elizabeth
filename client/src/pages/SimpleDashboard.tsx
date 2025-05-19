@@ -4,19 +4,30 @@ import HealthAssistant from "@/components/dashboard/HealthAssistant";
 export default function SimpleDashboard() {
   const { user } = useUser();
   
+  // Handle loading or no user state
+  if (!user) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <p className="text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Welcome back, {user.displayName}</h1>
+        <h1 className="text-2xl font-bold">Welcome back, {user?.displayName || 'Friend'}</h1>
         <p className="text-gray-500">Let's continue your healing journey today</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Your Health Journey</h2>
-          <p className="mb-2">Cancer Type: {user.cancerType || "Not specified"}</p>
-          <p className="mb-2">Cancer Stage: {user.cancerStage || "Not specified"}</p>
-          <p className="mb-6">Diagnosis Date: {user.diagnosis_date || "Not specified"}</p>
+          <p className="mb-2">Cancer Type: {user?.cancerType || "Not specified"}</p>
+          <p className="mb-2">Cancer Stage: {user?.cancerStage || "Not specified"}</p>
+          <p className="mb-6">Diagnosis Date: {user?.diagnosis_date || "Not specified"}</p>
           
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="bg-blue-100 p-2 rounded text-center">

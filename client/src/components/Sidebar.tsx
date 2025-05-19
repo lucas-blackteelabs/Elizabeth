@@ -61,11 +61,13 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
           <Link href="/profile" onClick={onClose}>
             <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-5 cursor-pointer hover:bg-gray-200 transition-colors">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-                {user.displayName.charAt(0)}
+                {user?.displayName?.charAt(0) || 'U'}
               </div>
               <div>
-                <p className="font-medium text-gray-800">{user.displayName}</p>
-                <p className="text-xs text-gray-500">{user.cancerType || 'Not specified'} - {user.cancerStage || 'Not specified'}</p>
+                <p className="font-medium text-gray-800">{user?.displayName || 'User'}</p>
+                <p className="text-xs text-gray-500">
+                  {user?.cancerType || 'Not specified'} - {user?.cancerStage || 'Not specified'}
+                </p>
               </div>
             </div>
           </Link>
