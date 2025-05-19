@@ -2,6 +2,33 @@ import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, Settings, HelpCircle, LogOut, UserRound } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Logout Button Component
+function LogoutButton() {
+  const { logout } = useUser();
+  const { toast } = useToast();
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/login';
+    } catch (error) {
+      toast({
+        title: 'Logout Error',
+        description: 'There was a problem logging out. Please try again.',
+        variant: 'destructive',
+      });
+      console.error('Logout error:', error);
+    }
+  };
+  
+  return (
+    <button onClick={handleLogout} className="hover:text-primary">
+      <LogOut className="h-5 w-5" />
+    </button>
+  );
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -105,7 +132,9 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
             <button className="hover:text-primary">
               <HelpCircle className="h-5 w-5" />
             </button>
-            <button className="hover:text-primary">
+            <button 
+              onClick={() => window.location.href = '/login'}
+              className="hover:text-primary">
               <LogOut className="h-5 w-5" />
             </button>
           </div>
