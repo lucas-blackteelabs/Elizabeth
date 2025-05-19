@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { apiRequest } from '@/lib/queryClient';
 
 const formSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -30,7 +30,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -51,10 +50,29 @@ export default function Register() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
-      // Remove confirmPassword as it's not needed in the API
-      const { confirmPassword, ...userData } = values;
+      // Prepare user data with all required fields
+      const userData = {
+        username: values.username,
+        password: values.password,
+        confirmPassword: values.confirmPassword, // Include this for the server validation
+        displayName: values.displayName,
+        email: values.email,
+        cancerType: values.cancerType || null,
+        cancerStage: values.cancerStage || null,
+        bio: values.bio || null,
+        diagnosis_date: null // Not collected in form but required by schema
+      };
       
-      await register(userData);
+      console.log("Sending registration data:", JSON.stringify(userData));
+      
+      // Use direct API request instead of AuthContext
+      await apiRequest('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      });
       
       toast({
         title: 'Registration successful',

@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -21,7 +20,15 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(username, password);
+      // Use direct API request instead of AuthContext
+      await apiRequest('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
+      });
+      
       toast({
         title: 'Login successful',
         description: 'Welcome back to Elizabeth!',

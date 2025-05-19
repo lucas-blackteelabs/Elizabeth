@@ -8,7 +8,12 @@ import { z } from 'zod';
 // Registration validation schema
 const registerSchema = insertUserSchema.extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
+  confirmPassword: z.string().min(1, "Confirm password is required"),
+  // Make sure optional fields are properly handled
+  cancerType: z.string().nullable().optional(),
+  cancerStage: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  diagnosis_date: z.string().nullable().optional()
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -27,8 +32,11 @@ type LoginInput = z.infer<typeof loginSchema>;
 // Register a new user
 export const register = async (req: Request, res: Response) => {
   try {
+    console.log('Registration request received:', req.body);
+    
     // Validate input data
     const validatedData = registerSchema.parse(req.body);
+    console.log('Validated data:', validatedData);
     
     // Check if username already exists
     const existingUser = await storage.getUserByUsername(validatedData.username);
@@ -44,10 +52,18 @@ export const register = async (req: Request, res: Response) => {
     const { confirmPassword, ...userData } = validatedData;
     
     // Store user in database with hashed password
-    const user = await storage.createUser({
+    const userToCreate = {
       ...userData,
       password: hashedPassword,
-    });
+      // Ensure nullable fields are properly set
+      cancerType: userData.cancerType || null,
+      cancerStage: userData.cancerStage || null,
+      bio: userData.bio || null,
+      diagnosis_date: userData.diagnosis_date || null
+    };
+    
+    console.log('Creating user with data:', userToCreate);
+    const user = await storage.createUser(userToCreate);
     
     // Generate JWT token
     const token = generateToken(user.id, user.username);
@@ -65,10 +81,11 @@ export const register = async (req: Request, res: Response) => {
     res.status(201).json(userWithoutPassword);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
       return res.status(400).json({ error: error.errors });
     }
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: 'Registration failed: ' + (error instanceof Error ? error.message : 'Unknown error') });
   }
 };
 

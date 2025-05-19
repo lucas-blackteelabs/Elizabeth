@@ -20,76 +20,40 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
-// Protected route component to restrict access
-function ProtectedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, path: string }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, navigate] = useLocation();
-  
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-  
-  if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    navigate('/login');
-    return null;
-  }
-  
-  return <Route {...rest} component={Component} />;
-}
-
+// Simple router without auth-dependent routing for now
 function Router() {
-  const { isAuthenticated } = useAuth();
-  
   return (
-    <Switch>
-      {/* Public routes accessible to all */}
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      
-      {/* Protected routes that require authentication */}
-      {isAuthenticated ? (
-        <Layout>
-          <Switch>
-            <Route path="/" component={SimpleDashboard} />
-            <Route path="/dashboard" component={SimpleDashboard} />
-            <Route path="/ai-assistant" component={AIAssistant} />
-            <Route path="/medical-tracker" component={MedicalTracker} />
-            <Route path="/nutrition" component={Nutrition} />
-            <Route path="/mind-body" component={MindBody} />
-            <Route path="/movement" component={Movement} />
-            <Route path="/supplements" component={Supplements} />
-            <Route path="/community" component={Community} />
-            <Route path="/spiritual" component={SpiritualWellbeing} />
-            <Route path="/calendar" component={Calendar} />
-            <Route path="/profile" component={ProfileSimple} />
-            <Route component={NotFound} />
-          </Switch>
-        </Layout>
-      ) : (
-        <Route>
-          {() => {
-            // Redirect to login if not authenticated
-            window.location.pathname !== '/login' && 
-            window.location.pathname !== '/register' && 
-            window.location.replace('/login');
-            return null;
-          }}
-        </Route>
-      )}
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/" component={SimpleDashboard} />
+        <Route path="/dashboard" component={SimpleDashboard} />
+        <Route path="/ai-assistant" component={AIAssistant} />
+        <Route path="/medical-tracker" component={MedicalTracker} />
+        <Route path="/nutrition" component={Nutrition} />
+        <Route path="/mind-body" component={MindBody} />
+        <Route path="/movement" component={Movement} />
+        <Route path="/supplements" component={Supplements} />
+        <Route path="/community" component={Community} />
+        <Route path="/spiritual" component={SpiritualWellbeing} />
+        <Route path="/calendar" component={Calendar} />
+        <Route path="/profile" component={ProfileSimple} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </AuthProvider>
+      {/* We only need the UserProvider since we already have its functionality */}
+      {/* The AuthProvider is causing conflicts with existing UserContext */}
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
