@@ -2,8 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getHealthAdvice, addToKnowledgeBase } from "./openai";
+import authRoutes from "./routes/auth.routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register authentication routes
+  app.use('/api/auth', authRoutes);
   // AI Chat endpoint
   app.post("/api/ai/chat", async (req, res) => {
     try {
