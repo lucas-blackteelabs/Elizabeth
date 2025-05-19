@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { formatOpenAIResponse } from "./ai";
+import { getHealthAdvice, addToKnowledgeBase } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // AI Chat endpoint
@@ -15,10 +15,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const response = await formatOpenAIResponse(message);
+      // Get response from OpenAI with our custom knowledge base
+      const response = await getHealthAdvice(message);
       
-      // Store the conversation in memory
-      // In a production app, this would go to a database
+      // Store the conversation in database
       await storage.addChatMessage(1, "user", message);
       await storage.addChatMessage(1, "assistant", response);
       
@@ -30,6 +30,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error in AI chat:", error);
       return res.status(500).json({ 
         error: "Failed to process your request" 
+      });
+    }
+  });
+  
+  // Endpoint to add new content to the AI knowledge base
+  app.post("/api/ai/knowledge", async (req, res) => {
+    try {
+      const { category, content } = req.body;
+      
+      if (!category || !content || typeof category !== "string" || typeof content !== "string") {
+        return res.status(400).json({ 
+          error: "Invalid request. Both category and content must be provided as strings." 
+        });
+      }
+      
+      // Add content to knowledge base
+      const result = addToKnowledgeBase(category, content);
+      
+      return res.json(result);
+    } catch (error) {
+      console.error("Error adding to knowledge base:", error);
+      return res.status(500).json({ 
+        error: "Failed to add to knowledge base" 
       });
     }
   });

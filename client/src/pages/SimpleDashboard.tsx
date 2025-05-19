@@ -1,4 +1,5 @@
 import { useUser } from "@/contexts/UserContext";
+import HealthAssistant from "@/components/dashboard/HealthAssistant";
 
 export default function SimpleDashboard() {
   const { user } = useUser();
@@ -33,22 +34,8 @@ export default function SimpleDashboard() {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">AI Health Assistant</h2>
-          <div className="bg-gray-100 p-3 rounded-lg mb-4 text-gray-700">
-            How can I help you with your healing journey today?
-          </div>
-          
-          <div className="flex gap-2">
-            <input 
-              type="text"
-              placeholder="Ask about nutrition, stress relief, etc."
-              className="flex-1 p-2 border rounded"
-            />
-            <button className="bg-blue-600 text-white px-4 py-2 rounded">
-              Send
-            </button>
-          </div>
+        <div className="bg-white rounded-lg shadow h-full">
+          <HealthAssistant />
         </div>
       </div>
       
