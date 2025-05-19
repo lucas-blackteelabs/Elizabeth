@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/Layout";
-import Dashboard from "@/pages/Dashboard";
+import SimpleDashboard from "@/pages/SimpleDashboard";
 import AIAssistant from "@/pages/AIAssistant";
 import MedicalTracker from "@/pages/MedicalTracker";
 import Nutrition from "@/pages/Nutrition";
@@ -21,8 +21,8 @@ function Router() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/" component={SimpleDashboard} />
+        <Route path="/dashboard" component={SimpleDashboard} />
         <Route path="/ai-assistant" component={AIAssistant} />
         <Route path="/medical-tracker" component={MedicalTracker} />
         <Route path="/nutrition" component={Nutrition} />
