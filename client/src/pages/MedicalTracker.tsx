@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Heading } from "@/components/ui/heading";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FileText, Clock, Calendar } from "lucide-react";
+import { PlusCircle, FileText, Clock, Calendar, X } from "lucide-react";
+import { TestResultsUpload } from "@/components/medical-tracker/TestResultsUpload";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
-// Placeholder component for Medical Tracker page
 export default function MedicalTracker() {
+  const [testResultsOpen, setTestResultsOpen] = useState(false);
+  
   return (
     <div className="p-6">
       <Heading 
@@ -29,7 +33,23 @@ export default function MedicalTracker() {
             <p className="text-gray-500 text-center py-8">
               No test results have been added yet
             </p>
-            <Button variant="outline" className="w-full">Upload Test Results</Button>
+            <Dialog open={testResultsOpen} onOpenChange={setTestResultsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">Upload Test Results</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Upload Test Results</DialogTitle>
+                  <DialogDescription>
+                    Add medical test results to track your health progress
+                  </DialogDescription>
+                  <DialogClose className="absolute top-4 right-4">
+                    <X className="h-4 w-4" />
+                  </DialogClose>
+                </DialogHeader>
+                <TestResultsUpload />
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
         
