@@ -1,5 +1,9 @@
 import { useUser } from "@/contexts/UserContext";
-import HealthAssistant from "@/components/dashboard/HealthAssistant";
+import { Suspense, lazy } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy load the HealthAssistant component to improve initial page load time
+const HealthAssistant = lazy(() => import("@/components/dashboard/HealthAssistant"));
 
 export default function SimpleDashboard() {
   const { user } = useUser();
@@ -46,7 +50,16 @@ export default function SimpleDashboard() {
         </div>
         
         <div className="bg-white rounded-lg shadow h-full">
-          <HealthAssistant />
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full p-6">
+              <div className="flex flex-col items-center space-y-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading your health assistant...</p>
+              </div>
+            </div>
+          }>
+            <HealthAssistant />
+          </Suspense>
         </div>
       </div>
       
