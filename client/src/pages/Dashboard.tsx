@@ -9,10 +9,21 @@ import { useUser } from "@/contexts/UserContext";
 export default function Dashboard() {
   const { user } = useUser();
   
+  // If user is not loaded yet, show loading state
+  if (!user) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <p className="text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <Heading 
-        title={`Welcome back, ${user.displayName}`}
+        title={`Welcome back, ${user.displayName || 'Friend'}`}
         description="Let's continue your healing journey today"
       />
       

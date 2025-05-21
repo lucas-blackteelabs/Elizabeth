@@ -29,16 +29,18 @@ export default function ProfileSimple() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      displayName: user.displayName,
-      email: user.email,
-      cancerType: user.cancerType || "",
-      cancerStage: user.cancerStage || "",
-      bio: user.bio || "",
-      diagnosis_date: user.diagnosis_date || "",
+      displayName: user?.displayName || "",
+      email: user?.email || "",
+      cancerType: user?.cancerType || "",
+      cancerStage: user?.cancerStage || "",
+      bio: user?.bio || "",
+      diagnosis_date: user?.diagnosis_date || "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
       
@@ -47,10 +49,10 @@ export default function ProfileSimple() {
         ...user,
         displayName: values.displayName,
         email: values.email,
-        cancerType: values.cancerType,
-        cancerStage: values.cancerStage,
-        bio: values.bio,
-        diagnosis_date: values.diagnosis_date
+        cancerType: values.cancerType || null,
+        cancerStage: values.cancerStage || null,
+        bio: values.bio || null,
+        diagnosis_date: values.diagnosis_date || null
       });
       
       toast({
@@ -83,19 +85,19 @@ export default function ProfileSimple() {
               <CardContent>
                 <div className="flex flex-col items-center">
                   <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mb-4">
-                    {user.displayName.split(' ').map(n => n[0]).join('')}
+                    {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
                   </div>
-                  <h3 className="text-xl font-semibold">{user.displayName}</h3>
-                  <p className="text-muted-foreground">{user.email}</p>
+                  <h3 className="text-xl font-semibold">{user?.displayName || 'Loading...'}</h3>
+                  <p className="text-muted-foreground">{user?.email || 'Loading...'}</p>
                   
                   <div className="w-full mt-4 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Cancer Type:</span>
-                      <span className="font-medium">{user.cancerType || "Not specified"}</span>
+                      <span className="font-medium">{user?.cancerType || "Not specified"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Cancer Stage:</span>
-                      <span className="font-medium">{user.cancerStage || "Not specified"}</span>
+                      <span className="font-medium">{user?.cancerStage || "Not specified"}</span>
                     </div>
                   </div>
                 </div>
