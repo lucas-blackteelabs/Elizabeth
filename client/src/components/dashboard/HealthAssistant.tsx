@@ -28,6 +28,16 @@ type KnowledgeAddition = {
 };
 
 export default function HealthAssistant() {
+  // Add small delay to prevent immediate API calls that might slow initial rendering
+  const [initialized, setInitialized] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialized(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,12 +55,15 @@ export default function HealthAssistant() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+  
+  // Only attempt to make API calls if we're fully initialized
+  const isReady = initialized;
 
   // Handle sending a message to the AI
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!message.trim()) return;
+    if (!message.trim() || !isReady) return;
     
     const userMessage = message;
     setMessage("");
@@ -91,7 +104,7 @@ export default function HealthAssistant() {
 
   // Handle adding new knowledge to the AI
   const handleAddKnowledge = async () => {
-    if (!newKnowledge.category.trim() || !newKnowledge.content.trim()) {
+    if (!newKnowledge.category.trim() || !newKnowledge.content.trim() || !isReady) {
       toast({
         title: "Missing information",
         description: "Please provide both a category and content.",
