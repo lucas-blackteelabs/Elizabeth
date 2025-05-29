@@ -1,12 +1,12 @@
 import { useUser } from "@/contexts/UserContext";
-import { Suspense, lazy } from "react";
-import { Loader2 } from "lucide-react";
-
-// Lazy load the HealthAssistant component to improve initial page load time
-const HealthAssistant = lazy(() => import("@/components/dashboard/HealthAssistant"));
+import { useState } from "react";
+import { MessageCircle, TrendingUp, Calendar, Heart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SimpleDashboard() {
   const { user } = useUser();
+  const [showAIChat, setShowAIChat] = useState(false);
   
   // Handle loading or no user state
   if (!user) {
@@ -49,18 +49,97 @@ export default function SimpleDashboard() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow h-full">
-          <Suspense fallback={
-            <div className="flex items-center justify-center h-full p-6">
-              <div className="flex flex-col items-center space-y-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading your health assistant...</p>
+        <Card className="h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Health Assistant
+            </CardTitle>
+            <CardDescription>
+              Get personalized guidance for your healing journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Ask me about nutrition, supplements, mind-body practices, and emotional wellbeing.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="text-xs">
+                  Nutrition Tips
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs">
+                  Stress Relief
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs">
+                  Exercise Ideas
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs">
+                  Supplements
+                </Button>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={() => window.location.href = '/ai-assistant'}
+              >
+                Start Conversation
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-5 w-5" />
+              Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Weekly Goals</span>
+                <span className="font-medium">4/7</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-green-600 h-2 rounded-full w-4/7"></div>
               </div>
             </div>
-          }>
-            <HealthAssistant />
-          </Suspense>
-        </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="h-5 w-5" />
+              Next Appointment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <p className="font-medium">Oncology Checkup</p>
+              <p className="text-sm text-muted-foreground">Dr. Sarah Thompson</p>
+              <p className="text-sm">May 22, 2025 at 9:30 AM</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Heart className="h-5 w-5" />
+              Wellness Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">85%</div>
+              <p className="text-sm text-muted-foreground">Keep up the great work!</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       
       <div className="mt-6 bg-white p-6 rounded-lg shadow">

@@ -18,7 +18,7 @@ import Calendar from "@/pages/Calendar";
 import ProfileSimple from "@/pages/ProfileSimple";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { UserProvider } from "@/contexts/UserContext";
 
 // Simple router without auth-dependent routing for now
 function Router() {
@@ -48,12 +48,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* We only need the UserProvider since we already have its functionality */}
-      {/* The AuthProvider is causing conflicts with existing UserContext */}
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <UserProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 }
