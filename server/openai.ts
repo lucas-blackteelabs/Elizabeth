@@ -242,40 +242,75 @@ Keep it warm, concise, and encouraging.`;
   }
 }
 
-export async function getDateNightIdeas(userContext: string = ""): Promise<string> {
+export interface RestaurantCard {
+  name: string;
+  suburb: string;
+  cuisineType: string;
+  priceRange: string;
+  summary: string;
+  dietaryNotes: string;
+  vibe: string;
+  menuSuggestions: string[];
+  whyItWorks: string;
+}
+
+export interface ActivityCard {
+  name: string;
+  location: string;
+  description: string;
+  whyItsSpecial: string;
+  bestTime: string;
+  category: string;
+}
+
+export interface DateNightSuggestions {
+  restaurants: RestaurantCard[];
+  activities: ActivityCard[];
+}
+
+export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = ""): Promise<DateNightSuggestions> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const dietaryInfo = dietaryPreferences
+      ? `\n\nDIETARY PREFERENCES (for the patient — her partner can eat anything, and restaurants can usually tailor their menu when briefed):\n${dietaryPreferences}\n\nIMPORTANT: Factor these preferences into your recommendations and highlight which dishes suit her needs, but do NOT exclude restaurants that don't strictly adhere — the partner eats other things and restaurants can usually accommodate when asked.`
+      : "";
 
     const prompt = `You are a thoughtful date night planner for a couple in Sydney, Australia. One partner is a cancer patient with specific dietary needs.
 
 ${cancerFightingNutrition}
 
-${userContext}
+${userContext}${dietaryInfo}
 
-Create a curated date night guide with TWO sections:
+You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation). Return this exact structure:
 
-## Restaurant Recommendations
+{
+  "restaurants": [
+    {
+      "name": "Restaurant Name",
+      "suburb": "Suburb",
+      "cuisineType": "Cuisine Type",
+      "priceRange": "$$ to $$$$",
+      "summary": "2-3 sentence summary of why this restaurant is a great choice for this couple, mentioning how it can cater to dietary needs",
+      "dietaryNotes": "Specific notes on what dietary accommodations are available for the patient's needs",
+      "vibe": "One sentence describing the atmosphere and romantic appeal",
+      "menuSuggestions": ["Dish 1 with brief note on why it's suitable", "Dish 2", "Dish 3"],
+      "whyItWorks": "Brief explanation of why this restaurant is particularly suitable"
+    }
+  ],
+  "activities": [
+    {
+      "name": "Activity Name",
+      "location": "Location in Sydney",
+      "description": "2-3 sentence description of the activity",
+      "whyItsSpecial": "How this supports connection, joy, or healing — link to Radical Remission positive emotions and social support",
+      "bestTime": "When to go",
+      "category": "one of: active, relaxing, creative, adventurous, romantic"
+    }
+  ]
+}
 
-Suggest 5 REAL restaurants in Sydney that would be great for a couple where one partner follows an anti-inflammatory, liver-supportive diet. For each restaurant:
-- **Restaurant name** and suburb
-- **Cuisine type** and why it works for their dietary needs
-- **What to order**: 2-3 specific menu suggestions that align with cancer-fighting nutrition
-- **Vibe**: One sentence on the atmosphere/romantic appeal
-- **Price range**: $ to $$$$
-
-Mix it up — include a waterfront spot, a cosy neighbourhood gem, a fine dining option, a casual healthy eatery, and something unique.
-
-## Fun Things to Do Together
-
-Suggest 5 creative, fun, and meaningful couple activities in Sydney that support wellbeing and connection. For each:
-- **Activity name**
-- **Where**: Location or area in Sydney
-- **Why it's special**: How it supports connection, joy, or healing (link to Radical Remission's positive emotions and social support factors)
-- **Best time**: When to go
-
-Include a mix of active, relaxing, creative, and adventurous options. Think beyond the obvious — make these feel special and memorable.
-
-Keep the tone warm, romantic, and encouraging. This is about celebrating life together.`;
+Include exactly 5 restaurants and 5 activities. Use REAL Sydney restaurants that exist. Mix restaurant types: waterfront, cosy neighbourhood gem, fine dining, casual healthy, and something unique. Mix activity types across categories. Keep the tone warm and encouraging.`;
 
     const result = await model.generateContent({
       contents: [
@@ -283,14 +318,17 @@ Keep the tone warm, romantic, and encouraging. This is about celebrating life to
       ],
       generationConfig: {
         temperature: 0.9,
-        maxOutputTokens: 2500,
+        maxOutputTokens: 3000,
       },
     });
 
-    return result.response.text() || "I couldn't generate date night ideas right now.";
+    const text = result.response.text() || "";
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed = JSON.parse(cleaned) as DateNightSuggestions;
+    return parsed;
   } catch (error) {
     console.error("Error generating date night ideas:", error);
-    return "I'm having trouble generating ideas right now. Please try again in a moment.";
+    return { restaurants: [], activities: [] };
   }
 }
 

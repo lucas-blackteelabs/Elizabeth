@@ -20,12 +20,17 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
   - Clicking a compact tile opens a dialog with full detail, charts, and milestones
   - Smooth hover animations, lift effects, and modern transitions throughout
   - Healing tools grid now includes Date Night link
-- **Feb 2026**: Date Night feature
-  - New page at /date-night with Gemini-powered Sydney restaurant recommendations
-  - Considers dietary requirements (anti-inflammatory, liver-supportive)
-  - Also suggests fun couple activities supporting wellbeing and connection
-  - Added to sidebar navigation and dashboard healing tools grid
-  - API endpoint: /api/ai/date-night
+- **Feb 2026**: Date Night feature (enhanced)
+  - Gemini-powered structured restaurant cards with summaries, dietary notes, menu suggestions
+  - Click-to-detail view for restaurants and activities with full information
+  - Save date nights to calendar with date picker
+  - History tab: upcoming planned dates and completed dates with star ratings and reviews
+  - Dietary preferences stored on user profile (editable in Profile page)
+  - AI factors dietary preferences but doesn't strictly exclude (partner can eat other things)
+  - Liz's defaults: sugar-free, dairy-free, fish or organic chicken
+  - Activity cards with categories (active, relaxing, creative, adventurous, romantic)
+  - Database table: date_nights (with rating, review, status fields)
+  - API endpoints: /api/ai/date-night (structured JSON), /api/date-nights (CRUD)
 - **Feb 2026**: Customizable dashboard with pick-and-mix widget system
   - 10 widgets: Scan Countdown, Treatment Journey, Tumour Response chart, Today's Wellness, Immune Recovery, Healing Streak, Treatment Timeline, AI Assistant, Appointments, Daily Inspiration
   - Widget picker dialog stores preferences in localStorage

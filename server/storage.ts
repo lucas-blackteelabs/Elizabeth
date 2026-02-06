@@ -1,11 +1,12 @@
 import { 
-  users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords,
+  users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights,
   type User, type InsertUser, type ChatMessage,
   type ScanResult, type InsertScanResult,
   type Meal, type InsertMeal,
   type MindBodyActivity, type InsertMindBodyActivity,
   type Exercise, type InsertExercise,
   type MedicalRecord, type InsertMedicalRecord,
+  type DateNight, type InsertDateNight,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -33,6 +34,11 @@ export interface IStorage {
   
   listMedicalRecords(userId: number): Promise<MedicalRecord[]>;
   createMedicalRecord(data: InsertMedicalRecord): Promise<MedicalRecord>;
+  
+  listDateNights(userId: number): Promise<DateNight[]>;
+  createDateNight(data: InsertDateNight): Promise<DateNight>;
+  updateDateNight(id: number, data: Partial<DateNight>): Promise<DateNight>;
+  getDateNight(id: number): Promise<DateNight | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,6 +139,26 @@ export class DatabaseStorage implements IStorage {
   async createMedicalRecord(data: InsertMedicalRecord): Promise<MedicalRecord> {
     const [record] = await db.insert(medicalRecords).values(data).returning();
     return record;
+  }
+
+  async listDateNights(userId: number): Promise<DateNight[]> {
+    return db.select().from(dateNights).where(eq(dateNights.userId, userId));
+  }
+
+  async createDateNight(data: InsertDateNight): Promise<DateNight> {
+    const [dn] = await db.insert(dateNights).values(data).returning();
+    return dn;
+  }
+
+  async updateDateNight(id: number, data: Partial<DateNight>): Promise<DateNight> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [dn] = await db.update(dateNights).set(updateData).where(eq(dateNights.id, id)).returning();
+    return dn;
+  }
+
+  async getDateNight(id: number): Promise<DateNight | undefined> {
+    const [dn] = await db.select().from(dateNights).where(eq(dateNights.id, id));
+    return dn;
   }
 }
 

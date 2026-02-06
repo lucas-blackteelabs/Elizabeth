@@ -22,6 +22,7 @@ async function seedLizAccount() {
     scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
     diagnosis_date: "2025-04-22",
+    dietaryPreferences: "Sugar-free, dairy-free, fish or organic chicken",
     bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
   };
 
@@ -148,6 +149,7 @@ PATIENT CONTEXT (use this to personalize your response):
 - Goals: ${user.goals || "Not specified"}
 - Latest Scan: ${user.scanSummary || "Not available"}
 - Medical Notes: ${user.medicalNotes || "None"}
+- Dietary Preferences: ${user.dietaryPreferences || "Not specified"}
 `;
         }
       }
@@ -383,14 +385,51 @@ PATIENT CONTEXT:
       const userId = req.body.userId || 1;
       const user = await storage.getUser(userId);
       let userContext = "";
+      let dietaryPreferences = "";
       if (user) {
         userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
+        dietaryPreferences = user.dietaryPreferences || "";
       }
-      const content = await getDateNightIdeas(userContext);
-      return res.json({ content });
+      const suggestions = await getDateNightIdeas(userContext, dietaryPreferences);
+      return res.json(suggestions);
     } catch (error) {
       console.error("Error generating date night ideas:", error);
       return res.status(500).json({ error: "Failed to generate ideas" });
+    }
+  });
+
+  app.get("/api/date-nights", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const results = await storage.listDateNights(userId);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching date nights:", error);
+      return res.status(500).json({ error: "Failed to fetch date nights" });
+    }
+  });
+
+  app.post("/api/date-nights", async (req, res) => {
+    try {
+      const dateNight = await storage.createDateNight(req.body);
+      return res.json(dateNight);
+    } catch (error) {
+      console.error("Error creating date night:", error);
+      return res.status(500).json({ error: "Failed to save date night" });
+    }
+  });
+
+  app.patch("/api/date-nights/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const existing = await storage.getDateNight(id);
+      if (!existing) return res.status(404).json({ error: "Date night not found" });
+      const updated = await storage.updateDateNight(id, req.body);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error updating date night:", error);
+      return res.status(500).json({ error: "Failed to update date night" });
     }
   });
 

@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   medicalNotes: text("medical_notes"),
   scanSummary: text("scan_summary"),
   nextScanDate: date("next_scan_date"),
+  dietaryPreferences: text("dietary_preferences"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -42,6 +43,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   medicalNotes: true,
   scanSummary: true,
   nextScanDate: true,
+  dietaryPreferences: true,
 });
 
 export const updateUserSchema = createInsertSchema(users).omit({
@@ -184,6 +186,47 @@ export const insertAppointmentSchema = createInsertSchema(appointments).pick({
   time: true,
   location: true,
 });
+
+export const dateNights = pgTable("date_nights", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: date("date").notNull(),
+  restaurantName: text("restaurant_name").notNull(),
+  restaurantSuburb: text("restaurant_suburb"),
+  cuisineType: text("cuisine_type"),
+  priceRange: text("price_range"),
+  summary: text("summary"),
+  dietaryNotes: text("dietary_notes"),
+  vibe: text("vibe"),
+  menuSuggestions: text("menu_suggestions"),
+  activity: text("activity"),
+  activityLocation: text("activity_location"),
+  activityDescription: text("activity_description"),
+  status: text("status").notNull().default("planned"),
+  rating: integer("rating"),
+  review: text("review"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDateNightSchema = createInsertSchema(dateNights).pick({
+  userId: true,
+  date: true,
+  restaurantName: true,
+  restaurantSuburb: true,
+  cuisineType: true,
+  priceRange: true,
+  summary: true,
+  dietaryNotes: true,
+  vibe: true,
+  menuSuggestions: true,
+  activity: true,
+  activityLocation: true,
+  activityDescription: true,
+  status: true,
+});
+
+export type DateNight = typeof dateNights.$inferSelect;
+export type InsertDateNight = z.infer<typeof insertDateNightSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

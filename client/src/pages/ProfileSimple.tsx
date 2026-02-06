@@ -22,6 +22,7 @@ const formSchema = z.object({
   treatmentStatus: z.string().optional(),
   goals: z.string().optional(),
   oncologist: z.string().optional(),
+  dietaryPreferences: z.string().optional(),
 });
 
 export default function ProfileSimple() {
@@ -41,6 +42,7 @@ export default function ProfileSimple() {
       treatmentStatus: user?.treatmentStatus || "",
       goals: user?.goals || "",
       oncologist: user?.oncologist || "",
+      dietaryPreferences: user?.dietaryPreferences || "",
     },
   });
 
@@ -273,6 +275,25 @@ export default function ProfileSimple() {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="dietaryPreferences"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(25,30%,28%)] font-body">Dietary Preferences</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="e.g. Sugar-free, dairy-free, fish or organic chicken" 
+                            className={`${inputClasses} resize-none`}
+                            rows={2}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
