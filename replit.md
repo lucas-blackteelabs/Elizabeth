@@ -9,6 +9,12 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
   - Persistent login with 90-day JWT + cookie session
   - First-time users can register via /register
   - Migrated old "." account to new "Liz" credentials
+- **Feb 2026**: PWA (Progressive Web App) support
+  - App can be installed on phones via "Add to Home Screen"
+  - Install prompt popup appears on first visit with instructions
+  - Service worker for offline caching (network-first strategy)
+  - App icons (192px, 512px) and manifest.json configured
+  - iOS and Android install flows supported
 - **Feb 2026**: Compact clickable dashboard widgets with expand-to-detail UX
   - Top stats (Scan Countdown, Treatment Journey, Immune Recovery, Healing Streak) are compact tiles
   - Clicking a compact tile opens a dialog with full detail, charts, and milestones
