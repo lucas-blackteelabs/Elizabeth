@@ -40,13 +40,13 @@ export default function Layout({ children }: LayoutProps) {
               variant="ghost" 
               size="icon" 
               onClick={toggleSidebar}
-              className="text-[hsl(25,20%,42%)] hover:text-gold"
+              className="text-[hsl(25,20%,42%)] hover:text-primary"
             >
               <Menu className="h-6 w-6" />
             </Button>
-            <h1 className="text-lg font-heading font-bold text-gold tracking-wider">Elizabeth</h1>
+            <h1 className="text-lg font-heading font-bold text-[hsl(34,55%,45%)] tracking-wider">Elizabeth</h1>
             <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
-              <span className="text-sm font-heading font-semibold text-gold">L</span>
+              <span className="text-sm font-heading font-semibold text-primary">L</span>
             </div>
           </div>
         )}

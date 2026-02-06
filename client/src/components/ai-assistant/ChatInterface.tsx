@@ -27,7 +27,7 @@ function ChatBubble({ role, content }: ChatBubbleProps) {
         <div dangerouslySetInnerHTML={{ 
           __html: content.replace(/\n/g, '<br>').replace(
             /\*\*(.*?)\*\*/g, 
-            '<strong class="text-gold">$1</strong>'
+            '<strong class="text-primary">$1</strong>'
           ).replace(
             /•\s(.*?)(?=\n|$)/g,
             '• <span>$1</span><br>'
@@ -64,10 +64,10 @@ export default function ChatInterface() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-gold/10 text-gold p-2 rounded-full border border-gold/20">
+            <div className="bg-primary/10 text-primary p-2 rounded-full border border-primary/20">
               <Bot className="h-5 w-5" />
             </div>
-            <CardTitle className="font-heading text-gold tracking-wide">Elizabeth AI</CardTitle>
+            <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide">Elizabeth AI</CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -91,9 +91,9 @@ export default function ChatInterface() {
           ))}
           {isLoading && (
             <div className="flex space-x-2 p-3 max-w-[80%] bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] rounded-lg mr-auto">
-              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce"></div>
+              <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce"></div>
             </div>
           )}
         </div>
@@ -103,14 +103,14 @@ export default function ChatInterface() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your question here..."
-            className="pr-12 bg-[hsl(30,30%,95%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-gold/40"
+            className="pr-12 bg-[hsl(30,30%,95%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-primary/40"
             disabled={isLoading}
           />
           <Button 
             type="submit" 
             size="icon" 
             variant="ghost" 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold hover:text-gold/80"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
             disabled={isLoading}
           >
             <Layers className="h-5 w-5" />

@@ -13,8 +13,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { Heart } from 'lucide-react';
 
 const formSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
   confirmPassword: z.string(),
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
@@ -62,8 +62,6 @@ export default function Register() {
         diagnosis_date: null
       };
       
-      console.log("Sending registration data:", JSON.stringify(userData));
-      
       await apiRequest('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -91,18 +89,18 @@ export default function Register() {
     }
   };
 
-  const inputClasses = "bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-gold/40";
+  const inputClasses = "bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-primary/40";
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background py-8">
       <Card className="w-full max-w-lg bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto bg-gold text-[hsl(0,0%,100%)] p-3 rounded mb-2 w-fit">
+          <div className="mx-auto bg-primary text-white p-3 rounded mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-heading font-bold text-gold tracking-wide">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)] tracking-wide">Create an account</CardTitle>
           <CardDescription className="text-[hsl(25,18%,50%)] font-body">
-            Enter your information to create an account in Elizabeth
+            Join Elizabeth on your healing journey
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +179,7 @@ export default function Register() {
               </div>
               
               <div className="space-y-4">
-                <h3 className="text-lg font-heading text-gold/80 tracking-wide">Health Information (Optional)</h3>
+                <h3 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide">Health Information (Optional)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -190,7 +188,7 @@ export default function Register() {
                       <FormItem>
                         <FormLabel className="text-[hsl(25,30%,28%)] font-body">Cancer Type</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Breast, Lung, etc." {...field} className={inputClasses} />
+                          <Input placeholder="e.g. Melanoma, Lymphoma" {...field} className={inputClasses} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -204,7 +202,7 @@ export default function Register() {
                       <FormItem>
                         <FormLabel className="text-[hsl(25,30%,28%)] font-body">Cancer Stage</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Stage 1, Stage 2, etc." {...field} className={inputClasses} />
+                          <Input placeholder="e.g. Stage IV" {...field} className={inputClasses} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -217,9 +215,9 @@ export default function Register() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Bio</FormLabel>
+                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">About You</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tell us a bit about yourself" {...field} className={inputClasses} />
+                        <Input placeholder="Tell us a bit about your journey" {...field} className={inputClasses} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -227,7 +225,7 @@ export default function Register() {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-gold text-[hsl(0,0%,100%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>
@@ -239,7 +237,7 @@ export default function Register() {
               Already have an account?{' '}
               <a
                 href="/login"
-                className="text-gold font-medium hover:text-gold/80"
+                className="text-primary font-medium hover:text-primary/80"
                 onClick={(e) => {
                   e.preventDefault();
                   setLocation('/login');
