@@ -3,7 +3,7 @@ import { useUser } from "@/contexts/UserContext";
 import {
   MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
   Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
-  ArrowDown, Zap
+  ArrowDown, Zap, ChevronRight, Wine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -258,7 +258,7 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1.5">
-          <Settings2 className="h-3.5 w-3.5" /> Customise Dashboard
+          <Settings2 className="h-3.5 w-3.5" /> Customise
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-md">
@@ -297,7 +297,7 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
         </div>
         <div className="flex gap-2 mt-2">
           <Button variant="outline" onClick={() => setSelected(getDefaultWidgets())} className="flex-1 font-body text-sm border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)]">
-            Reset to Default
+            Reset
           </Button>
           <Button onClick={apply} className="flex-1 bg-primary text-white hover:bg-primary/90 font-heading text-sm">
             Save Layout
@@ -308,7 +308,38 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
   );
 }
 
-function ScanCountdownWidget({ nextScanDate }: { nextScanDate: string | null }) {
+function CompactStatCard({
+  icon, label, value, subtitle, accentColor, onClick
+}: {
+  icon: React.ReactNode; label: string; value: string | number; subtitle?: string;
+  accentColor?: string; onClick: () => void;
+}) {
+  const accent = accentColor || "primary";
+  return (
+    <button
+      onClick={onClick}
+      className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
+    >
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+          accent === "amber" ? "bg-[hsl(34,55%,52%)]/10 text-[hsl(34,55%,45%)] group-hover:bg-[hsl(34,55%,52%)]/20" : "bg-primary/10 text-primary group-hover:bg-primary/20"
+        }`}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-0.5">{label}</p>
+          <p className={`text-xl font-heading font-bold ${
+            accent === "amber" ? "text-[hsl(34,55%,45%)]" : "text-primary"
+          }`}>{value}</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
+      </div>
+      {subtitle && <p className="text-[10px] text-[hsl(25,18%,55%)] font-body mt-2 line-clamp-1">{subtitle}</p>}
+    </button>
+  );
+}
+
+function ScanCountdownExpanded({ nextScanDate }: { nextScanDate: string | null }) {
   const scanDate = nextScanDate ? new Date(nextScanDate) : null;
   const daysUntil = scanDate ? Math.ceil((scanDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
   const totalDays = 90;
@@ -317,63 +348,202 @@ function ScanCountdownWidget({ nextScanDate }: { nextScanDate: string | null }) 
   const dashOffset = circumference * (1 - progress);
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-      <CardContent className="p-6 flex flex-col items-center">
-        <div className="relative w-32 h-32 mb-3">
-          <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(30,25%,90%)" strokeWidth="6" />
-            <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(158,32%,42%)" strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-heading font-bold text-[hsl(25,35%,22%)]">{daysUntil ?? "—"}</span>
-            <span className="text-[10px] text-[hsl(25,18%,48%)] font-body uppercase tracking-wider">days</span>
-          </div>
+    <div className="flex flex-col items-center py-4">
+      <div className="relative w-40 h-40 mb-4">
+        <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(30,25%,90%)" strokeWidth="5" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(158,32%,42%)" strokeWidth="5" strokeLinecap="round"
+            strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-4xl font-heading font-bold text-[hsl(25,35%,22%)]">{daysUntil ?? "—"}</span>
+          <span className="text-xs text-[hsl(25,18%,48%)] font-body uppercase tracking-wider">days to go</span>
         </div>
-        <p className="font-heading text-sm text-[hsl(34,55%,45%)] tracking-wide">Next Scan</p>
-        {scanDate && (
-          <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-1">
-            {scanDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+      <p className="font-heading text-base text-[hsl(34,55%,45%)] tracking-wide">Next PET/CT Scan</p>
+      {scanDate && (
+        <p className="text-sm text-[hsl(25,18%,48%)] font-body mt-1">
+          {scanDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        </p>
+      )}
+      <div className="mt-4 bg-primary/5 border border-primary/15 rounded-lg p-3 text-center w-full">
+        <p className="text-xs font-body text-[hsl(25,18%,48%)]">
+          Every day your body continues to heal. Your scans have shown consistent improvement — trust the process.
+        </p>
+      </div>
+    </div>
   );
 }
 
-function TreatmentJourneyWidget({ user }: { user: any }) {
+function TreatmentJourneyExpanded({ user }: { user: any }) {
   const diagnosisDate = user.diagnosis_date ? new Date(user.diagnosis_date) : new Date("2025-04-01");
   const daysSinceDiagnosis = Math.floor((new Date().getTime() - diagnosisDate.getTime()) / (1000 * 60 * 60 * 24));
   const treatmentStartDate = new Date("2025-04-22");
   const daysSinceTreatmentStart = Math.floor((new Date().getTime() - treatmentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const monthsJourney = Math.floor(daysSinceDiagnosis / 30);
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-      <CardHeader className="pb-2">
-        <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" /> Your Journey
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-primary/8 border border-primary/15 rounded-lg p-3 text-center">
-            <p className="text-2xl font-heading font-bold text-primary">{daysSinceTreatmentStart}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-0.5">Days of Treatment Journey</p>
-          </div>
-          <div className="bg-[hsl(34,55%,52%)]/8 border border-[hsl(34,55%,52%)]/15 rounded-lg p-3 text-center">
-            <p className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)]">{daysSinceDiagnosis}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-0.5">Days Since Diagnosis</p>
-          </div>
+    <div className="space-y-4 py-2">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-primary/8 border border-primary/15 rounded-xl p-4 text-center">
+          <p className="text-2xl font-heading font-bold text-primary">{daysSinceTreatmentStart}</p>
+          <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">Treatment Days</p>
         </div>
-        <div className="flex items-center gap-2 bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)]">
-          <Target className="h-5 w-5 text-primary flex-shrink-0" />
-          <div>
-            <p className="text-xs font-body font-medium text-[hsl(25,30%,28%)]">{user.treatmentStatus || "Active Surveillance"}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">{user.cancerType} — {user.cancerStage}</p>
-          </div>
+        <div className="bg-[hsl(34,55%,52%)]/8 border border-[hsl(34,55%,52%)]/15 rounded-xl p-4 text-center">
+          <p className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)]">{daysSinceDiagnosis}</p>
+          <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">Since Diagnosis</p>
         </div>
-      </CardContent>
-    </Card>
+        <div className="bg-primary/8 border border-primary/15 rounded-xl p-4 text-center">
+          <p className="text-2xl font-heading font-bold text-primary">{monthsJourney}</p>
+          <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">Months Strong</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 bg-[hsl(30,30%,95%)] rounded-xl p-4 border border-[hsl(30,22%,87%)]">
+        <Target className="h-6 w-6 text-primary flex-shrink-0" />
+        <div>
+          <p className="text-sm font-body font-medium text-[hsl(25,30%,28%)]">{user.treatmentStatus || "Active Surveillance"}</p>
+          <p className="text-xs text-[hsl(25,18%,48%)] font-body">{user.cancerType} — {user.cancerStage}</p>
+        </div>
+      </div>
+      <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
+        <p className="text-xs font-body text-[hsl(25,18%,48%)] leading-relaxed">
+          {user.medicalNotes || "You're showing incredible resilience on this journey. Keep going."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ImmuneRecoveryExpanded() {
+  const immunoSuppressionEndDate = new Date("2025-12-01");
+  const daysSince = Math.floor((new Date().getTime() - immunoSuppressionEndDate.getTime()) / (1000 * 60 * 60 * 24));
+  const weeksRecovering = Math.floor(daysSince / 7);
+  const monthsRecovering = Math.floor(daysSince / 30);
+
+  const milestones = [
+    { weeks: 4, label: "Initial recovery phase", done: weeksRecovering >= 4 },
+    { weeks: 8, label: "Immune cells rebuilding", done: weeksRecovering >= 8 },
+    { weeks: 12, label: "T-cell function improving", done: weeksRecovering >= 12 },
+    { weeks: 24, label: "Substantial immune restoration", done: weeksRecovering >= 24 },
+    { weeks: 52, label: "Full immune reconstitution", done: weeksRecovering >= 52 },
+  ];
+
+  return (
+    <div className="space-y-4 py-2">
+      <div className="flex items-center justify-center gap-8">
+        <div className="text-center">
+          <p className="text-3xl font-heading font-bold text-primary">{daysSince}</p>
+          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Days</p>
+        </div>
+        <div className="text-center">
+          <p className="text-3xl font-heading font-bold text-[hsl(34,55%,45%)]">{weeksRecovering}</p>
+          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Weeks</p>
+        </div>
+        <div className="text-center">
+          <p className="text-3xl font-heading font-bold text-primary">{monthsRecovering}</p>
+          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Months</p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs font-heading text-[hsl(34,55%,45%)] uppercase tracking-wider">Recovery Milestones</p>
+        {milestones.map((m, i) => (
+          <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${m.done ? "bg-primary/8" : "bg-[hsl(30,20%,95%)]"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${m.done ? "bg-primary text-white" : "border-2 border-[hsl(30,22%,80%)]"}`}>
+              {m.done && <Check className="h-3 w-3" />}
+            </div>
+            <span className={`text-sm font-body ${m.done ? "text-[hsl(25,30%,28%)]" : "text-[hsl(25,18%,55%)]"}`}>{m.label}</span>
+            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body ml-auto">{m.weeks}w</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HealingStreakExpanded({ userId }: { userId: number }) {
+  const { data: recentMeals = [] } = useQuery<Meal[]>({
+    queryKey: ["/api/meals", { userId, recent: true }],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+  });
+  const { data: recentMindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ["/api/mind-body", { userId, recent: true }],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+  });
+  const { data: recentExercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, recent: true }],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+  });
+
+  const activeDates = new Set<string>();
+  recentMeals.forEach((m) => activeDates.add(m.date));
+  recentMindBody.forEach((a) => activeDates.add(a.date));
+  recentExercises.forEach((e) => activeDates.add(e.date));
+
+  let streak = 0;
+  const d = new Date();
+  while (true) {
+    const dateStr = d.toISOString().split("T")[0];
+    if (activeDates.has(dateStr)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const dt = new Date(Date.now() - (6 - i) * 86400000);
+    const dateStr = dt.toISOString().split("T")[0];
+    const meals = recentMeals.filter(m => m.date === dateStr).length;
+    const mindBody = recentMindBody.filter(a => a.date === dateStr).length;
+    const exercises = recentExercises.filter(e => e.date === dateStr).length;
+    return {
+      day: dt.toLocaleDateString("en-AU", { weekday: "short" }),
+      date: dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" }),
+      active: activeDates.has(dateStr),
+      meals, mindBody, exercises
+    };
+  });
+
+  return (
+    <div className="space-y-4 py-2">
+      <div className="text-center">
+        <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)]">{streak}</p>
+        <p className="text-sm text-[hsl(25,18%,48%)] font-body">Day Healing Streak</p>
+      </div>
+      <div className="grid grid-cols-7 gap-2">
+        {last7.map((d, i) => (
+          <div key={i} className="flex flex-col items-center gap-1.5">
+            <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">{d.day}</p>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-heading transition-all ${
+              d.active ? "bg-[hsl(34,55%,52%)] text-white shadow-sm" : "bg-[hsl(30,20%,92%)] text-[hsl(25,18%,55%)]"
+            }`}>
+              {d.active ? <Check className="h-3.5 w-3.5" /> : "·"}
+            </div>
+            <div className="flex gap-0.5">
+              {d.meals > 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+              {d.mindBody > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[hsl(34,55%,52%)]" />}
+              {d.exercises > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[hsl(200,50%,50%)]" />}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-center gap-4 text-[10px] text-[hsl(25,18%,55%)] font-body">
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Meals</span>
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)]" /> Mindfulness</span>
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[hsl(200,50%,50%)]" /> Exercise</span>
+      </div>
+    </div>
   );
 }
 
@@ -388,7 +558,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
 
   if (isLoading) {
     return (
-      <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+      <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
         <CardContent className="p-6 flex items-center justify-center h-48">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </CardContent>
@@ -398,7 +568,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
 
   if (scanResults.length === 0) {
     return (
-      <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+      <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
         <CardContent className="p-6 text-center">
           <p className="text-sm text-[hsl(25,18%,48%)] font-body">No scan data available yet.</p>
         </CardContent>
@@ -412,7 +582,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
   const sizeData = scanDates.map((date) => {
     const scansOnDate = scanResults.filter((s) => s.scanDate === date);
     const label = scansOnDate[0]?.scanLabel || date;
-    const shortLabel = label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Treatment" : label.includes("Surveillance") ? "Surveillance" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
+    const shortLabel = label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Tx" : label.includes("Surveillance") ? "Latest" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
     const row: any = { scan: shortLabel };
     tumourLabels.forEach((tl) => {
       const r = scansOnDate.find((s) => s.tumourLabel === tl);
@@ -435,7 +605,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
   });
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" /> Tumour Response
@@ -457,7 +627,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
             const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
 
             return (
-              <div key={tl} className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-lg p-3">
+              <div key={tl} className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tumourColors[i] }} />
                   <p className="text-xs font-heading text-[hsl(25,30%,28%)]">{tl}</p>
@@ -471,7 +641,7 @@ function TumourResponseWidget({ userId }: { userId: number }) {
                     </div>
                   </div>
                   <div className="w-full bg-[hsl(30,20%,88%)] rounded-full h-1.5">
-                    <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${Math.min(100, sizeReduction)}%` }} />
+                    <div className="bg-primary rounded-full h-1.5 transition-all duration-1000" style={{ width: `${Math.min(100, sizeReduction)}%` }} />
                   </div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-[10px] text-[hsl(25,18%,48%)] font-body">Activity (SUV)</span>
@@ -538,7 +708,7 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
   const totalExerciseMins = todayExercises.reduce((sum, e) => sum + e.durationMinutes, 0);
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
@@ -548,18 +718,18 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
-            <Apple className="h-5 w-5 text-primary mx-auto mb-1" />
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
+            <Apple className="h-5 w-5 text-[hsl(34,55%,52%)] mx-auto mb-1" />
             <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{todayMeals.length}</p>
             <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Meals logged</p>
           </div>
-          <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
-            <Sparkles className="h-5 w-5 text-[hsl(34,55%,52%)] mx-auto mb-1" />
+          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
+            <Sparkles className="h-5 w-5 text-primary mx-auto mb-1" />
             <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalMindBodyMins}</p>
             <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min mindfulness</p>
           </div>
-          <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
+          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
             <Activity className="h-5 w-5 text-primary mx-auto mb-1" />
             <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalExerciseMins}</p>
             <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min exercise</p>
@@ -606,103 +776,6 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
   );
 }
 
-function ImmuneRecoveryWidget() {
-  const immunoSuppressionEndDate = new Date("2025-12-01");
-  const daysSince = Math.floor((new Date().getTime() - immunoSuppressionEndDate.getTime()) / (1000 * 60 * 60 * 24));
-  const weeksRecovering = Math.floor(daysSince / 7);
-
-  return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-      <CardContent className="p-6 flex flex-col items-center">
-        <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center mb-3">
-          <Zap className="h-7 w-7 text-primary" />
-        </div>
-        <p className="text-3xl font-heading font-bold text-primary">{daysSince}</p>
-        <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-1">Days of Immune Recovery</p>
-        <p className="text-[10px] text-[hsl(25,18%,55%)] font-body mt-2 text-center">
-          {weeksRecovering} weeks since immunosuppression ended — your immune system grows stronger each day
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function HealingStreakWidget({ userId }: { userId: number }) {
-  const { data: recentMeals = [] } = useQuery<Meal[]>({
-    queryKey: ["/api/meals", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-  const { data: recentMindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-  const { data: recentExercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-
-  const activeDates = new Set<string>();
-  recentMeals.forEach((m) => activeDates.add(m.date));
-  recentMindBody.forEach((a) => activeDates.add(a.date));
-  recentExercises.forEach((e) => activeDates.add(e.date));
-
-  let streak = 0;
-  const d = new Date();
-  while (true) {
-    const dateStr = d.toISOString().split("T")[0];
-    if (activeDates.has(dateStr)) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const dt = new Date(Date.now() - (6 - i) * 86400000);
-    const dateStr = dt.toISOString().split("T")[0];
-    return {
-      day: dt.toLocaleDateString("en-AU", { weekday: "narrow" }),
-      active: activeDates.has(dateStr),
-    };
-  });
-
-  return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-      <CardContent className="p-6 flex flex-col items-center">
-        <div className="w-16 h-16 rounded-full bg-[hsl(34,55%,52%)]/10 border-2 border-[hsl(34,55%,52%)]/30 flex items-center justify-center mb-3">
-          <Flame className="h-7 w-7 text-[hsl(34,55%,45%)]" />
-        </div>
-        <p className="text-3xl font-heading font-bold text-[hsl(34,55%,45%)]">{streak}</p>
-        <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-1">Day Healing Streak</p>
-        <div className="flex gap-1.5 mt-3">
-          {last7.map((d, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-body ${
-                d.active ? "bg-[hsl(34,55%,52%)] text-white" : "bg-[hsl(30,20%,90%)] text-[hsl(25,18%,55%)]"
-              }`}>
-                {d.day}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function TreatmentTimelineWidget() {
   const timeline = [
     { date: "April 2025", title: "Diagnosis", desc: "Stage IV melanoma with liver metastases. Three liver tumours identified.", color: "bg-[hsl(34,55%,52%)]" },
@@ -713,7 +786,7 @@ function TreatmentTimelineWidget() {
   ];
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
       <CardHeader className="pb-3">
         <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" /> Treatment Timeline
@@ -723,52 +796,24 @@ function TreatmentTimelineWidget() {
         <div className="space-y-4">
           {timeline.map((item, i) => (
             <div key={i} className="flex items-start gap-4">
-              <div className={`w-3 h-3 rounded-full ${item.color} mt-1.5 flex-shrink-0`} />
-              <div>
-                <p className="font-body font-medium text-[hsl(25,30%,28%)]">{item.date} — {item.title}</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">{item.desc}</p>
+              <div className="flex flex-col items-center">
+                <div className={`w-3 h-3 rounded-full ${item.color} flex-shrink-0`} />
+                {i < timeline.length && <div className="w-px h-8 bg-[hsl(30,22%,87%)]" />}
+              </div>
+              <div className="-mt-0.5">
+                <p className="font-body font-medium text-sm text-[hsl(25,30%,28%)]">{item.date} — {item.title}</p>
+                <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-0.5">{item.desc}</p>
               </div>
             </div>
           ))}
           <div className="flex items-start gap-4">
-            <div className="w-3 h-3 rounded-full border-2 border-primary bg-white mt-1.5 flex-shrink-0" />
-            <div>
-              <p className="font-body font-medium text-primary">May 2026 — Goal: NED</p>
-              <p className="text-sm text-[hsl(25,18%,48%)] font-body">Target: No Evidence of Disease confirmation at next scan.</p>
+            <div className="w-3 h-3 rounded-full border-2 border-primary bg-white flex-shrink-0" />
+            <div className="-mt-0.5">
+              <p className="font-body font-medium text-sm text-primary">May 2026 — Goal: NED</p>
+              <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-0.5">Target: No Evidence of Disease confirmation at next scan.</p>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AIAssistantWidget() {
-  return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-      <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-primary" /> Health Assistant
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-4">
-          Personalised guidance for nutrition, immune support, scan preparation, and emotional wellbeing.
-        </p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {["Immune Support", "Scan Anxiety", "Liver Recovery", "Supplements"].map((topic) => (
-            <Link key={topic} href="/ai-assistant">
-              <Button variant="outline" size="sm" className="w-full text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body">
-                {topic}
-              </Button>
-            </Link>
-          ))}
-        </div>
-        <Link href="/ai-assistant">
-          <Button className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide">
-            Start Conversation
-          </Button>
-        </Link>
       </CardContent>
     </Card>
   );
@@ -782,7 +827,7 @@ function AppointmentsWidget() {
   ];
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] col-span-full">
+    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
       <CardHeader className="pb-3">
         <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
@@ -793,12 +838,12 @@ function AppointmentsWidget() {
           {appointments.map((appt, i) => (
             <div key={i} className={`flex items-center justify-between pb-3 ${i < appointments.length - 1 ? "border-b border-[hsl(30,22%,87%)]" : ""}`}>
               <div>
-                <p className="font-body font-medium text-[hsl(25,30%,28%)]">{appt.title}</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">{appt.person}</p>
+                <p className="font-body font-medium text-sm text-[hsl(25,30%,28%)]">{appt.title}</p>
+                <p className="text-xs text-[hsl(25,18%,48%)] font-body">{appt.person}</p>
               </div>
               <div className="text-right">
-                <p className="font-body font-medium text-[hsl(34,55%,45%)]">{appt.date}</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">{appt.time}</p>
+                <p className="font-body font-medium text-sm text-[hsl(34,55%,45%)]">{appt.date}</p>
+                <p className="text-xs text-[hsl(25,18%,48%)] font-body">{appt.time}</p>
               </div>
             </div>
           ))}
@@ -837,9 +882,28 @@ function InspirationWidget() {
   );
 }
 
+function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode;
+  open: boolean; onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
+            {icon} {title}
+          </DialogTitle>
+        </DialogHeader>
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function SimpleDashboard() {
   const { user } = useUser();
   const [activeWidgets, setActiveWidgets] = useState<string[]>(loadWidgets());
+  const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
 
   const handleWidgetChange = (ids: string[]) => {
     setActiveWidgets(ids);
@@ -861,80 +925,187 @@ export default function SimpleDashboard() {
 
   const isActive = (id: string) => activeWidgets.includes(id);
 
+  const scanDate = user.nextScanDate ? new Date(user.nextScanDate) : null;
+  const daysUntilScan = scanDate ? Math.ceil((scanDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const diagnosisDate = user.diagnosis_date ? new Date(user.diagnosis_date) : new Date("2025-04-01");
+  const treatmentStartDate = new Date("2025-04-22");
+  const daysSinceTreatmentStart = Math.floor((new Date().getTime() - treatmentStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const immunoSuppressionEndDate = new Date("2025-12-01");
+  const daysImmuneRecovery = Math.floor((new Date().getTime() - immunoSuppressionEndDate.getTime()) / (1000 * 60 * 60 * 24));
+
   const quickLinks = [
     { href: "/nutrition", label: "Nutrition", icon: <Apple className="h-5 w-5" />, desc: "Liver & immune support" },
     { href: "/mind-body", label: "Mind & Body", icon: <Sparkles className="h-5 w-5" />, desc: "Meditation & healing" },
     { href: "/movement", label: "Movement", icon: <Activity className="h-5 w-5" />, desc: "Gentle exercise" },
     { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="h-5 w-5" />, desc: "Inner peace & purpose" },
+    { href: "/date-night", label: "Date Night", icon: <Wine className="h-5 w-5" />, desc: "Sydney dining & fun" },
+    { href: "/ai-assistant", label: "AI Assistant", icon: <MessageCircle className="h-5 w-5" />, desc: "Personalised guidance" },
   ];
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="mb-8">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-primary/70 font-body text-sm tracking-widest uppercase mb-2">Your Healing Journey</p>
-            <h1 className="text-3xl lg:text-4xl font-heading font-bold text-[hsl(25,35%,22%)] tracking-wide">
+            <p className="text-primary/60 font-body text-xs tracking-[0.2em] uppercase mb-1.5">Your Healing Journey</p>
+            <h1 className="text-2xl lg:text-3xl font-heading font-bold text-[hsl(25,35%,22%)] tracking-wide">
               Welcome back, {user?.displayName || "Friend"}
             </h1>
-            <p className="text-[hsl(25,18%,50%)] font-body mt-2">
+            <p className="text-sm text-[hsl(25,18%,50%)] font-body mt-1.5">
               {user.treatmentStatus === "Active Surveillance"
-                ? "Your body is continuing to heal. Every day your immune system grows stronger."
+                ? "Your body continues to heal beautifully. Every day brings you closer."
                 : "Continue nurturing your path to wellness"}
             </p>
           </div>
           <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
         </div>
-        <div className="mt-4 h-px bg-gradient-to-r from-primary/40 via-[hsl(34,55%,52%)]/30 to-transparent" />
+        <div className="mt-4 h-px bg-gradient-to-r from-primary/30 via-[hsl(34,55%,52%)]/20 to-transparent" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {isActive("scanCountdown") && <ScanCountdownWidget nextScanDate={user.nextScanDate} />}
-        {isActive("treatmentJourney") && <TreatmentJourneyWidget user={user} />}
-        {isActive("immuneRecovery") && <ImmuneRecoveryWidget />}
-        {isActive("healingStreak") && <HealingStreakWidget userId={user.id} />}
-        {isActive("inspiration") && <InspirationWidget />}
-        {isActive("aiAssistant") && <AIAssistantWidget />}
-      </div>
+      {(isActive("scanCountdown") || isActive("treatmentJourney") || isActive("immuneRecovery") || isActive("healingStreak")) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {isActive("scanCountdown") && (
+            <CompactStatCard
+              icon={<Scan className="h-5 w-5" />}
+              label="Next Scan"
+              value={daysUntilScan ?? "—"}
+              subtitle={scanDate ? scanDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : undefined}
+              onClick={() => setExpandedWidget("scanCountdown")}
+            />
+          )}
+          {isActive("treatmentJourney") && (
+            <CompactStatCard
+              icon={<Shield className="h-5 w-5" />}
+              label="Treatment Journey"
+              value={`${daysSinceTreatmentStart}d`}
+              subtitle={user.treatmentStatus || "Active Surveillance"}
+              accentColor="amber"
+              onClick={() => setExpandedWidget("treatmentJourney")}
+            />
+          )}
+          {isActive("immuneRecovery") && (
+            <CompactStatCard
+              icon={<Zap className="h-5 w-5" />}
+              label="Immune Recovery"
+              value={`${daysImmuneRecovery}d`}
+              subtitle={`${Math.floor(daysImmuneRecovery / 7)} weeks recovering`}
+              onClick={() => setExpandedWidget("immuneRecovery")}
+            />
+          )}
+          {isActive("healingStreak") && (
+            <CompactStatCard
+              icon={<Flame className="h-5 w-5" />}
+              label="Healing Streak"
+              value="View"
+              subtitle="Tap to see your streak"
+              accentColor="amber"
+              onClick={() => setExpandedWidget("healingStreak")}
+            />
+          )}
+        </div>
+      )}
+
+      <ExpandableWidget
+        title="Next Scan Countdown"
+        icon={<Scan className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "scanCountdown"}
+        onOpenChange={(open) => setExpandedWidget(open ? "scanCountdown" : null)}
+      >
+        <ScanCountdownExpanded nextScanDate={user.nextScanDate} />
+      </ExpandableWidget>
+
+      <ExpandableWidget
+        title="Your Treatment Journey"
+        icon={<Shield className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "treatmentJourney"}
+        onOpenChange={(open) => setExpandedWidget(open ? "treatmentJourney" : null)}
+      >
+        <TreatmentJourneyExpanded user={user} />
+      </ExpandableWidget>
+
+      <ExpandableWidget
+        title="Immune Recovery"
+        icon={<Zap className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "immuneRecovery"}
+        onOpenChange={(open) => setExpandedWidget(open ? "immuneRecovery" : null)}
+      >
+        <ImmuneRecoveryExpanded />
+      </ExpandableWidget>
+
+      <ExpandableWidget
+        title="Healing Streak"
+        icon={<Flame className="h-5 w-5 text-[hsl(34,55%,45%)]" />}
+        open={expandedWidget === "healingStreak"}
+        onOpenChange={(open) => setExpandedWidget(open ? "healingStreak" : null)}
+      >
+        <HealingStreakExpanded userId={user.id} />
+      </ExpandableWidget>
+
+      {isActive("inspiration") && (
+        <div className="mb-6">
+          <InspirationWidget />
+        </div>
+      )}
 
       {isActive("tumourResponse") && (
-        <div className="mb-8">
+        <div className="mb-6">
           <TumourResponseWidget userId={user.id} />
         </div>
       )}
 
       {isActive("todayWellness") && (
-        <div className="mb-8">
+        <div className="mb-6">
           <TodayWellnessWidget userId={user.id} />
         </div>
       )}
 
-      {isActive("treatmentTimeline") && (
-        <div className="mb-8">
-          <TreatmentTimelineWidget />
+      {(isActive("treatmentTimeline") || isActive("appointments") || isActive("aiAssistant")) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
+          {isActive("appointments") && <AppointmentsWidget />}
+          {isActive("aiAssistant") && (
+            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" /> Health Assistant
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-4">
+                  Personalised guidance for nutrition, immune support, scan preparation, and emotional wellbeing.
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {["Immune Support", "Scan Anxiety", "Liver Recovery", "Supplements"].map((topic) => (
+                    <Link key={topic} href="/ai-assistant">
+                      <Button variant="outline" size="sm" className="w-full text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body">
+                        {topic}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/ai-assistant">
+                  <Button className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide">
+                    Start Conversation
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
-      {isActive("appointments") && (
-        <div className="mb-8">
-          <AppointmentsWidget />
-        </div>
-      )}
-
-      <div className="mb-8">
-        <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide mb-4">Explore Your Healing Tools</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="mb-6">
+        <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide mb-4">Explore Your Healing Tools</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] hover:border-primary/30 hover:bg-[hsl(30,30%,95%)] transition-all duration-300 cursor-pointer group">
-                <CardContent className="p-4 text-center">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center mb-3 group-hover:bg-primary/25 transition-colors">
-                    <span className="text-primary">{link.icon}</span>
-                  </div>
-                  <h3 className="font-heading text-sm text-[hsl(25,30%,28%)] group-hover:text-primary transition-colors">{link.label}</h3>
-                  <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-1">{link.desc}</p>
-                </CardContent>
-              </Card>
+              <div className="group bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0">
+                <div className="mx-auto w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                  <span className="text-primary">{link.icon}</span>
+                </div>
+                <h3 className="font-heading text-xs text-[hsl(25,30%,28%)] group-hover:text-primary transition-colors">{link.label}</h3>
+                <p className="text-[10px] text-[hsl(25,18%,55%)] font-body mt-0.5 line-clamp-1">{link.desc}</p>
+              </div>
             </Link>
           ))}
         </div>

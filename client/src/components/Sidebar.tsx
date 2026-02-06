@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, LogOut, UserRound } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, LogOut, UserRound, Wine } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,6 +23,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
     { href: "/supplements", label: "Supplements", icon: <Pill className="w-5 h-5" /> },
     { href: "/community", label: "Resources", icon: <Users className="w-5 h-5" /> },
     { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="w-5 h-5" /> },
+    { href: "/date-night", label: "Date Night", icon: <Wine className="w-5 h-5" /> },
     { href: "/calendar", label: "Calendar", icon: <Calendar className="w-5 h-5" /> },
   ];
 

@@ -16,6 +16,7 @@ import Community from "@/pages/Community";
 import SpiritualWellbeing from "@/pages/SpiritualWellbeing";
 import Calendar from "@/pages/Calendar";
 import ProfileSimple from "@/pages/ProfileSimple";
+import DateNight from "@/pages/DateNight";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
@@ -124,6 +125,11 @@ function AppRouter() {
       <Route path="/calendar">
         <Layout>
           <ProtectedRoute component={Calendar} />
+        </Layout>
+      </Route>
+      <Route path="/date-night">
+        <Layout>
+          <ProtectedRoute component={DateNight} />
         </Layout>
       </Route>
       <Route path="/profile">

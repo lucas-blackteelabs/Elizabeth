@@ -4,6 +4,17 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Compact clickable dashboard widgets with expand-to-detail UX
+  - Top stats (Scan Countdown, Treatment Journey, Immune Recovery, Healing Streak) are compact tiles
+  - Clicking a compact tile opens a dialog with full detail, charts, and milestones
+  - Smooth hover animations, lift effects, and modern transitions throughout
+  - Healing tools grid now includes Date Night link
+- **Feb 2026**: Date Night feature
+  - New page at /date-night with Gemini-powered Sydney restaurant recommendations
+  - Considers dietary requirements (anti-inflammatory, liver-supportive)
+  - Also suggests fun couple activities supporting wellbeing and connection
+  - Added to sidebar navigation and dashboard healing tools grid
+  - API endpoint: /api/ai/date-night
 - **Feb 2026**: Customizable dashboard with pick-and-mix widget system
   - 10 widgets: Scan Countdown, Treatment Journey, Tumour Response chart, Today's Wellness, Immune Recovery, Healing Streak, Treatment Timeline, AI Assistant, Appointments, Daily Inspiration
   - Widget picker dialog stores preferences in localStorage

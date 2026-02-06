@@ -242,6 +242,58 @@ Keep it warm, concise, and encouraging.`;
   }
 }
 
+export async function getDateNightIdeas(userContext: string = ""): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are a thoughtful date night planner for a couple in Sydney, Australia. One partner is a cancer patient with specific dietary needs.
+
+${cancerFightingNutrition}
+
+${userContext}
+
+Create a curated date night guide with TWO sections:
+
+## Restaurant Recommendations
+
+Suggest 5 REAL restaurants in Sydney that would be great for a couple where one partner follows an anti-inflammatory, liver-supportive diet. For each restaurant:
+- **Restaurant name** and suburb
+- **Cuisine type** and why it works for their dietary needs
+- **What to order**: 2-3 specific menu suggestions that align with cancer-fighting nutrition
+- **Vibe**: One sentence on the atmosphere/romantic appeal
+- **Price range**: $ to $$$$
+
+Mix it up — include a waterfront spot, a cosy neighbourhood gem, a fine dining option, a casual healthy eatery, and something unique.
+
+## Fun Things to Do Together
+
+Suggest 5 creative, fun, and meaningful couple activities in Sydney that support wellbeing and connection. For each:
+- **Activity name**
+- **Where**: Location or area in Sydney
+- **Why it's special**: How it supports connection, joy, or healing (link to Radical Remission's positive emotions and social support factors)
+- **Best time**: When to go
+
+Include a mix of active, relaxing, creative, and adventurous options. Think beyond the obvious — make these feel special and memorable.
+
+Keep the tone warm, romantic, and encouraging. This is about celebrating life together.`;
+
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 2500,
+      },
+    });
+
+    return result.response.text() || "I couldn't generate date night ideas right now.";
+  } catch (error) {
+    console.error("Error generating date night ideas:", error);
+    return "I'm having trouble generating ideas right now. Please try again in a moment.";
+  }
+}
+
 export function addToKnowledgeBase(category: string, content: string): { success: boolean, message: string } {
   console.log(`Added to knowledge base - Category: ${category}, Content: ${content}`);
   

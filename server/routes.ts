@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion } from "./openai";
+import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 
@@ -353,6 +353,22 @@ PATIENT CONTEXT:
     } catch (error) {
       console.error("Error creating medical record:", error);
       return res.status(500).json({ error: "Failed to create medical record" });
+    }
+  });
+
+  app.post("/api/ai/date-night", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const user = await storage.getUser(userId);
+      let userContext = "";
+      if (user) {
+        userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
+      }
+      const content = await getDateNightIdeas(userContext);
+      return res.json({ content });
+    } catch (error) {
+      console.error("Error generating date night ideas:", error);
+      return res.status(500).json({ error: "Failed to generate ideas" });
     }
   });
 
