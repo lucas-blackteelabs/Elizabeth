@@ -6,14 +6,14 @@ import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 
 async function seedLizAccount() {
-  const existingUser = await storage.getUserByUsername("liz");
+  const existingUser = await storage.getUserByUsername(".");
   if (existingUser) return;
 
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash("elizabeth2025", salt);
+  const hashedPassword = await bcrypt.hash(".", salt);
 
   await storage.createUser({
-    username: "liz",
+    username: ".",
     password: hashedPassword,
     displayName: "Liz",
     email: "liz@elizabeth.app",
