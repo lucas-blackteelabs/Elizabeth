@@ -310,7 +310,7 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation
   ]
 }
 
-Include exactly 5 restaurants and 5 activities. Use REAL Sydney restaurants that exist. Mix restaurant types: waterfront, cosy neighbourhood gem, fine dining, casual healthy, and something unique. Mix activity types across categories. Keep the tone warm and encouraging.`;
+Include exactly 3 restaurants and 3 activities. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining). Mix activity types across categories. Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.`;
 
     const result = await model.generateContent({
       contents: [
@@ -318,14 +318,43 @@ Include exactly 5 restaurants and 5 activities. Use REAL Sydney restaurants that
       ],
       generationConfig: {
         temperature: 0.9,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 4096,
       },
     });
 
     const text = result.response.text() || "";
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const parsed = JSON.parse(cleaned) as DateNightSuggestions;
-    return parsed;
+    try {
+      const parsed = JSON.parse(cleaned) as DateNightSuggestions;
+      return parsed;
+    } catch (parseError) {
+      console.error("JSON parse error, attempting repair:", parseError);
+      const restaurantMatch = cleaned.match(/"restaurants"\s*:\s*\[([\s\S]*?)\]\s*,\s*"activities"/);
+      const activityMatch = cleaned.match(/"activities"\s*:\s*\[([\s\S]*)/);
+      const restaurants: RestaurantCard[] = [];
+      const activities: ActivityCard[] = [];
+      if (restaurantMatch) {
+        try {
+          const rArr = JSON.parse("[" + restaurantMatch[1] + "]");
+          restaurants.push(...rArr);
+        } catch {}
+      }
+      if (activityMatch) {
+        let actStr = activityMatch[1].replace(/\]\s*\}\s*$/, '').trim();
+        if (!actStr.endsWith(']')) {
+          const lastBrace = actStr.lastIndexOf('}');
+          if (lastBrace > 0) actStr = actStr.substring(0, lastBrace + 1);
+        }
+        try {
+          const aArr = JSON.parse("[" + actStr + "]");
+          activities.push(...aArr);
+        } catch {}
+      }
+      if (restaurants.length > 0 || activities.length > 0) {
+        return { restaurants, activities };
+      }
+      throw parseError;
+    }
   } catch (error) {
     console.error("Error generating date night ideas:", error);
     return { restaurants: [], activities: [] };
