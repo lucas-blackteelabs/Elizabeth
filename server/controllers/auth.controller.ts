@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Registration validation schema
 const registerSchema = insertUserSchema.extend({
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(1, "Password is required"),
   confirmPassword: z.string().min(1, "Confirm password is required"),
   // Make sure optional fields are properly handled
   cancerType: z.string().nullable().optional(),
@@ -71,7 +71,7 @@ export const register = async (req: Request, res: Response) => {
     // Set token in cookie
     res.cookie('authToken', token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
       sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
     });
@@ -113,7 +113,7 @@ export const login = async (req: Request, res: Response) => {
     // Set token in cookie
     res.cookie('authToken', token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
       sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
     });

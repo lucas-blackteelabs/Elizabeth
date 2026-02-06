@@ -34,6 +34,6 @@ export const generateToken = (userId: number, username: string): string => {
   return jwt.sign(
     { id: userId, username },
     JWT_SECRET,
-    { expiresIn: '7d' } // Token expires in 7 days
+    { expiresIn: '90d' } // Token expires in 90 days for persistent login
   );
 };

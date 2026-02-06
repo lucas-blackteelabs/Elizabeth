@@ -4,28 +4,38 @@ import { storage } from "./storage";
 import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
+import { db } from "./db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 async function seedLizAccount() {
-  const existingUser = await storage.getUserByUsername(".");
-  if (existingUser) {
-    if (existingUser.cancerType !== "Stage IV Melanoma") {
-      await storage.updateUser(existingUser.id, {
-        cancerType: "Stage IV Melanoma",
-        cancerStage: "Stage IV",
-        treatmentStatus: "Active Surveillance",
-        treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
-        currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
-        adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
-        oncologist: "Melanoma Oncology Team",
-        goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-        medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-        scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
-        nextScanDate: "2026-05-15",
-        diagnosis_date: "2025-04-22",
-        bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
-      });
-    }
+  const lizProfile = {
+    cancerType: "Stage IV Melanoma",
+    cancerStage: "Stage IV",
+    treatmentStatus: "Active Surveillance",
+    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    oncologist: "Melanoma Oncology Team",
+    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
+    nextScanDate: "2026-05-15",
+    diagnosis_date: "2025-04-22",
+    bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
+  };
 
+  const existingUser = await storage.getUserByUsername("Liz");
+  const oldUser = !existingUser ? await storage.getUserByUsername(".") : null;
+
+  if (existingUser) {
+    await storage.updateUser(existingUser.id, lizProfile);
+    const validPassword = await bcrypt.compare("Cookie", existingUser.password);
+    if (!validPassword) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash("Cookie", salt);
+      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, existingUser.id));
+    }
     const scans = await storage.listScanResults(existingUser.id);
     if (scans.length === 0) {
       await seedScanData(existingUser.id);
@@ -33,11 +43,23 @@ async function seedLizAccount() {
     return;
   }
 
+  if (oldUser) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash("Cookie", salt);
+    await db.update(users).set({ ...lizProfile, username: "Liz", password: hashedPassword }).where(eq(users.id, oldUser.id));
+    const scans = await storage.listScanResults(oldUser.id);
+    if (scans.length === 0) {
+      await seedScanData(oldUser.id);
+    }
+    console.log("Migrated old Liz account (./.) to Liz/Cookie");
+    return;
+  }
+
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(".", salt);
+  const hashedPassword = await bcrypt.hash("Cookie", salt);
 
   const user = await storage.createUser({
-    username: ".",
+    username: "Liz",
     password: hashedPassword,
     displayName: "Liz",
     email: "liz@elizabeth.app",
