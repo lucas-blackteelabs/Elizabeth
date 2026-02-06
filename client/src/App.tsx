@@ -22,6 +22,7 @@ import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Redirect } from "wouter";
 import InstallPrompt from "@/components/InstallPrompt";
+import AIChatButton from "@/components/AIChatButton";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -147,6 +148,12 @@ function AppRouter() {
   );
 }
 
+function AuthenticatedAIChatButton() {
+  const { isAuthenticated } = useUser();
+  if (!isAuthenticated) return null;
+  return <AIChatButton />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -155,6 +162,7 @@ function App() {
           <Toaster />
           <InstallPrompt />
           <AppRouter />
+          <AuthenticatedAIChatButton />
         </TooltipProvider>
       </UserProvider>
     </QueryClientProvider>

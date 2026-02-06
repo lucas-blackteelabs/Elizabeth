@@ -268,7 +268,7 @@ export interface DateNightSuggestions {
   activities: ActivityCard[];
 }
 
-export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = ""): Promise<DateNightSuggestions> {
+export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = ""): Promise<DateNightSuggestions> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -310,7 +310,7 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation
   ]
 }
 
-Include exactly 3 restaurants and 3 activities. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining). Mix activity types across categories. Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.`;
+Include exactly 3 restaurants and 3 activities. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining). Mix activity types across categories. Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT restaurants and activities.` : ""}`;
 
     const result = await model.generateContent({
       contents: [

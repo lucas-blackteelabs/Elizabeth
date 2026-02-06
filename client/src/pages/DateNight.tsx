@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Heart, Sparkles, Loader2, RefreshCw, MapPin, Utensils, Star,
   Music, Calendar, ChevronLeft, Clock, DollarSign, Leaf, X,
-  MessageSquare, Check, History, Compass, Palette, Mountain, Wine
+  MessageSquare, Check, History, Compass, Palette, Mountain, Wine,
+  Pin, PinOff, ChevronRight, Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,12 +80,27 @@ function StarRating({ rating, onRate, size = "md" }: { rating: number; onRate?: 
   );
 }
 
+const SHORTLIST_KEY = "elizabeth-date-night-shortlist";
+
+function loadShortlist(): { restaurants: RestaurantCard[]; activities: ActivityCard[] } {
+  try {
+    const saved = localStorage.getItem(SHORTLIST_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return { restaurants: [], activities: [] };
+}
+
+function saveShortlist(data: { restaurants: RestaurantCard[]; activities: ActivityCard[] }) {
+  localStorage.setItem(SHORTLIST_KEY, JSON.stringify(data));
+}
+
 export default function DateNight() {
   const { user } = useUser();
   const { toast } = useToast();
   const [restaurants, setRestaurants] = useState<RestaurantCard[]>([]);
   const [activities, setActivities] = useState<ActivityCard[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
 
   const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantCard | null>(null);
@@ -94,11 +110,38 @@ export default function DateNight() {
   const [savingRestaurant, setSavingRestaurant] = useState<RestaurantCard | null>(null);
   const [savingActivity, setSavingActivity] = useState<ActivityCard | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"discover" | "history">("discover");
+  const [activeTab, setActiveTab] = useState<"discover" | "shortlist" | "history">("discover");
+  const [shortlist, setShortlist] = useState(loadShortlist);
 
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+
+  const isRestaurantShortlisted = (r: RestaurantCard) =>
+    shortlist.restaurants.some((s) => s.name === r.name && s.suburb === r.suburb);
+
+  const isActivityShortlisted = (a: ActivityCard) =>
+    shortlist.activities.some((s) => s.name === a.name && s.location === a.location);
+
+  const toggleRestaurantShortlist = (r: RestaurantCard, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updated = isRestaurantShortlisted(r)
+      ? { ...shortlist, restaurants: shortlist.restaurants.filter((s) => !(s.name === r.name && s.suburb === r.suburb)) }
+      : { ...shortlist, restaurants: [...shortlist.restaurants, r] };
+    setShortlist(updated);
+    saveShortlist(updated);
+    toast({ title: isRestaurantShortlisted(r) ? "Removed from shortlist" : "Shortlisted!", description: r.name });
+  };
+
+  const toggleActivityShortlist = (a: ActivityCard, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updated = isActivityShortlisted(a)
+      ? { ...shortlist, activities: shortlist.activities.filter((s) => !(s.name === a.name && s.location === a.location)) }
+      : { ...shortlist, activities: [...shortlist.activities, a] };
+    setShortlist(updated);
+    saveShortlist(updated);
+    toast({ title: isActivityShortlisted(a) ? "Removed from shortlist" : "Shortlisted!", description: a.name });
+  };
 
   const { data: dateNightHistory = [], isLoading: historyLoading } = useQuery<DateNightType[]>({
     queryKey: [`/api/date-nights?userId=${user?.id || 1}`],
@@ -132,23 +175,34 @@ export default function DateNight() {
     },
   });
 
-  const generateIdeas = async () => {
-    setLoading(true);
+  const generateIdeas = async (append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     try {
+      const existingNames = append ? [...restaurants.map(r => r.name), ...activities.map(a => a.name)].join(", ") : "";
       const res = await fetch("/api/ai/date-night", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id }),
+        body: JSON.stringify({ userId: user?.id, excludeNames: existingNames }),
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
-      setRestaurants(data.restaurants || []);
-      setActivities(data.activities || []);
+      if (append) {
+        setRestaurants((prev) => [...prev, ...(data.restaurants || [])]);
+        setActivities((prev) => [...prev, ...(data.activities || [])]);
+      } else {
+        setRestaurants(data.restaurants || []);
+        setActivities(data.activities || []);
+      }
       setHasGenerated(true);
     } catch {
       toast({ title: "Oops", description: "Couldn't generate ideas right now. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -206,18 +260,27 @@ export default function DateNight() {
         </div>
       )}
 
-      <div className="flex gap-1 mb-6 bg-[hsl(30,30%,93%)] rounded-xl p-1 max-w-xs mx-auto">
+      <div className="flex gap-1 mb-6 bg-[hsl(30,30%,93%)] rounded-xl p-1 max-w-sm mx-auto">
         <button
           onClick={() => setActiveTab("discover")}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-body transition-all ${activeTab === "discover" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all ${activeTab === "discover" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
         >
-          <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />Discover
+          <Sparkles className="h-3.5 w-3.5 inline mr-1" />Discover
+        </button>
+        <button
+          onClick={() => setActiveTab("shortlist")}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all relative ${activeTab === "shortlist" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+        >
+          <Pin className="h-3.5 w-3.5 inline mr-1" />Shortlist
+          {(shortlist.restaurants.length + shortlist.activities.length) > 0 && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">{shortlist.restaurants.length + shortlist.activities.length}</span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-body transition-all relative ${activeTab === "history" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all relative ${activeTab === "history" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
         >
-          <History className="h-3.5 w-3.5 inline mr-1.5" />History
+          <History className="h-3.5 w-3.5 inline mr-1" />History
           {planned.length > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[hsl(34,55%,52%)] text-white text-[10px] flex items-center justify-center">{planned.length}</span>
           )}
@@ -273,11 +336,21 @@ export default function DateNight() {
                 {restaurants.map((r, i) => (
                   <Card
                     key={i}
-                    className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+                    className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group relative"
                     onClick={() => setSelectedRestaurant(r)}
                   >
+                    <button
+                      onClick={(e) => toggleRestaurantShortlist(r, e)}
+                      className={`absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                        isRestaurantShortlisted(r)
+                          ? "bg-primary text-white"
+                          : "bg-[hsl(30,25%,90%)] text-[hsl(25,18%,55%)] hover:bg-primary/20 hover:text-primary"
+                      }`}
+                    >
+                      <Pin className="h-3.5 w-3.5" />
+                    </button>
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-2 pr-8">
                         <h3 className="font-heading text-sm text-[hsl(25,30%,22%)] group-hover:text-primary transition-colors leading-tight">{r.name}</h3>
                         <PriceIndicator range={r.priceRange} />
                       </div>
@@ -307,11 +380,21 @@ export default function DateNight() {
                   return (
                     <Card
                       key={i}
-                      className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+                      className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group relative"
                       onClick={() => setSelectedActivity(a)}
                     >
+                      <button
+                        onClick={(e) => toggleActivityShortlist(a, e)}
+                        className={`absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                          isActivityShortlisted(a)
+                            ? "bg-[hsl(34,55%,52%)] text-white"
+                            : "bg-[hsl(30,25%,90%)] text-[hsl(25,18%,55%)] hover:bg-[hsl(34,55%,52%)]/20 hover:text-[hsl(34,55%,52%)]"
+                        }`}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
                       <CardContent className="p-4">
-                        <div className="flex items-start gap-3 mb-2">
+                        <div className="flex items-start gap-3 mb-2 pr-8">
                           <div className="h-8 w-8 rounded-lg bg-[hsl(34,55%,52%)]/10 flex items-center justify-center flex-shrink-0">
                             <Icon className="h-4 w-4 text-[hsl(34,55%,52%)]" />
                           </div>
@@ -332,9 +415,129 @@ export default function DateNight() {
                   );
                 })}
               </div>
+
+              <div className="flex justify-center mt-6">
+                <Button
+                  onClick={() => generateIdeas(true)}
+                  disabled={loadingMore}
+                  variant="outline"
+                  className="border-primary/30 text-primary hover:bg-primary/10 font-body gap-2"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Finding more ideas...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" /> See More Ideas
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "shortlist" && (
+        <div className="space-y-6">
+          {shortlist.restaurants.length === 0 && shortlist.activities.length === 0 ? (
+            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+              <CardContent className="p-8 text-center">
+                <Pin className="h-10 w-10 text-primary/30 mx-auto mb-3" />
+                <p className="text-sm text-[hsl(25,18%,48%)] font-body">No items shortlisted yet.</p>
+                <p className="text-xs text-[hsl(25,18%,58%)] font-body mt-1">Tap the pin icon on any restaurant or activity to save it here.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {shortlist.restaurants.length > 0 && (
+                <div>
+                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                    <Utensils className="h-4 w-4" /> Shortlisted Restaurants
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {shortlist.restaurants.map((r, i) => (
+                      <Card
+                        key={i}
+                        className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
+                        onClick={() => setSelectedRestaurant(r)}
+                      >
+                        <button
+                          onClick={(e) => toggleRestaurantShortlist(r, e)}
+                          className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center bg-primary text-white hover:bg-red-400 transition-all"
+                        >
+                          <PinOff className="h-3.5 w-3.5" />
+                        </button>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-2 pr-8">
+                            <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{r.name}</h3>
+                            <PriceIndicator range={r.priceRange} />
+                          </div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <MapPin className="h-3 w-3 text-[hsl(25,18%,55%)]" />
+                            <span className="text-xs text-[hsl(25,18%,55%)] font-body">{r.suburb}</span>
+                            <span className="text-xs text-[hsl(25,18%,70%)]">·</span>
+                            <span className="text-xs text-primary/80 font-body">{r.cuisineType}</span>
+                          </div>
+                          <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-2">{r.summary}</p>
+                          <div className="flex gap-2 mt-3">
+                            <Button
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); openSaveDialog(r); }}
+                              className="bg-primary text-white hover:bg-primary/90 font-body text-xs gap-1 h-7"
+                            >
+                              <Calendar className="h-3 w-3" /> Book It
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {shortlist.activities.length > 0 && (
+                <div>
+                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                    <Music className="h-4 w-4" /> Shortlisted Activities
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {shortlist.activities.map((a, i) => {
+                      const Icon = categoryIcons[a.category] || Compass;
+                      return (
+                        <Card
+                          key={i}
+                          className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
+                          onClick={() => setSelectedActivity(a)}
+                        >
+                          <button
+                            onClick={(e) => toggleActivityShortlist(a, e)}
+                            className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center bg-[hsl(34,55%,52%)] text-white hover:bg-red-400 transition-all"
+                          >
+                            <PinOff className="h-3.5 w-3.5" />
+                          </button>
+                          <CardContent className="p-4 pr-10">
+                            <div className="flex items-start gap-3 mb-2">
+                              <div className="h-8 w-8 rounded-lg bg-[hsl(34,55%,52%)]/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="h-4 w-4 text-[hsl(34,55%,52%)]" />
+                              </div>
+                              <div>
+                                <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{a.name}</h3>
+                                <p className="text-xs text-[hsl(25,18%,55%)] font-body">{a.location}</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-2">{a.description}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {activeTab === "history" && (
