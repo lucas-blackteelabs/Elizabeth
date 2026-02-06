@@ -3,27 +3,78 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getHealthAdvice, addToKnowledgeBase } from "./openai";
 import authRoutes from "./routes/auth.routes";
+import bcrypt from "bcrypt";
+
+async function seedLizAccount() {
+  const existingUser = await storage.getUserByUsername("liz");
+  if (existingUser) return;
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash("elizabeth2025", salt);
+
+  await storage.createUser({
+    username: "liz",
+    password: hashedPassword,
+    displayName: "Liz",
+    email: "liz@elizabeth.app",
+    cancerType: "Melanoma",
+    cancerStage: "Stage IV",
+    bio: "I'm on a healing journey with Stage IV melanoma. After immunotherapy, my tumors are responding beautifully and I'm focused on reaching NED through holistic wellness and the power of my immune system.",
+    diagnosis_date: "2025-04-01",
+    treatmentStatus: "Active Surveillance",
+    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    oncologist: "Melanoma Oncology Team",
+    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission. Current management: active surveillance rather than treatment restart due to prior severe toxicity.",
+    scanSummary: "Feb 2026: Continued improvement. One lesion shows no focal uptake (metabolic complete response). Others show lower SUV (~3.1-3.2), necrotic/calcified, stable or smaller. No metastases elsewhere - brain, lungs, bones, nodes all clear. Overall: ongoing treatment response and disease control off therapy.",
+    nextScanDate: "2026-05-15",
+  });
+
+  console.log("Seeded Liz's account with medical profile");
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register authentication routes
   app.use('/api/auth', authRoutes);
-  // AI Chat endpoint
+
+  await seedLizAccount();
+
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { message } = req.body;
+      const { message, userId } = req.body;
       
       if (!message || typeof message !== "string") {
         return res.status(400).json({ 
           error: "Invalid request. Message must be a string." 
         });
       }
+
+      let userContext = "";
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          userContext = `
+PATIENT CONTEXT (use this to personalize your response):
+- Name: ${user.displayName}
+- Cancer Type: ${user.cancerType || "Not specified"}
+- Stage: ${user.cancerStage || "Not specified"}
+- Treatment Status: ${user.treatmentStatus || "Not specified"}
+- Treatment History: ${user.treatmentHistory || "Not specified"}
+- Current Medications: ${user.currentMedications || "None specified"}
+- Adverse Events: ${user.adverseEventHistory || "None"}
+- Goals: ${user.goals || "Not specified"}
+- Latest Scan: ${user.scanSummary || "Not available"}
+- Medical Notes: ${user.medicalNotes || "None"}
+`;
+        }
+      }
       
-      // Get response from OpenAI with our custom knowledge base
-      const response = await getHealthAdvice(message);
+      const response = await getHealthAdvice(message, userContext);
       
-      // Store the conversation in database
-      await storage.addChatMessage(1, "user", message);
-      await storage.addChatMessage(1, "assistant", response);
+      const uid = userId || 1;
+      await storage.addChatMessage(uid, "user", message);
+      await storage.addChatMessage(uid, "assistant", response);
       
       return res.json({ 
         role: "assistant", 
@@ -37,7 +88,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint to add new content to the AI knowledge base
   app.post("/api/ai/knowledge", async (req, res) => {
     try {
       const { category, content } = req.body;
@@ -48,7 +98,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Add content to knowledge base
       const result = addToKnowledgeBase(category, content);
       
       return res.json(result);
@@ -60,35 +109,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User endpoints
-  app.get("/api/user", async (req, res) => {
-    try {
-      // For now, we'll return the default user
-      // In a production app, this would use authentication
-      let user = await storage.getUser(1);
-      
-      if (!user) {
-        // Create default user if not exists
-        user = await storage.createUser({
-          username: "liz",
-          password: "password123", // In a real app, this would be properly hashed
-          displayName: "Liz",
-          email: "liz@example.com",
-          cancerType: "breast",
-          cancerStage: "stage2",
-          bio: "I'm on a journey to healing through holistic wellness and conventional treatment.",
-          diagnosis_date: "2023-01-15"
-        });
-      }
-      
-      return res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      return res.status(500).json({ error: "Failed to fetch user" });
-    }
-  });
-  
-  // Update user profile
   app.patch("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
@@ -98,13 +118,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid user ID" });
       }
       
-      // Get the existing user
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Update the user with the provided fields
       const updatedUser = await storage.updateUser(userId, req.body);
       return res.json(updatedUser);
     } catch (error) {
@@ -113,42 +131,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Medical tracking endpoints
   app.get("/api/medical-records", (req, res) => {
-    // Will be implemented with actual storage in a production app
     return res.json([]);
   });
 
-  // Appointments endpoints
   app.get("/api/appointments", (req, res) => {
-    // Will be implemented with actual storage in a production app
     const appointments = [
       {
         id: 1,
-        title: "Oncology Appointment",
-        description: "Regular checkup with oncologist",
-        date: "2023-05-17",
-        time: "9:30 AM - 10:30 AM",
-        location: "Memorial Hospital",
-        person: "Dr. Sarah Thompson"
+        title: "PET/CT Scan",
+        description: "Follow-up PET/CT scan to assess treatment response",
+        date: "2026-05-15",
+        time: "9:00 AM",
+        location: "Radiology Department",
+        person: "Radiology Team"
       },
       {
         id: 2,
-        title: "Nutrition Consultation",
-        description: "Dietary planning session",
-        date: "2023-05-19",
-        time: "2:00 PM - 3:00 PM",
-        location: "Wellness Center",
-        person: "Maria Rodriguez, RD"
+        title: "Oncology Review",
+        description: "Review scan results and discuss next steps",
+        date: "2026-05-22",
+        time: "10:30 AM",
+        location: "Oncology Clinic",
+        person: "Melanoma Oncology Team"
       },
       {
         id: 3,
-        title: "Support Group",
-        description: "Weekly cancer support meeting",
-        date: "2023-05-22",
-        time: "6:00 PM - 7:30 PM",
-        location: "Community Center",
-        person: "Community Center"
+        title: "Nutrition Consultation",
+        description: "Liver-supportive and immune-boosting nutrition planning",
+        date: "2026-03-10",
+        time: "2:00 PM",
+        location: "Integrative Health Centre",
+        person: "Integrative Dietitian"
       }
     ];
     

@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { ChatMessage, sendMessage as sendMessageToApi } from "@/lib/openai";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
 
 const INITIAL_MESSAGE: ChatMessage = {
   role: "assistant",
-  content: "Hello! How are you feeling today? Is there anything specific I can help you with regarding your wellness journey?"
+  content: "Hello! I'm here to support your healing journey. How are you feeling today? I can help with nutrition, supplements, mind-body practices, scan preparation, and more."
 };
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
   
   // Load messages from localStorage on initial load
   useEffect(() => {
@@ -46,7 +48,7 @@ export function useChat() {
     setMessages(prev => [...prev, userMessage]);
     
     try {
-      const response = await sendMessageToApi(message);
+      const response = await sendMessageToApi(message, user?.id);
       setMessages(prev => [...prev, response]);
     } catch (error) {
       console.error("Error sending message:", error);

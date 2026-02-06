@@ -2,7 +2,6 @@ import { pgTable, text, serial, integer, boolean, date, jsonb, timestamp } from 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -13,6 +12,15 @@ export const users = pgTable("users", {
   cancerStage: text("cancer_stage"),
   bio: text("bio"),
   diagnosis_date: date("diagnosis_date"),
+  treatmentStatus: text("treatment_status"),
+  treatmentHistory: text("treatment_history"),
+  currentMedications: text("current_medications"),
+  adverseEventHistory: text("adverse_event_history"),
+  oncologist: text("oncologist"),
+  goals: text("goals"),
+  medicalNotes: text("medical_notes"),
+  scanSummary: text("scan_summary"),
+  nextScanDate: date("next_scan_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -25,6 +33,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
   cancerStage: true,
   bio: true,
   diagnosis_date: true,
+  treatmentStatus: true,
+  treatmentHistory: true,
+  currentMedications: true,
+  adverseEventHistory: true,
+  oncologist: true,
+  goals: true,
+  medicalNotes: true,
+  scanSummary: true,
+  nextScanDate: true,
 });
 
 export const updateUserSchema = createInsertSchema(users).omit({
@@ -34,15 +51,14 @@ export const updateUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 }).partial();
 
-// Medical Tracking
 export const medicalRecords = pgTable("medical_records", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   date: date("date").notNull(),
-  recordType: text("record_type").notNull(), // 'appointment', 'test_result', 'medication', etc.
+  recordType: text("record_type").notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  data: jsonb("data"), // For structured data like test results
+  data: jsonb("data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -55,12 +71,11 @@ export const insertMedicalRecordSchema = createInsertSchema(medicalRecords).pick
   data: true,
 });
 
-// Nutrition
 export const meals = pgTable("meals", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   date: date("date").notNull(),
-  mealType: text("meal_type").notNull(), // 'breakfast', 'lunch', 'dinner', 'snack'
+  mealType: text("meal_type").notNull(),
   description: text("description").notNull(),
   antiInflammatoryScore: integer("anti_inflammatory_score"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -74,12 +89,11 @@ export const insertMealSchema = createInsertSchema(meals).pick({
   antiInflammatoryScore: true,
 });
 
-// Mind-Body Activities
 export const mindBodyActivities = pgTable("mind_body_activities", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   date: date("date").notNull(),
-  activityType: text("activity_type").notNull(), // 'meditation', 'breathing', 'yoga', etc.
+  activityType: text("activity_type").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -93,14 +107,13 @@ export const insertMindBodyActivitySchema = createInsertSchema(mindBodyActivitie
   notes: true,
 });
 
-// Exercises
 export const exercises = pgTable("exercises", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   date: date("date").notNull(),
-  exerciseType: text("exercise_type").notNull(), // 'walking', 'swimming', 'yoga', etc.
+  exerciseType: text("exercise_type").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
-  intensity: text("intensity").notNull(), // 'low', 'moderate', 'high'
+  intensity: text("intensity").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -114,11 +127,10 @@ export const insertExerciseSchema = createInsertSchema(exercises).pick({
   notes: true,
 });
 
-// Chat messages
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  role: text("role").notNull(), // 'user' or 'assistant'
+  role: text("role").notNull(),
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
@@ -129,7 +141,6 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
   content: true,
 });
 
-// Appointments
 export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -150,7 +161,6 @@ export const insertAppointmentSchema = createInsertSchema(appointments).pick({
   location: true,
 });
 
-// Define types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type MedicalRecord = typeof medicalRecords.$inferSelect;

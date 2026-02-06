@@ -5,13 +5,13 @@ export interface ChatMessage {
   content: string;
 }
 
-export async function sendMessage(message: string): Promise<ChatMessage> {
+export async function sendMessage(message: string, userId?: number): Promise<ChatMessage> {
   const response = await fetch("/api/ai/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, userId }),
   });
 
   if (!response.ok) {
@@ -32,26 +32,26 @@ export interface ChatSuggestion {
 export const chatSuggestions: ChatSuggestion[] = [
   {
     icon: "apple-whole",
-    title: "Nutrition During Treatment",
-    description: "Foods that help with side effects",
-    prompt: "What are the best foods to eat during chemotherapy to reduce side effects and support healing?"
+    title: "Liver-Supportive Nutrition",
+    description: "Foods that support liver recovery and immune health",
+    prompt: "What are the best foods to support my liver recovery after hepatitis from immunotherapy, while also boosting my immune system against melanoma?"
   },
   {
     icon: "person-walking",
-    title: "Safe Exercise Options",
-    description: "Staying active during recovery",
-    prompt: "Can you recommend gentle exercises that are safe during cancer treatment? I want to maintain some activity but I get tired easily."
+    title: "Movement for Recovery",
+    description: "Safe exercise during surveillance",
+    prompt: "What kinds of exercise are most beneficial during active surveillance after immunotherapy? I want to support my immune system and overall health."
   },
   {
-    icon: "bed",
-    title: "Improving Sleep",
-    description: "Better rest during treatment",
-    prompt: "I'm having trouble sleeping during my treatment. What natural approaches might help me get better sleep?"
+    icon: "heart-pulse",
+    title: "Managing Scan Anxiety",
+    description: "Coping with scanxiety before results",
+    prompt: "I have a scan coming up and I'm feeling anxious about it. What mind-body techniques can help me manage scanxiety and stay positive?"
   },
   {
     icon: "hand-holding-heart",
-    title: "Managing Anxiety",
-    description: "Techniques for emotional balance",
-    prompt: "What are some effective techniques for managing anxiety related to my cancer diagnosis and treatment?"
+    title: "Immune System Support",
+    description: "Natural ways to support immunity",
+    prompt: "What holistic approaches and supplements can help support my immune system's ability to continue fighting melanoma during surveillance?"
   }
 ];

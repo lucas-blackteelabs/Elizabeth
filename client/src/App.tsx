@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation, useRouter } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,30 +18,125 @@ import Calendar from "@/pages/Calendar";
 import ProfileSimple from "@/pages/ProfileSimple";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import { UserProvider } from "@/contexts/UserContext";
+import { UserProvider, useUser } from "@/contexts/UserContext";
+import { Redirect } from "wouter";
 
-// Simple router without auth-dependent routing for now
-function Router() {
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useUser();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[hsl(25,18%,48%)] font-body text-lg">Loading Elizabeth...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+  
+  return <Component />;
+}
+
+function AuthRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useUser();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        </div>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Redirect to="/dashboard" />;
+  }
+  
+  return <Component />;
+}
+
+function AppRouter() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={SimpleDashboard} />
-        <Route path="/dashboard" component={SimpleDashboard} />
-        <Route path="/ai-assistant" component={AIAssistant} />
-        <Route path="/medical-tracker" component={MedicalTracker} />
-        <Route path="/nutrition" component={Nutrition} />
-        <Route path="/mind-body" component={MindBody} />
-        <Route path="/movement" component={Movement} />
-        <Route path="/supplements" component={Supplements} />
-        <Route path="/community" component={Community} />
-        <Route path="/spiritual" component={SpiritualWellbeing} />
-        <Route path="/calendar" component={Calendar} />
-        <Route path="/profile" component={ProfileSimple} />
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/login">
+        <AuthRoute component={Login} />
+      </Route>
+      <Route path="/register">
+        <AuthRoute component={Register} />
+      </Route>
+      <Route path="/">
+        <Layout>
+          <ProtectedRoute component={SimpleDashboard} />
+        </Layout>
+      </Route>
+      <Route path="/dashboard">
+        <Layout>
+          <ProtectedRoute component={SimpleDashboard} />
+        </Layout>
+      </Route>
+      <Route path="/ai-assistant">
+        <Layout>
+          <ProtectedRoute component={AIAssistant} />
+        </Layout>
+      </Route>
+      <Route path="/medical-tracker">
+        <Layout>
+          <ProtectedRoute component={MedicalTracker} />
+        </Layout>
+      </Route>
+      <Route path="/nutrition">
+        <Layout>
+          <ProtectedRoute component={Nutrition} />
+        </Layout>
+      </Route>
+      <Route path="/mind-body">
+        <Layout>
+          <ProtectedRoute component={MindBody} />
+        </Layout>
+      </Route>
+      <Route path="/movement">
+        <Layout>
+          <ProtectedRoute component={Movement} />
+        </Layout>
+      </Route>
+      <Route path="/supplements">
+        <Layout>
+          <ProtectedRoute component={Supplements} />
+        </Layout>
+      </Route>
+      <Route path="/community">
+        <Layout>
+          <ProtectedRoute component={Community} />
+        </Layout>
+      </Route>
+      <Route path="/spiritual">
+        <Layout>
+          <ProtectedRoute component={SpiritualWellbeing} />
+        </Layout>
+      </Route>
+      <Route path="/calendar">
+        <Layout>
+          <ProtectedRoute component={Calendar} />
+        </Layout>
+      </Route>
+      <Route path="/profile">
+        <Layout>
+          <ProtectedRoute component={ProfileSimple} />
+        </Layout>
+      </Route>
+      <Route>
+        <Layout>
+          <NotFound />
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 
@@ -51,7 +146,7 @@ function App() {
       <UserProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AppRouter />
         </TooltipProvider>
       </UserProvider>
     </QueryClientProvider>

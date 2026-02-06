@@ -10,6 +10,15 @@ interface User {
   cancerStage: string | null;
   bio: string | null;
   diagnosis_date: string | null;
+  treatmentStatus: string | null;
+  treatmentHistory: string | null;
+  currentMedications: string | null;
+  adverseEventHistory: string | null;
+  oncologist: string | null;
+  goals: string | null;
+  medicalNotes: string | null;
+  scanSummary: string | null;
+  nextScanDate: string | null;
 }
 
 interface UserContextType {
@@ -22,18 +31,6 @@ interface UserContextType {
   logout: () => Promise<void>;
 }
 
-const defaultUser: User = {
-  id: 1,
-  username: "liz",
-  displayName: "Liz",
-  email: "liz@example.com",
-  cancerType: "breast",
-  cancerStage: "stage2",
-  bio: "I'm on a journey to healing through holistic wellness and conventional treatment.",
-  diagnosis_date: "2023-01-15"
-};
-
-// Create context with default values to avoid undefined checks
 const initialContextValue: UserContextType = {
   user: null,
   setUser: () => {},
@@ -50,37 +47,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Check if user is logged in on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // Always fall back to legacy auth for now to ensure the app continues to work
-        try {
-          // Try legacy auth first - we know this works
-          const legacyUser = await apiRequest('/api/user', {
-            method: 'GET'
-          });
-          setUser(legacyUser);
-          console.log('Using legacy auth');
-        } catch (e) {
-          // Try JWT auth as a backup
-          try {
-            const userData = await apiRequest('/api/auth/me', {
-              method: 'GET'
-            });
-            setUser(userData);
-            console.log('Using JWT auth');
-          } catch (authError) {
-            // Not authenticated, that's okay
-            console.log('User not authenticated');
-            // Always use default user in development 
-            setUser(defaultUser);
-          }
-        }
-      } catch (error) {
-        console.log('Authentication error:', error);
-        // Always use default user in development
-        setUser(defaultUser);
+        const userData = await apiRequest('/api/auth/me', {
+          method: 'GET'
+        });
+        setUser(userData);
+      } catch (authError) {
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -89,7 +64,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     checkAuthStatus();
   }, []);
 
-  // Login function
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
@@ -107,7 +81,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Register function
   const register = async (userData: any) => {
     setIsLoading(true);
     try {
@@ -125,7 +98,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Logout function
   const logout = async () => {
     setIsLoading(true);
     try {
