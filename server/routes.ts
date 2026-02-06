@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase } from "./openai";
+import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 
@@ -148,6 +148,60 @@ PATIENT CONTEXT (use this to personalize your response):
     }
   });
   
+  app.post("/api/ai/meal-plan", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      let userContext = "";
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          userContext = `
+PATIENT CONTEXT:
+- Name: ${user.displayName}
+- Cancer Type: ${user.cancerType || "Not specified"}
+- Stage: ${user.cancerStage || "Not specified"}
+- Treatment Status: ${user.treatmentStatus || "Not specified"}
+- Treatment History: ${user.treatmentHistory || "Not specified"}
+- Adverse Events: ${user.adverseEventHistory || "None"}
+- Goals: ${user.goals || "Not specified"}
+`;
+        }
+      }
+      const plan = await generateMealPlan(userContext);
+      return res.json({ content: plan });
+    } catch (error) {
+      console.error("Error generating meal plan:", error);
+      return res.status(500).json({ error: "Failed to generate meal plan" });
+    }
+  });
+
+  app.post("/api/ai/meal-suggestion", async (req, res) => {
+    try {
+      const { mealType, userId } = req.body;
+      if (!mealType) {
+        return res.status(400).json({ error: "mealType is required" });
+      }
+      let userContext = "";
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          userContext = `
+PATIENT CONTEXT:
+- Name: ${user.displayName}
+- Cancer Type: ${user.cancerType || "Not specified"}
+- Treatment Status: ${user.treatmentStatus || "Not specified"}
+- Adverse Events: ${user.adverseEventHistory || "None"}
+`;
+        }
+      }
+      const suggestion = await getMealSuggestion(mealType, userContext);
+      return res.json({ content: suggestion });
+    } catch (error) {
+      console.error("Error generating meal suggestion:", error);
+      return res.status(500).json({ error: "Failed to generate suggestion" });
+    }
+  });
+
   app.post("/api/ai/knowledge", async (req, res) => {
     try {
       const { category, content } = req.body;

@@ -1,6 +1,6 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
 const radicalRemissionKnowledge = `
 # The Nine Factors of Radical Remission
@@ -64,8 +64,62 @@ const radicalRemissionKnowledge = `
    - Focusing on relationships and contributions
 `;
 
+const cancerFightingNutrition = `
+# Cancer-Fighting & Radical Remission Nutrition Guidelines
+
+## Core Principles
+- Plant-forward, whole-foods diet with emphasis on anti-inflammatory foods
+- Minimise processed foods, refined sugar, and red/processed meat
+- Focus on nutrient density and bioavailability
+- Support liver recovery (especially post-immunotherapy hepatotoxicity)
+- Support immune system function
+
+## Key Food Categories
+
+### Cruciferous Vegetables (sulforaphane, DIM — anti-cancer)
+Broccoli, broccoli sprouts, cauliflower, cabbage, kale, Brussels sprouts, bok choy, watercress
+
+### Allium Family (allicin — immune support)
+Garlic, onions, leeks, shallots, chives
+
+### Berries & Dark Fruits (anthocyanins — antioxidant)
+Blueberries, blackberries, raspberries, pomegranate, tart cherries
+
+### Liver-Supportive Foods
+Beetroot, artichoke, dandelion greens, lemon, turmeric, milk thistle tea, bitter greens
+
+### Anti-Inflammatory Spices
+Turmeric (with black pepper for absorption), ginger, cinnamon, rosemary, oregano
+
+### Healthy Fats (omega-3, reduce inflammation)
+Wild salmon, sardines, walnuts, flaxseed, chia seeds, extra virgin olive oil, avocado
+
+### Immune-Boosting Foods
+Medicinal mushrooms (shiitake, maitake, reishi), green tea, fermented foods (kimchi, sauerkraut, miso), bone broth
+
+### Whole Grains & Legumes
+Quinoa, brown rice, oats, lentils, chickpeas, black beans
+
+## Foods to Minimise
+- Refined sugar and artificial sweeteners
+- Processed and ultra-processed foods
+- Red meat (limit), processed meat (avoid)
+- Excessive alcohol
+- Deep-fried foods
+- Excessive dairy (especially conventional)
+
+## Meal Pattern Recommendations
+- Eat the rainbow — variety of coloured vegetables daily
+- Include protein with every meal for tissue repair
+- Stay well-hydrated (water, herbal teas, bone broth)
+- Consider intermittent fasting if appropriate (discuss with team)
+- Prioritise organic when possible (especially dirty dozen)
+`;
+
 export async function getHealthAdvice(userQuery: string, userContext: string = ""): Promise<string> {
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
     const systemPrompt = `You are Elizabeth, a compassionate and knowledgeable health companion for cancer patients following the "Radical Remission" approach. You provide personalised, holistic guidance that complements conventional medical treatment.
 
 ${radicalRemissionKnowledge}
@@ -82,22 +136,109 @@ IMPORTANT GUIDELINES:
 - Never claim that these approaches can cure cancer
 - Always emphasize consulting with healthcare providers
 - Be aware of drug interactions and contraindications, especially for patients who experienced immunotherapy toxicity
-- Celebrate progress and positive scan results to support emotional wellbeing`;
+- Celebrate progress and positive scan results to support emotional wellbeing
+- Keep responses concise but thorough (2-4 paragraphs)
+- Use gentle formatting with bullet points where helpful`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userQuery }
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: systemPrompt + "\n\nUser's question: " + userQuery }] }
       ],
-      temperature: 0.7,
-      max_tokens: 800
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 800,
+      },
     });
 
-    return response.choices[0].message.content || "I'm sorry, I couldn't process your request at this time.";
+    const response = result.response;
+    return response.text() || "I'm sorry, I couldn't process your request at this time.";
   } catch (error) {
-    console.error("Error querying OpenAI:", error);
+    console.error("Error querying Gemini:", error);
     return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment.";
+  }
+}
+
+export async function generateMealPlan(userContext: string = ""): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are Elizabeth, a nutrition-focused health companion for cancer patients. Generate a personalised daily meal plan based on Radical Remission principles and the patient's specific medical situation.
+
+${cancerFightingNutrition}
+
+${userContext}
+
+Generate a complete daily meal plan with:
+1. **Breakfast** — an anti-inflammatory, nutrient-dense morning meal
+2. **Morning Snack** — immune-boosting snack
+3. **Lunch** — a cancer-fighting, colourful main meal
+4. **Afternoon Snack** — liver-supportive snack
+5. **Dinner** — a healing, whole-foods evening meal
+6. **Evening** — a calming tea or elixir
+
+For each meal:
+- Name the dish
+- List key cancer-fighting ingredients and WHY they help (briefly)
+- Keep it practical and delicious, not clinical
+
+End with a brief encouraging note about how this day of eating supports their healing.
+Format with clear headers and bullet points. Keep it warm and supportive in tone.`;
+
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 1200,
+      },
+    });
+
+    return result.response.text() || "I couldn't generate a meal plan right now. Please try again.";
+  } catch (error) {
+    console.error("Error generating meal plan:", error);
+    return "I'm having trouble generating your meal plan right now. Please try again in a moment.";
+  }
+}
+
+export async function getMealSuggestion(mealType: string, userContext: string = ""): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are Elizabeth, a nutrition companion for cancer patients following Radical Remission principles.
+
+${cancerFightingNutrition}
+
+${userContext}
+
+Suggest ONE specific ${mealType} recipe that is:
+- Anti-inflammatory and cancer-fighting
+- Liver-supportive (patient had immunotherapy hepatotoxicity)
+- Immune-boosting
+- Practical and delicious
+
+Provide:
+- **Recipe name**
+- **Key ingredients** (with brief cancer-fighting benefits)
+- **Simple instructions** (3-5 steps)
+- **Why this helps**: One sentence on how this meal supports their healing
+
+Keep it warm, concise, and encouraging.`;
+
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 600,
+      },
+    });
+
+    return result.response.text() || "I couldn't generate a suggestion right now.";
+  } catch (error) {
+    console.error("Error generating meal suggestion:", error);
+    return "I'm having trouble generating a suggestion right now. Please try again.";
   }
 }
 

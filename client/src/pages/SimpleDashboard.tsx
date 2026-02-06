@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser } from "@/contexts/UserContext";
-import { MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock, Scan, Plus, Check } from "lucide-react";
+import { MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock, Scan, Plus, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ function LogMealDialog({ userId }: { userId: number }) {
   const [open, setOpen] = useState(false);
   const [mealType, setMealType] = useState("");
   const [description, setDescription] = useState("");
+  const [aiSuggestion, setAiSuggestion] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const { toast } = useToast();
   
   const mutation = useMutation({
@@ -35,9 +37,29 @@ function LogMealDialog({ userId }: { userId: number }) {
       setOpen(false);
       setMealType("");
       setDescription("");
+      setAiSuggestion("");
       toast({ title: "Meal logged", description: "Keep nourishing your body." });
     },
   });
+
+  const getAiSuggestion = async () => {
+    if (!mealType) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai/meal-suggestion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mealType, userId }),
+      });
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+      setAiSuggestion(data.content || "No suggestion available.");
+    } catch {
+      setAiSuggestion("Couldn't get a suggestion right now.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -46,7 +68,7 @@ function LogMealDialog({ userId }: { userId: number }) {
           <Apple className="h-3.5 w-3.5" /> Log Meal
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">Log a Meal</DialogTitle>
         </DialogHeader>
@@ -69,6 +91,24 @@ function LogMealDialog({ userId }: { userId: number }) {
             onChange={e => setDescription(e.target.value)}
             className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body"
           />
+          {mealType && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={getAiSuggestion}
+              disabled={aiLoading}
+              className="w-full text-xs border-[hsl(34,55%,52%)]/30 text-[hsl(34,55%,45%)] hover:bg-[hsl(34,55%,52%)]/10 font-body gap-1"
+            >
+              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiLoading ? "Getting suggestion..." : `Suggest a healing ${mealType}`}
+            </Button>
+          )}
+          {aiSuggestion && (
+            <div className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-lg p-3 max-h-48 overflow-y-auto">
+              <p className="text-[10px] uppercase tracking-wider text-[hsl(34,55%,45%)] font-heading mb-1.5">AI Suggestion</p>
+              <p className="text-xs text-[hsl(25,18%,42%)] font-body leading-relaxed whitespace-pre-line">{aiSuggestion}</p>
+            </div>
+          )}
           <Button 
             onClick={() => mutation.mutate()} 
             disabled={!mealType || !description || mutation.isPending}
