@@ -289,34 +289,41 @@ export default function DateNight() {
 
       {activeTab === "discover" && (
         <>
-          {!hasGenerated && !loading && (
+          {!hasGenerated && (
             <Card className="bg-gradient-to-br from-[hsl(0,40%,97%)] to-[hsl(34,40%,96%)] border-[hsl(0,30%,88%)] mb-6">
               <CardContent className="p-8 text-center">
-                <div className="flex justify-center gap-3 mb-4">
-                  <Utensils className="h-6 w-6 text-primary/60" />
-                  <Music className="h-6 w-6 text-[hsl(34,55%,52%)]/60" />
-                  <MapPin className="h-6 w-6 text-[hsl(0,45%,65%)]/60" />
-                </div>
-                <p className="text-sm text-[hsl(25,30%,28%)] font-body leading-relaxed max-w-md mx-auto mb-6">
-                  Taking time for each other is a beautiful part of healing. Connection, laughter, and love are powerful medicine.
-                  Let us find you the perfect Sydney restaurants and activities for a wonderful evening together.
-                </p>
-                <Button
-                  onClick={generateIdeas}
-                  className="bg-primary text-white hover:bg-primary/90 font-heading tracking-wide gap-2 px-6"
-                >
-                  <Sparkles className="h-4 w-4" /> Find Date Night Ideas
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {loading && (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
-              <CardContent className="p-12 text-center">
-                <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Finding the perfect spots for you two...</p>
-                <p className="text-xs text-[hsl(25,18%,58%)] font-body mt-1">Considering your dietary preferences and Sydney's best options</p>
+                {loading ? (
+                  <>
+                    <div className="relative mx-auto mb-5 w-16 h-16">
+                      <div className="absolute inset-0 rounded-full border-4 border-primary/15" />
+                      <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" style={{ animationDuration: "1s" }} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Heart className="h-6 w-6 text-primary/70 animate-pulse" />
+                      </div>
+                    </div>
+                    <h2 className="font-heading text-lg text-[hsl(25,30%,22%)] mb-2">Finding the perfect spots...</h2>
+                    <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-1">Searching Sydney's best restaurants and activities for you two</p>
+                    <p className="text-xs text-[hsl(25,18%,60%)] font-body animate-pulse">Considering your dietary preferences</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-center gap-3 mb-4">
+                      <Utensils className="h-6 w-6 text-primary/60" />
+                      <Music className="h-6 w-6 text-[hsl(34,55%,52%)]/60" />
+                      <MapPin className="h-6 w-6 text-[hsl(0,45%,65%)]/60" />
+                    </div>
+                    <p className="text-sm text-[hsl(25,30%,28%)] font-body leading-relaxed max-w-md mx-auto mb-6">
+                      Taking time for each other is a beautiful part of healing. Connection, laughter, and love are powerful medicine.
+                      Let us find you the perfect Sydney restaurants and activities for a wonderful evening together.
+                    </p>
+                    <Button
+                      onClick={generateIdeas}
+                      className="bg-primary text-white hover:bg-primary/90 font-heading tracking-wide gap-2 px-6"
+                    >
+                      <Sparkles className="h-4 w-4" /> Find Date Night Ideas
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
