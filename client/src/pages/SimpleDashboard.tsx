@@ -1,11 +1,214 @@
+import { useState } from "react";
 import { useUser } from "@/contexts/UserContext";
-import { MessageCircle, TrendingUp, Calendar, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock, Scan } from "lucide-react";
+import { MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock, Scan, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Meal, MindBodyActivity, Exercise } from "@shared/schema";
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function LogMealDialog({ userId }: { userId: number }) {
+  const [open, setOpen] = useState(false);
+  const [mealType, setMealType] = useState("");
+  const [description, setDescription] = useState("");
+  const { toast } = useToast();
+  
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, date: todayStr(), mealType, description, antiInflammatoryScore: null }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meals'] });
+      setOpen(false);
+      setMealType("");
+      setDescription("");
+      toast({ title: "Meal logged", description: "Keep nourishing your body." });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
+          <Apple className="h-3.5 w-3.5" /> Log Meal
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">Log a Meal</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={mealType} onValueChange={setMealType}>
+            <SelectTrigger className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body">
+              <SelectValue placeholder="Meal type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="breakfast">Breakfast</SelectItem>
+              <SelectItem value="lunch">Lunch</SelectItem>
+              <SelectItem value="dinner">Dinner</SelectItem>
+              <SelectItem value="snack">Snack</SelectItem>
+              <SelectItem value="juice">Juice / Smoothie</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="What did you eat? (e.g. turmeric latte, green salad)"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body"
+          />
+          <Button 
+            onClick={() => mutation.mutate()} 
+            disabled={!mealType || !description || mutation.isPending}
+            className="w-full bg-primary text-white hover:bg-primary/90 font-heading"
+          >
+            {mutation.isPending ? "Saving..." : "Log Meal"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" | "exercise" }) {
+  const [open, setOpen] = useState(false);
+  const [activityType, setActivityType] = useState("");
+  const [duration, setDuration] = useState("");
+  const [notes, setNotes] = useState("");
+  const { toast } = useToast();
+
+  const isMindBody = type === "mindBody";
+  const endpoint = isMindBody ? '/api/mind-body' : '/api/exercises';
+  const queryKey = isMindBody ? '/api/mind-body' : '/api/exercises';
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const body = isMindBody 
+        ? { userId, date: todayStr(), activityType, durationMinutes: parseInt(duration), notes: notes || null }
+        : { userId, date: todayStr(), exerciseType: activityType, durationMinutes: parseInt(duration), intensity: "moderate", notes: notes || null };
+      return apiRequest(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      setOpen(false);
+      setActivityType("");
+      setDuration("");
+      setNotes("");
+      toast({ title: isMindBody ? "Activity logged" : "Exercise logged", description: "Well done! Every step counts." });
+    },
+  });
+
+  const options = isMindBody 
+    ? [
+        { value: "meditation", label: "Meditation" },
+        { value: "breathwork", label: "Breathwork" },
+        { value: "journaling", label: "Journaling" },
+        { value: "yoga", label: "Yoga" },
+        { value: "visualization", label: "Healing Visualization" },
+        { value: "gratitude", label: "Gratitude Practice" },
+      ]
+    : [
+        { value: "walking", label: "Walking" },
+        { value: "yoga", label: "Yoga" },
+        { value: "swimming", label: "Swimming" },
+        { value: "stretching", label: "Stretching" },
+        { value: "tai-chi", label: "Tai Chi" },
+        { value: "other", label: "Other" },
+      ];
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
+          {isMindBody ? <Sparkles className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
+          {isMindBody ? "Log Mindfulness" : "Log Exercise"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">{isMindBody ? "Log Mind-Body Activity" : "Log Exercise"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={activityType} onValueChange={setActivityType}>
+            <SelectTrigger className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body">
+              <SelectValue placeholder="Select activity" />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input
+            type="number"
+            placeholder="Duration (minutes)"
+            value={duration}
+            onChange={e => setDuration(e.target.value)}
+            className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body"
+          />
+          <Input
+            placeholder="Notes (optional)"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body"
+          />
+          <Button 
+            onClick={() => mutation.mutate()} 
+            disabled={!activityType || !duration || mutation.isPending}
+            className="w-full bg-primary text-white hover:bg-primary/90 font-heading"
+          >
+            {mutation.isPending ? "Saving..." : "Log Activity"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function SimpleDashboard() {
   const { user } = useUser();
+  const today = todayStr();
+  
+  const { data: todayMeals = [] } = useQuery<Meal[]>({
+    queryKey: ['/api/meals', { userId: user?.id, date: today }],
+    queryFn: async () => {
+      const res = await fetch(`/api/meals?userId=${user?.id || 1}&dateFrom=${today}&dateTo=${today}`);
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  const { data: todayMindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ['/api/mind-body', { userId: user?.id, date: today }],
+    queryFn: async () => {
+      const res = await fetch(`/api/mind-body?userId=${user?.id || 1}&dateFrom=${today}&dateTo=${today}`);
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  const { data: todayExercises = [] } = useQuery<Exercise[]>({
+    queryKey: ['/api/exercises', { userId: user?.id, date: today }],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises?userId=${user?.id || 1}&dateFrom=${today}&dateTo=${today}`);
+      return res.json();
+    },
+    enabled: !!user,
+  });
   
   if (!user) {
     return (
@@ -32,6 +235,9 @@ export default function SimpleDashboard() {
 
   const nextScanDate = user.nextScanDate ? new Date(user.nextScanDate) : null;
   const daysUntilScan = nextScanDate ? Math.ceil((nextScanDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+  const totalMindBodyMins = todayMindBody.reduce((sum, a) => sum + a.durationMinutes, 0);
+  const totalExerciseMins = todayExercises.reduce((sum, e) => sum + e.durationMinutes, 0);
 
   return (
     <div className="p-6 lg:p-8">
@@ -80,6 +286,73 @@ export default function SimpleDashboard() {
           </Card>
         </div>
       )}
+
+      <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] mb-8">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide">Today's Wellness</CardTitle>
+            <span className="text-xs text-[hsl(25,18%,48%)] font-body">{new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
+              <Apple className="h-5 w-5 text-primary mx-auto mb-1" />
+              <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{todayMeals.length}</p>
+              <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Meals logged</p>
+            </div>
+            <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
+              <Sparkles className="h-5 w-5 text-[hsl(34,55%,52%)] mx-auto mb-1" />
+              <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalMindBodyMins}</p>
+              <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min mindfulness</p>
+            </div>
+            <div className="bg-[hsl(30,30%,95%)] rounded-lg p-3 border border-[hsl(30,22%,87%)] text-center">
+              <Activity className="h-5 w-5 text-primary mx-auto mb-1" />
+              <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalExerciseMins}</p>
+              <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min exercise</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <LogMealDialog userId={user.id} />
+            <LogActivityDialog userId={user.id} type="mindBody" />
+            <LogActivityDialog userId={user.id} type="exercise" />
+          </div>
+
+          {todayMeals.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-body font-medium text-[hsl(25,18%,48%)]">Today's meals:</p>
+              {todayMeals.map((meal, i) => (
+                <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
+                  <Check className="h-3 w-3 text-primary" />
+                  <span className="capitalize text-[hsl(25,18%,48%)]">{meal.mealType}:</span>
+                  <span>{meal.description}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(todayMindBody.length > 0 || todayExercises.length > 0) && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-body font-medium text-[hsl(25,18%,48%)]">Today's activities:</p>
+              {todayMindBody.map(a => (
+                <div key={a.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
+                  <Check className="h-3 w-3 text-[hsl(34,55%,52%)]" />
+                  <span className="capitalize">{a.activityType}</span>
+                  <span className="text-[hsl(25,18%,48%)]">— {a.durationMinutes} min</span>
+                </div>
+              ))}
+              {todayExercises.map(e => (
+                <div key={e.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
+                  <Check className="h-3 w-3 text-primary" />
+                  <span className="capitalize">{e.exerciseType}</span>
+                  <span className="text-[hsl(25,18%,48%)]">— {e.durationMinutes} min</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] overflow-hidden">
@@ -170,41 +443,21 @@ export default function SimpleDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">April 2025 — Diagnosis</p>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">Stage IV melanoma with liver metastases. Three liver tumours identified.</p>
+              {[
+                { date: "April 2025", title: "Diagnosis", desc: "Stage IV melanoma with liver metastases. Three liver tumours identified.", color: "bg-[hsl(34,55%,52%)]" },
+                { date: "April–July 2025", title: "Immunotherapy", desc: "4 cycles of ipilimumab + nivolumab. Major partial metabolic response achieved.", color: "bg-primary" },
+                { date: "July 2025", title: "Treatment Stopped", desc: "Immunotherapy ceased due to severe toxicity (Grade 4 hepatitis, colitis). Started immunosuppression.", color: "bg-[hsl(0,50%,55%)]" },
+                { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Immune system now recovering.", color: "bg-[hsl(34,55%,52%)]" },
+                { date: "February 2026", title: "Continued Improvement", desc: "Latest scan shows continued improvement. One lesion metabolically complete. No new disease anywhere.", color: "bg-primary" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className={`w-3 h-3 rounded-full ${item.color} mt-1.5 flex-shrink-0`} />
+                  <div>
+                    <p className="font-body font-medium text-[hsl(25,30%,28%)]">{item.date} — {item.title}</p>
+                    <p className="text-sm text-[hsl(25,18%,48%)] font-body">{item.desc}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">April–July 2025 — Immunotherapy</p>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">4 cycles of ipilimumab + nivolumab. Major partial metabolic response achieved.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 rounded-full bg-[hsl(0,50%,55%)] mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">July 2025 — Treatment Stopped</p>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">Immunotherapy ceased due to severe toxicity (Grade 4 hepatitis, colitis). Started immunosuppression.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">December 2025 — Immunosuppression Ceased</p>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">Approximately 5 months of mycophenolate completed. Immune system now recovering.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <div>
-                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">February 2026 — Continued Improvement</p>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">Latest scan shows continued improvement. One lesion metabolically complete. No new disease anywhere.</p>
-                </div>
-              </div>
+              ))}
               <div className="flex items-start gap-4">
                 <div className="w-3 h-3 rounded-full border-2 border-primary bg-white mt-1.5 flex-shrink-0" />
                 <div>
@@ -242,36 +495,22 @@ export default function SimpleDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-[hsl(30,22%,87%)] pb-3">
-              <div>
-                <p className="font-body font-medium text-[hsl(25,30%,28%)]">Nutrition Consultation</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Integrative Dietitian</p>
+            {[
+              { title: "Nutrition Consultation", person: "Integrative Dietitian", date: "March 10, 2026", time: "2:00 PM", color: "text-primary" },
+              { title: "PET/CT Scan", person: "Radiology Department", date: "May 15, 2026", time: "9:00 AM", color: "text-[hsl(34,55%,45%)]" },
+              { title: "Oncology Review", person: "Melanoma Oncology Team", date: "May 22, 2026", time: "10:30 AM", color: "text-[hsl(34,55%,45%)]" },
+            ].map((appt, i) => (
+              <div key={i} className={`flex items-center justify-between pb-3 ${i < 2 ? 'border-b border-[hsl(30,22%,87%)]' : ''}`}>
+                <div>
+                  <p className="font-body font-medium text-[hsl(25,30%,28%)]">{appt.title}</p>
+                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">{appt.person}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-body font-medium ${appt.color}`}>{appt.date}</p>
+                  <p className="text-sm text-[hsl(25,18%,48%)] font-body">{appt.time}</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-body font-medium text-primary">March 10, 2026</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">2:00 PM</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between border-b border-[hsl(30,22%,87%)] pb-3">
-              <div>
-                <p className="font-body font-medium text-[hsl(25,30%,28%)]">PET/CT Scan</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Radiology Department</p>
-              </div>
-              <div className="text-right">
-                <p className="font-body font-medium text-[hsl(34,55%,45%)]">May 15, 2026</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">9:00 AM</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between pb-3">
-              <div>
-                <p className="font-body font-medium text-[hsl(25,30%,28%)]">Oncology Review</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Melanoma Oncology Team</p>
-              </div>
-              <div className="text-right">
-                <p className="font-body font-medium text-[hsl(34,55%,45%)]">May 22, 2026</p>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">10:30 AM</p>
-              </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>

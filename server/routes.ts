@@ -7,32 +7,92 @@ import bcrypt from "bcrypt";
 
 async function seedLizAccount() {
   const existingUser = await storage.getUserByUsername(".");
-  if (existingUser) return;
+  if (existingUser) {
+    if (existingUser.cancerType !== "Stage IV Melanoma") {
+      await storage.updateUser(existingUser.id, {
+        cancerType: "Stage IV Melanoma",
+        cancerStage: "Stage IV",
+        treatmentStatus: "Active Surveillance",
+        treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+        currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+        adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+        oncologist: "Melanoma Oncology Team",
+        goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+        medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+        scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
+        nextScanDate: "2026-05-15",
+        diagnosis_date: "2025-04-22",
+        bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
+      });
+    }
+
+    const scans = await storage.listScanResults(existingUser.id);
+    if (scans.length === 0) {
+      await seedScanData(existingUser.id);
+    }
+    return;
+  }
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(".", salt);
 
-  await storage.createUser({
+  const user = await storage.createUser({
     username: ".",
     password: hashedPassword,
     displayName: "Liz",
     email: "liz@elizabeth.app",
-    cancerType: "Melanoma",
+    cancerType: "Stage IV Melanoma",
     cancerStage: "Stage IV",
-    bio: "I'm on a healing journey with Stage IV melanoma. After immunotherapy, my tumors are responding beautifully and I'm focused on reaching NED through holistic wellness and the power of my immune system.",
-    diagnosis_date: "2025-04-01",
+    bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
+    diagnosis_date: "2025-04-22",
     treatmentStatus: "Active Surveillance",
-    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
     currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
     adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
     oncologist: "Melanoma Oncology Team",
     goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission. Current management: active surveillance rather than treatment restart due to prior severe toxicity.",
-    scanSummary: "Feb 2026: Continued improvement. One lesion shows no focal uptake (metabolic complete response). Others show lower SUV (~3.1-3.2), necrotic/calcified, stable or smaller. No metastases elsewhere - brain, lungs, bones, nodes all clear. Overall: ongoing treatment response and disease control off therapy.",
+    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
   });
 
-  console.log("Seeded Liz's account with medical profile");
+  await seedScanData(user.id);
+  console.log("Seeded Liz's account with medical profile and scan data");
+}
+
+async function seedScanData(userId: number) {
+  const scanData = [
+    { scanDate: "2025-04-22", scanLabel: "Baseline (before treatment)", tumours: [
+      { label: "Tumour 1", sizeX: 82, sizeY: 57, suvMax: 7.6 },
+      { label: "Tumour 2", sizeX: 67, sizeY: 58, suvMax: 9.8 },
+      { label: "Tumour 3", sizeX: 49, sizeY: 49, suvMax: 9.8 },
+    ]},
+    { scanDate: "2025-08-05", scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)", tumours: [
+      { label: "Tumour 1", sizeX: 65, sizeY: 54, suvMax: 4.3 },
+      { label: "Tumour 2", sizeX: 60, sizeY: 49, suvMax: 3.5 },
+      { label: "Tumour 3", sizeX: 45, sizeY: 36, suvMax: 4.3 },
+    ]},
+    { scanDate: "2026-02-03", scanLabel: "Surveillance (no treatment since Jul 2025)", tumours: [
+      { label: "Tumour 1", sizeX: 60, sizeY: 51, suvMax: 3.2 },
+      { label: "Tumour 2", sizeX: 51, sizeY: 42, suvMax: null },
+      { label: "Tumour 3", sizeX: 42, sizeY: 35, suvMax: 3.1 },
+    ]},
+  ];
+
+  for (const scan of scanData) {
+    for (const tumour of scan.tumours) {
+      await storage.createScanResult({
+        userId,
+        scanDate: scan.scanDate,
+        scanLabel: scan.scanLabel,
+        tumourLabel: tumour.label,
+        sizeX: tumour.sizeX,
+        sizeY: tumour.sizeY,
+        suvMax: tumour.suvMax,
+        notes: null,
+      });
+    }
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -131,8 +191,115 @@ PATIENT CONTEXT (use this to personalize your response):
     }
   });
 
-  app.get("/api/medical-records", (req, res) => {
-    return res.json([]);
+  app.get("/api/scan-results", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const results = await storage.listScanResults(userId);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching scan results:", error);
+      return res.status(500).json({ error: "Failed to fetch scan results" });
+    }
+  });
+
+  app.post("/api/scan-results", async (req, res) => {
+    try {
+      const result = await storage.createScanResult(req.body);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error creating scan result:", error);
+      return res.status(500).json({ error: "Failed to create scan result" });
+    }
+  });
+
+  app.get("/api/meals", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const results = await storage.listMeals(userId, dateFrom, dateTo);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching meals:", error);
+      return res.status(500).json({ error: "Failed to fetch meals" });
+    }
+  });
+
+  app.post("/api/meals", async (req, res) => {
+    try {
+      const meal = await storage.createMeal(req.body);
+      return res.json(meal);
+    } catch (error) {
+      console.error("Error creating meal:", error);
+      return res.status(500).json({ error: "Failed to create meal" });
+    }
+  });
+
+  app.get("/api/mind-body", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const results = await storage.listMindBodyActivities(userId, dateFrom, dateTo);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching mind-body activities:", error);
+      return res.status(500).json({ error: "Failed to fetch activities" });
+    }
+  });
+
+  app.post("/api/mind-body", async (req, res) => {
+    try {
+      const activity = await storage.createMindBodyActivity(req.body);
+      return res.json(activity);
+    } catch (error) {
+      console.error("Error creating mind-body activity:", error);
+      return res.status(500).json({ error: "Failed to create activity" });
+    }
+  });
+
+  app.get("/api/exercises", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const results = await storage.listExercises(userId, dateFrom, dateTo);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+      return res.status(500).json({ error: "Failed to fetch exercises" });
+    }
+  });
+
+  app.post("/api/exercises", async (req, res) => {
+    try {
+      const exercise = await storage.createExercise(req.body);
+      return res.json(exercise);
+    } catch (error) {
+      console.error("Error creating exercise:", error);
+      return res.status(500).json({ error: "Failed to create exercise" });
+    }
+  });
+
+  app.get("/api/medical-records", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const results = await storage.listMedicalRecords(userId);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching medical records:", error);
+      return res.status(500).json({ error: "Failed to fetch medical records" });
+    }
+  });
+
+  app.post("/api/medical-records", async (req, res) => {
+    try {
+      const record = await storage.createMedicalRecord(req.body);
+      return res.json(record);
+    } catch (error) {
+      console.error("Error creating medical record:", error);
+      return res.status(500).json({ error: "Failed to create medical record" });
+    }
   });
 
   app.get("/api/appointments", (req, res) => {

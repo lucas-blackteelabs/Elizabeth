@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, date, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, jsonb, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -50,6 +50,30 @@ export const updateUserSchema = createInsertSchema(users).omit({
   password: true,
   createdAt: true,
 }).partial();
+
+export const scanResults = pgTable("scan_results", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  scanDate: date("scan_date").notNull(),
+  scanLabel: text("scan_label").notNull(),
+  tumourLabel: text("tumour_label").notNull(),
+  sizeX: real("size_x").notNull(),
+  sizeY: real("size_y").notNull(),
+  suvMax: real("suv_max"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertScanResultSchema = createInsertSchema(scanResults).pick({
+  userId: true,
+  scanDate: true,
+  scanLabel: true,
+  tumourLabel: true,
+  sizeX: true,
+  sizeY: true,
+  suvMax: true,
+  notes: true,
+});
 
 export const medicalRecords = pgTable("medical_records", {
   id: serial("id").primaryKey(),
@@ -163,6 +187,8 @@ export const insertAppointmentSchema = createInsertSchema(appointments).pick({
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type ScanResult = typeof scanResults.$inferSelect;
+export type InsertScanResult = z.infer<typeof insertScanResultSchema>;
 export type MedicalRecord = typeof medicalRecords.$inferSelect;
 export type InsertMedicalRecord = z.infer<typeof insertMedicalRecordSchema>;
 export type Meal = typeof meals.$inferSelect;
