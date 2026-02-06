@@ -414,34 +414,98 @@ function TreatmentJourneyExpanded({ user }: { user: any }) {
   );
 }
 
+function useImmuneRecoveryTimer() {
+  const immunoSuppressionEndDate = new Date("2025-12-01T00:00:00");
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const totalMs = now.getTime() - immunoSuppressionEndDate.getTime();
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+
+  return { days, hours, minutes, seconds, weeks, months };
+}
+
+function ImmuneRecoveryCompactTimer({ onClick }: { onClick: () => void }) {
+  const { days, hours, minutes, seconds } = useImmuneRecoveryTimer();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  return (
+    <button
+      onClick={onClick}
+      className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-primary/10 text-primary group-hover:bg-primary/20">
+          <Zap className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-0.5">Immune Recovery</p>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-lg font-heading font-bold text-primary tabular-nums">{days}</span>
+            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body mr-1">d</span>
+            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(hours)}</span>
+            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">:</span>
+            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(minutes)}</span>
+            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">:</span>
+            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(seconds)}</span>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
+      </div>
+    </button>
+  );
+}
+
 function ImmuneRecoveryExpanded() {
-  const immunoSuppressionEndDate = new Date("2025-12-01");
-  const daysSince = Math.floor((new Date().getTime() - immunoSuppressionEndDate.getTime()) / (1000 * 60 * 60 * 24));
-  const weeksRecovering = Math.floor(daysSince / 7);
-  const monthsRecovering = Math.floor(daysSince / 30);
+  const { days, hours, minutes, seconds, weeks, months } = useImmuneRecoveryTimer();
+  const pad = (n: number) => n.toString().padStart(2, "0");
 
   const milestones = [
-    { weeks: 4, label: "Initial recovery phase", done: weeksRecovering >= 4 },
-    { weeks: 8, label: "Immune cells rebuilding", done: weeksRecovering >= 8 },
-    { weeks: 12, label: "T-cell function improving", done: weeksRecovering >= 12 },
-    { weeks: 24, label: "Substantial immune restoration", done: weeksRecovering >= 24 },
-    { weeks: 52, label: "Full immune reconstitution", done: weeksRecovering >= 52 },
+    { weeks: 4, label: "Initial recovery phase", done: weeks >= 4 },
+    { weeks: 8, label: "Immune cells rebuilding", done: weeks >= 8 },
+    { weeks: 12, label: "T-cell function improving", done: weeks >= 12 },
+    { weeks: 24, label: "Substantial immune restoration", done: weeks >= 24 },
+    { weeks: 52, label: "Full immune reconstitution", done: weeks >= 52 },
   ];
 
   return (
-    <div className="space-y-4 py-2">
-      <div className="flex items-center justify-center gap-8">
-        <div className="text-center">
-          <p className="text-3xl font-heading font-bold text-primary">{daysSince}</p>
-          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Days</p>
+    <div className="space-y-5 py-2">
+      <div className="bg-primary/5 border border-primary/15 rounded-xl p-5">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-body text-center mb-3">Time Recovering</p>
+        <div className="flex items-center justify-center gap-1">
+          <div className="text-center">
+            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{days}</p>
+            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">days</p>
+          </div>
+          <span className="text-2xl font-heading text-primary/30 mx-2">:</span>
+          <div className="text-center">
+            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(hours)}</p>
+            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">hrs</p>
+          </div>
+          <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
+          <div className="text-center">
+            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(minutes)}</p>
+            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">min</p>
+          </div>
+          <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
+          <div className="text-center">
+            <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)] tabular-nums">{pad(seconds)}</p>
+            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">sec</p>
+          </div>
         </div>
-        <div className="text-center">
-          <p className="text-3xl font-heading font-bold text-[hsl(34,55%,45%)]">{weeksRecovering}</p>
-          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Weeks</p>
-        </div>
-        <div className="text-center">
-          <p className="text-3xl font-heading font-bold text-primary">{monthsRecovering}</p>
-          <p className="text-xs text-[hsl(25,18%,48%)] font-body">Months</p>
+        <div className="flex justify-center gap-6 mt-3">
+          <span className="text-xs font-body text-[hsl(25,18%,48%)]"><strong className="text-primary font-heading">{weeks}</strong> weeks</span>
+          <span className="text-xs font-body text-[hsl(25,18%,48%)]"><strong className="text-[hsl(34,55%,45%)] font-heading">{months}</strong> months</span>
         </div>
       </div>
       <div className="space-y-2">
@@ -984,13 +1048,7 @@ export default function SimpleDashboard() {
             />
           )}
           {isActive("immuneRecovery") && (
-            <CompactStatCard
-              icon={<Zap className="h-5 w-5" />}
-              label="Immune Recovery"
-              value={`${daysImmuneRecovery}d`}
-              subtitle={`${Math.floor(daysImmuneRecovery / 7)} weeks recovering`}
-              onClick={() => setExpandedWidget("immuneRecovery")}
-            />
+            <ImmuneRecoveryCompactTimer onClick={() => setExpandedWidget("immuneRecovery")} />
           )}
           {isActive("healingStreak") && (
             <CompactStatCard
