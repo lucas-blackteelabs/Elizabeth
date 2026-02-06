@@ -19,8 +19,8 @@ function ChatBubble({ role, content }: ChatBubbleProps) {
       className={cn(
         "max-w-[80%] mb-3 p-3 rounded-lg font-body",
         isUser 
-          ? "bg-primary/30 border border-primary/40 text-[hsl(30,25%,90%)] ml-auto rounded-br-sm" 
-          : "bg-[hsl(25,12%,21%)] border border-[hsl(25,10%,27%)] text-[hsl(30,22%,87%)] mr-auto rounded-bl-sm"
+          ? "bg-primary/30 border border-primary/40 text-[hsl(25,30%,22%)] ml-auto rounded-br-sm" 
+          : "bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)] mr-auto rounded-bl-sm"
       )}
     >
       {role === "assistant" ? (
@@ -60,7 +60,7 @@ export default function ChatInterface() {
   };
   
   return (
-    <Card className="mb-6 bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
+    <Card className="mb-6 bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -72,8 +72,8 @@ export default function ChatInterface() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 p-4 bg-[hsl(25,14%,19%)] rounded border border-[hsl(25,10%,25%)]">
-          <p className="text-sm text-[hsl(28,15%,58%)] font-body">
+        <div className="mb-4 p-4 bg-[hsl(30,30%,95%)] rounded border border-[hsl(30,25%,87%)]">
+          <p className="text-sm text-[hsl(25,18%,48%)] font-body">
             I'm here to provide information and support for your cancer journey. I can help with questions about nutrition, exercise, supplements, and emotional wellbeing. Remember that my guidance complements but doesn't replace medical advice from your healthcare team.
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function ChatInterface() {
             />
           ))}
           {isLoading && (
-            <div className="flex space-x-2 p-3 max-w-[80%] bg-[hsl(25,12%,21%)] border border-[hsl(25,10%,27%)] rounded-lg mr-auto">
+            <div className="flex space-x-2 p-3 max-w-[80%] bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] rounded-lg mr-auto">
               <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.3s]"></div>
               <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.15s]"></div>
               <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce"></div>
@@ -103,7 +103,7 @@ export default function ChatInterface() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your question here..."
-            className="pr-12 bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)] text-[hsl(30,25%,90%)] placeholder:text-[hsl(28,15%,45%)] font-body focus:border-gold/40"
+            className="pr-12 bg-[hsl(30,30%,95%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-gold/40"
             disabled={isLoading}
           />
           <Button 
@@ -117,7 +117,7 @@ export default function ChatInterface() {
           </Button>
         </form>
         
-        <Separator className="my-3 bg-[hsl(25,10%,25%)]" />
+        <Separator className="my-3 bg-[hsl(30,25%,87%)]" />
         
         <div className="text-xs text-[hsl(28,15%,50%)] flex justify-between items-center font-body">
           <span>Powered by OpenAI</span>

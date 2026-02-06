@@ -40,20 +40,20 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
+      <Card className="w-full max-w-md bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto bg-gold text-[hsl(25,20%,13%)] p-3 rounded mb-2 w-fit">
+          <div className="mx-auto bg-gold text-[hsl(0,0%,100%)] p-3 rounded mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-heading font-bold text-gold tracking-wide">Log in to Elizabeth</CardTitle>
-          <CardDescription className="text-[hsl(28,15%,55%)] font-body">
+          <CardDescription className="text-[hsl(25,18%,50%)] font-body">
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-[hsl(30,22%,87%)] font-body">Username</Label>
+              <Label htmlFor="username" className="text-[hsl(25,30%,28%)] font-body">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -61,12 +61,12 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)] text-[hsl(30,25%,90%)] placeholder:text-[hsl(28,15%,45%)] font-body focus:border-gold/40"
+                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-gold/40"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[hsl(30,22%,87%)] font-body">Password</Label>
+                <Label htmlFor="password" className="text-[hsl(25,30%,28%)] font-body">Password</Label>
                 <a
                   href="#"
                   className="text-sm font-body font-medium text-gold/70 hover:text-gold"
@@ -88,16 +88,16 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)] text-[hsl(30,25%,90%)] placeholder:text-[hsl(28,15%,45%)] font-body focus:border-gold/40"
+                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-gold/40"
               />
             </div>
-            <Button type="submit" className="w-full bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-gold text-[hsl(0,0%,100%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
               {isLoading ? 'Logging in...' : 'Log in'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            <Separator className="my-4 bg-[hsl(25,10%,25%)]" />
-            <p className="text-[hsl(28,15%,58%)] font-body">
+            <Separator className="my-4 bg-[hsl(30,25%,87%)]" />
+            <p className="text-[hsl(25,18%,48%)] font-body">
               Don't have an account?{' '}
               <a
                 href="/register"
