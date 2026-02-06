@@ -35,12 +35,12 @@ export default function Layout({ children }: LayoutProps) {
 
       <main className="flex-1 overflow-y-auto pb-16">
         {isMobile && (
-          <div className="flex items-center justify-between bg-[hsl(30,12%,9%)] p-4 border-b border-[hsl(30,8%,18%)] sticky top-0 z-20">
+          <div className="flex items-center justify-between bg-[hsl(25,18%,14%)] p-4 border-b border-[hsl(25,10%,23%)] sticky top-0 z-20">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={toggleSidebar}
-              className="text-[hsl(35,15%,65%)] hover:text-gold"
+              className="text-[hsl(28,18%,65%)] hover:text-gold"
             >
               <Menu className="h-6 w-6" />
             </Button>

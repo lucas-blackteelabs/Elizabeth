@@ -13,15 +13,15 @@ function SuggestedTopic({ icon, title, description, onClick }: SuggestedTopicPro
   return (
     <Button
       variant="outline"
-      className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,22%)] p-4 rounded text-left hover:border-gold/30 hover:bg-[hsl(30,10%,13%)] transition-all h-auto"
+      className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,27%)] p-4 rounded text-left hover:border-gold/30 hover:bg-[hsl(25,14%,19%)] transition-all h-auto"
       onClick={onClick}
     >
       <div className="flex flex-col items-start gap-2">
         <div className="text-gold mb-2">
           {icon}
         </div>
-        <h3 className="font-heading text-sm text-[hsl(40,20%,88%)] mb-1">{title}</h3>
-        <p className="text-sm text-[hsl(35,10%,50%)] font-body">{description}</p>
+        <h3 className="font-heading text-sm text-[hsl(30,25%,90%)] mb-1">{title}</h3>
+        <p className="text-sm text-[hsl(28,15%,55%)] font-body">{description}</p>
       </div>
     </Button>
   );

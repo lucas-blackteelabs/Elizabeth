@@ -13,7 +13,7 @@ export default function SpiritualWellbeing() {
       />
       
       <Tabs defaultValue="reflection">
-        <TabsList className="mb-6 bg-[hsl(30,8%,13%)] border border-[hsl(30,8%,20%)]">
+        <TabsList className="mb-6 bg-[hsl(25,14%,19%)] border border-[hsl(25,10%,25%)]">
           <TabsTrigger value="reflection" className="data-[state=active]:bg-primary/20 data-[state=active]:text-gold font-body">
             <Heart className="h-4 w-4 mr-2" /> Reflective Practices
           </TabsTrigger>
@@ -35,10 +35,10 @@ export default function SpiritualWellbeing() {
               {title: "Meaning Making", desc: "Find purpose in your cancer experience"},
               {title: "Legacy Building", desc: "Consider how you wish to impact others"}
             ].map((practice, index) => (
-              <Card key={index} className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)] hover:border-gold/20 transition-all duration-300">
+              <Card key={index} className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)] hover:border-gold/20 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(40,20%,88%)]">{practice.title}</CardTitle>
-                  <CardDescription className="text-[hsl(35,10%,50%)] font-body">{practice.desc}</CardDescription>
+                  <CardTitle className="font-heading text-[hsl(30,25%,90%)]">{practice.title}</CardTitle>
+                  <CardDescription className="text-[hsl(28,15%,55%)] font-body">{practice.desc}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button className="w-full bg-primary/30 border border-primary/40 text-gold hover:bg-primary/40 font-body">Start Practice</Button>
@@ -49,15 +49,15 @@ export default function SpiritualWellbeing() {
         </TabsContent>
         
         <TabsContent value="purpose">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold">Purpose Discovery</CardTitle>
-              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+              <CardDescription className="text-[hsl(28,15%,55%)] font-body">
                 Tools to help you identify and pursue what gives your life meaning
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
+              <p className="text-[hsl(28,15%,50%)] text-center py-12 font-body">
                 Purpose discovery exercises are coming soon
               </p>
             </CardContent>
@@ -65,18 +65,18 @@ export default function SpiritualWellbeing() {
         </TabsContent>
         
         <TabsContent value="journal">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold">Healing Journal</CardTitle>
-              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+              <CardDescription className="text-[hsl(28,15%,55%)] font-body">
                 A private space to document your healing journey
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
+              <p className="text-[hsl(28,15%,50%)] text-center py-12 font-body">
                 Journal feature coming soon
               </p>
-              <Button className="mx-auto block bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading">Create Journal</Button>
+              <Button className="mx-auto block bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading">Create Journal</Button>
             </CardContent>
           </Card>
         </TabsContent>

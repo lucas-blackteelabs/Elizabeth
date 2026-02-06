@@ -11,16 +11,16 @@ export default function Movement() {
         description="Customized exercise plans for different treatment stages"
       />
       
-      <Card className="mb-6 bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+      <Card className="mb-6 bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
         <CardHeader>
-          <CardTitle className="flex items-center font-heading text-[hsl(40,20%,88%)]">
+          <CardTitle className="flex items-center font-heading text-[hsl(30,25%,90%)]">
             <Activity className="h-5 w-5 mr-2 text-gold/70" />
             Your Activity This Week
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-center justify-center">
-            <p className="text-[hsl(35,10%,45%)] font-body">Activity tracking will appear here</p>
+            <p className="text-[hsl(28,15%,50%)] font-body">Activity tracking will appear here</p>
           </div>
         </CardContent>
       </Card>
@@ -29,13 +29,13 @@ export default function Movement() {
       
       <div className="grid md:grid-cols-3 gap-6">
         {["Gentle Yoga", "Seated Stretches", "Walking Program", "Chair Exercises", "Tai Chi Basics", "Resistance Band"].map((title, index) => (
-          <Card key={index} className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)] overflow-hidden hover:border-gold/20 transition-all duration-300">
-            <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-[hsl(30,8%,15%)] flex items-center justify-center">
+          <Card key={index} className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)] overflow-hidden hover:border-gold/20 transition-all duration-300">
+            <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-[hsl(25,12%,21%)] flex items-center justify-center">
               <PersonStanding className="h-12 w-12 text-gold/30" />
             </div>
             <CardContent className="p-4">
-              <h3 className="font-heading text-sm text-[hsl(40,20%,88%)] mb-1">{title}</h3>
-              <p className="text-sm text-[hsl(35,10%,50%)] font-body mb-3">
+              <h3 className="font-heading text-sm text-[hsl(30,25%,90%)] mb-1">{title}</h3>
+              <p className="text-sm text-[hsl(28,15%,55%)] font-body mb-3">
                 Low-impact exercise appropriate during treatment
               </p>
               <div className="flex justify-between items-center">
@@ -44,7 +44,7 @@ export default function Movement() {
                     ? "bg-primary/20 text-gold/80 border-primary/30" 
                     : index % 3 === 1 
                     ? "bg-gold/10 text-gold/80 border-gold/20" 
-                    : "bg-[hsl(30,8%,15%)] text-[hsl(35,10%,55%)] border-[hsl(30,8%,22%)]"
+                    : "bg-[hsl(25,12%,21%)] text-[hsl(28,15%,58%)] border-[hsl(25,10%,27%)]"
                 }`}>
                   {index % 3 === 0 ? "Beginner" : index % 3 === 1 ? "Intermediate" : "All Levels"}
                 </span>

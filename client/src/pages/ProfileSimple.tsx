@@ -69,7 +69,7 @@ export default function ProfileSimple() {
     }
   }
 
-  const inputClasses = "bg-[hsl(30,8%,13%)] border-[hsl(30,8%,22%)] text-[hsl(40,20%,88%)] placeholder:text-[hsl(35,10%,40%)] font-body focus:border-gold/40";
+  const inputClasses = "bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)] text-[hsl(30,25%,90%)] placeholder:text-[hsl(28,15%,45%)] font-body focus:border-gold/40";
 
   return (
     <div className="p-6 lg:p-8">
@@ -80,7 +80,7 @@ export default function ProfileSimple() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="col-span-1">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold tracking-wide">Profile Summary</CardTitle>
             </CardHeader>
@@ -89,17 +89,17 @@ export default function ProfileSimple() {
                 <div className="h-24 w-24 rounded-full bg-primary/20 border-2 border-gold/30 flex items-center justify-center text-2xl font-heading font-bold text-gold mb-4">
                   {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
                 </div>
-                <h3 className="text-xl font-heading text-[hsl(40,20%,88%)]">{user?.displayName || 'Loading...'}</h3>
-                <p className="text-[hsl(35,10%,50%)] font-body">{user?.email || 'Loading...'}</p>
+                <h3 className="text-xl font-heading text-[hsl(30,25%,90%)]">{user?.displayName || 'Loading...'}</h3>
+                <p className="text-[hsl(28,15%,55%)] font-body">{user?.email || 'Loading...'}</p>
                 
                 <div className="w-full mt-4 space-y-2">
-                  <div className="flex justify-between py-2 border-b border-[hsl(30,8%,18%)]">
-                    <span className="text-sm text-[hsl(35,10%,50%)] font-body">Cancer Type:</span>
-                    <span className="font-body font-medium text-[hsl(40,20%,88%)]">{user?.cancerType || "Not specified"}</span>
+                  <div className="flex justify-between py-2 border-b border-[hsl(25,10%,23%)]">
+                    <span className="text-sm text-[hsl(28,15%,55%)] font-body">Cancer Type:</span>
+                    <span className="font-body font-medium text-[hsl(30,25%,90%)]">{user?.cancerType || "Not specified"}</span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm text-[hsl(35,10%,50%)] font-body">Cancer Stage:</span>
-                    <span className="font-body font-medium text-[hsl(40,20%,88%)]">{user?.cancerStage || "Not specified"}</span>
+                    <span className="text-sm text-[hsl(28,15%,55%)] font-body">Cancer Stage:</span>
+                    <span className="font-body font-medium text-[hsl(30,25%,90%)]">{user?.cancerStage || "Not specified"}</span>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@ export default function ProfileSimple() {
         </div>
         
         <div className="col-span-1 md:col-span-2">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold tracking-wide">Edit Profile</CardTitle>
             </CardHeader>
@@ -120,7 +120,7 @@ export default function ProfileSimple() {
                     name="displayName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Display Name</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">Display Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Your name" {...field} className={inputClasses} />
                         </FormControl>
@@ -134,7 +134,7 @@ export default function ProfileSimple() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Email</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">Email</FormLabel>
                         <FormControl>
                           <Input placeholder="Your email" {...field} className={inputClasses} />
                         </FormControl>
@@ -149,7 +149,7 @@ export default function ProfileSimple() {
                       name="cancerType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Type</FormLabel>
+                          <FormLabel className="text-[hsl(30,22%,87%)] font-body">Cancer Type</FormLabel>
                           <Select 
                             onValueChange={field.onChange} 
                             defaultValue={field.value}
@@ -159,7 +159,7 @@ export default function ProfileSimple() {
                                 <SelectValue placeholder="Select cancer type" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-[hsl(30,10%,13%)] border-[hsl(30,8%,22%)]">
+                            <SelectContent className="bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)]">
                               <SelectItem value="breast">Breast Cancer</SelectItem>
                               <SelectItem value="lung">Lung Cancer</SelectItem>
                               <SelectItem value="colon">Colorectal Cancer</SelectItem>
@@ -180,7 +180,7 @@ export default function ProfileSimple() {
                       name="cancerStage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Stage</FormLabel>
+                          <FormLabel className="text-[hsl(30,22%,87%)] font-body">Cancer Stage</FormLabel>
                           <Select 
                             onValueChange={field.onChange} 
                             defaultValue={field.value}
@@ -190,7 +190,7 @@ export default function ProfileSimple() {
                                 <SelectValue placeholder="Select stage" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="bg-[hsl(30,10%,13%)] border-[hsl(30,8%,22%)]">
+                            <SelectContent className="bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)]">
                               <SelectItem value="stage1">Stage I</SelectItem>
                               <SelectItem value="stage2">Stage II</SelectItem>
                               <SelectItem value="stage3">Stage III</SelectItem>
@@ -210,7 +210,7 @@ export default function ProfileSimple() {
                     name="diagnosis_date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Diagnosis Date</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">Diagnosis Date</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} className={inputClasses} />
                         </FormControl>
@@ -224,7 +224,7 @@ export default function ProfileSimple() {
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">About Me</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">About Me</FormLabel>
                         <FormControl>
                           <Textarea 
                             placeholder="Tell others about yourself..." 
@@ -238,7 +238,7 @@ export default function ProfileSimple() {
                     )}
                   />
                   
-                  <Button type="submit" className="w-full bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
                     {isLoading ? "Saving..." : "Save Changes"}
                   </Button>
                 </form>

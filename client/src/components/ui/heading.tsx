@@ -14,7 +14,7 @@ export function Heading({ title, description, className, children }: HeadingProp
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-heading font-bold text-gold tracking-wide">{title}</h1>
-          {description && <p className="text-[hsl(35,10%,55%)] font-body mt-1">{description}</p>}
+          {description && <p className="text-[hsl(28,15%,58%)] font-body mt-1">{description}</p>}
         </div>
         {children}
       </div>

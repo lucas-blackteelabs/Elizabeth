@@ -91,17 +91,17 @@ export default function Register() {
     }
   };
 
-  const inputClasses = "bg-[hsl(30,8%,13%)] border-[hsl(30,8%,22%)] text-[hsl(40,20%,88%)] placeholder:text-[hsl(35,10%,40%)] font-body focus:border-gold/40";
+  const inputClasses = "bg-[hsl(25,14%,19%)] border-[hsl(25,10%,27%)] text-[hsl(30,25%,90%)] placeholder:text-[hsl(28,15%,45%)] font-body focus:border-gold/40";
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background py-8">
-      <Card className="w-full max-w-lg bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+      <Card className="w-full max-w-lg bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto bg-gold text-[hsl(30,15%,7%)] p-3 rounded mb-2 w-fit">
+          <div className="mx-auto bg-gold text-[hsl(25,20%,13%)] p-3 rounded mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-heading font-bold text-gold tracking-wide">Create an account</CardTitle>
-          <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+          <CardDescription className="text-[hsl(28,15%,55%)] font-body">
             Enter your information to create an account in Elizabeth
           </CardDescription>
         </CardHeader>
@@ -114,7 +114,7 @@ export default function Register() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Username</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Username</FormLabel>
                       <FormControl>
                         <Input placeholder="Choose a username" {...field} className={inputClasses} />
                       </FormControl>
@@ -128,7 +128,7 @@ export default function Register() {
                   name="displayName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Display Name</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Display Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Your name" {...field} className={inputClasses} />
                       </FormControl>
@@ -142,7 +142,7 @@ export default function Register() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Email</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="your.email@example.com" {...field} className={inputClasses} />
                       </FormControl>
@@ -156,7 +156,7 @@ export default function Register() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Password</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Password</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="Create a password" {...field} className={inputClasses} />
                       </FormControl>
@@ -170,7 +170,7 @@ export default function Register() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Confirm Password</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Confirm Password</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="Confirm your password" {...field} className={inputClasses} />
                       </FormControl>
@@ -188,7 +188,7 @@ export default function Register() {
                     name="cancerType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Type</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">Cancer Type</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Breast, Lung, etc." {...field} className={inputClasses} />
                         </FormControl>
@@ -202,7 +202,7 @@ export default function Register() {
                     name="cancerStage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Stage</FormLabel>
+                        <FormLabel className="text-[hsl(30,22%,87%)] font-body">Cancer Stage</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Stage 1, Stage 2, etc." {...field} className={inputClasses} />
                         </FormControl>
@@ -217,7 +217,7 @@ export default function Register() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(40,20%,85%)] font-body">Bio</FormLabel>
+                      <FormLabel className="text-[hsl(30,22%,87%)] font-body">Bio</FormLabel>
                       <FormControl>
                         <Input placeholder="Tell us a bit about yourself" {...field} className={inputClasses} />
                       </FormControl>
@@ -227,15 +227,15 @@ export default function Register() {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>
           </Form>
           
           <div className="mt-4 text-center text-sm">
-            <Separator className="my-4 bg-[hsl(30,8%,20%)]" />
-            <p className="text-[hsl(35,10%,55%)] font-body">
+            <Separator className="my-4 bg-[hsl(25,10%,25%)]" />
+            <p className="text-[hsl(28,15%,58%)] font-body">
               Already have an account?{' '}
               <a
                 href="/login"

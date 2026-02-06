@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
 
   const sidebarClasses = cn(
     "w-64 h-full flex-shrink-0 z-30 transition-all duration-300",
-    "bg-[hsl(30,12%,9%)] border-r border-[hsl(30,8%,18%)]",
+    "bg-[hsl(25,18%,14%)] border-r border-[hsl(25,10%,23%)]",
     {
       "fixed translate-x-0": isMobile && isOpen,
       "fixed -translate-x-full": isMobile && !isOpen,
@@ -73,8 +73,8 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-5 border-b border-[hsl(30,8%,18%)] flex items-center space-x-3">
-          <div className="bg-gold text-[hsl(30,15%,7%)] p-2 rounded">
+        <div className="p-5 border-b border-[hsl(25,10%,23%)] flex items-center space-x-3">
+          <div className="bg-gold text-[hsl(25,20%,13%)] p-2 rounded">
             <Heart className="h-5 w-5" />
           </div>
           <h1 className="text-xl font-heading font-bold text-gold tracking-wider">Elizabeth</h1>
@@ -82,13 +82,13 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
         
         <div className="p-3 overflow-y-auto" style={{ height: 'calc(100% - 130px)' }}>
           <Link href="/profile" onClick={onClose}>
-            <div className="flex items-center space-x-3 p-3 bg-[hsl(30,8%,13%)] rounded mb-5 cursor-pointer hover:bg-[hsl(30,8%,16%)] transition-colors border border-[hsl(30,8%,18%)]">
+            <div className="flex items-center space-x-3 p-3 bg-[hsl(25,14%,19%)] rounded mb-5 cursor-pointer hover:bg-[hsl(25,12%,22%)] transition-colors border border-[hsl(25,10%,23%)]">
               <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-gold font-heading font-semibold">
                 {user?.displayName?.charAt(0) || 'U'}
               </div>
               <div>
-                <p className="font-medium text-[hsl(40,20%,90%)]">{user?.displayName || 'User'}</p>
-                <p className="text-xs text-[hsl(35,10%,50%)]">
+                <p className="font-medium text-[hsl(30,25%,90%)]">{user?.displayName || 'User'}</p>
+                <p className="text-xs text-[hsl(28,15%,55%)]">
                   {user?.cancerType || 'Not specified'} - {user?.cancerStage || 'Not specified'}
                 </p>
               </div>
@@ -107,7 +107,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
                     "flex items-center space-x-3 p-3 rounded transition-all duration-200",
                     isActive
                       ? "bg-primary/20 text-gold border-l-2 border-gold"
-                      : "text-[hsl(35,15%,65%)] hover:bg-[hsl(30,8%,14%)] hover:text-[hsl(40,20%,85%)]"
+                      : "text-[hsl(28,18%,65%)] hover:bg-[hsl(25,12%,20%)] hover:text-[hsl(30,22%,87%)]"
                   )}
                 >
                   {link.icon}
@@ -118,8 +118,8 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
           </nav>
         </div>
         
-        <div className="absolute bottom-0 w-full p-3 border-t border-[hsl(30,8%,18%)]">
-          <div className="flex items-center justify-between text-[hsl(35,10%,50%)] text-sm px-3">
+        <div className="absolute bottom-0 w-full p-3 border-t border-[hsl(25,10%,23%)]">
+          <div className="flex items-center justify-between text-[hsl(28,15%,55%)] text-sm px-3">
             <Link href="/profile" onClick={onClose} className="hover:text-gold transition-colors">
               <UserRound className="h-5 w-5" />
             </Link>

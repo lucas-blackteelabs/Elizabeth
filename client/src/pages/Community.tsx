@@ -13,7 +13,7 @@ export default function Community() {
       />
       
       <Tabs defaultValue="forums">
-        <TabsList className="mb-6 bg-[hsl(30,8%,13%)] border border-[hsl(30,8%,20%)]">
+        <TabsList className="mb-6 bg-[hsl(25,14%,19%)] border border-[hsl(25,10%,25%)]">
           <TabsTrigger value="forums" className="data-[state=active]:bg-primary/20 data-[state=active]:text-gold font-body">
             <MessageSquare className="h-4 w-4 mr-2" /> Forums
           </TabsTrigger>
@@ -35,10 +35,10 @@ export default function Community() {
               {title: "Lymphoma", members: 176, posts: 654},
               {title: "General Discussion", members: 452, posts: 2134}
             ].map((forum, index) => (
-              <Card key={index} className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)] hover:border-gold/20 transition-all duration-300">
+              <Card key={index} className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)] hover:border-gold/20 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(40,20%,88%)]">{forum.title}</CardTitle>
-                  <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+                  <CardTitle className="font-heading text-[hsl(30,25%,90%)]">{forum.title}</CardTitle>
+                  <CardDescription className="text-[hsl(28,15%,55%)] font-body">
                     {forum.members} members · {forum.posts} posts
                   </CardDescription>
                 </CardHeader>
@@ -51,35 +51,35 @@ export default function Community() {
         </TabsContent>
         
         <TabsContent value="mentors">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold">Mentor Matching</CardTitle>
-              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+              <CardDescription className="text-[hsl(28,15%,55%)] font-body">
                 Connect with someone who has been through a similar journey
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
+              <p className="text-[hsl(28,15%,50%)] text-center py-12 font-body">
                 Our mentor matching system is coming soon
               </p>
-              <Button className="mx-auto block bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading">Join Waitlist</Button>
+              <Button className="mx-auto block bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading">Join Waitlist</Button>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="resources">
-          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+          <Card className="bg-[hsl(25,16%,17%)] border-[hsl(25,10%,25%)]">
             <CardHeader>
               <CardTitle className="font-heading text-gold">Community Resources</CardTitle>
-              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
+              <CardDescription className="text-[hsl(28,15%,55%)] font-body">
                 Resources shared by community members
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
+              <p className="text-[hsl(28,15%,50%)] text-center py-12 font-body">
                 No resources have been shared yet
               </p>
-              <Button className="mx-auto block bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading">Share a Resource</Button>
+              <Button className="mx-auto block bg-gold text-[hsl(25,20%,13%)] hover:bg-gold/90 font-heading">Share a Resource</Button>
             </CardContent>
           </Card>
         </TabsContent>

@@ -4,18 +4,19 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a clean dark elegant interface, OpenAI-powered AI assistance, medical tracking, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
-- **Feb 2026**: Complete visual redesign - dark elegant theme inspired by "The Invitational" style
-  - Color scheme: Dark background (hsl(30,15%,7%)), deep green primary (hsl(152,70%,18%)), gold accent (hsl(42,80%,55%))
-  - Typography: Cinzel (serif) for headings, Lora (serif) for body text
-  - All pages updated with consistent dark theme, gold accents, green highlights
-  - Cards use dark backgrounds with subtle borders, gold heading text
-  - Buttons: Primary CTAs use gold background with dark text
+- **Feb 2026**: Softened visual design for warmer, more supportive feel
+  - Palette shifted warmer: backgrounds lighter/warmer, sage green primary, gentle honey accent
+  - Reduced harsh contrasts, increased border-radius for softer rounded elements
+  - Glow effects toned down for gentler visual impact
+  - All pages updated with consistent soft warm dark theme
+- **Feb 2026**: Initial dark elegant theme with serif typography (Cinzel/Lora)
 
 ## User Preferences
-- Dark, elegant, professional design aesthetic
+- Soft, warm, supportive design aesthetic (cancer support app)
+- Dark theme but not too harsh - warm cocoa-toned backgrounds
 - Serif fonts (Cinzel headings, Lora body)
-- Gold accent color for key elements
-- Cancer support app should feel warm and supportive
+- Honey/amber accent color (not sharp gold) for key elements
+- Sage green primary (not deep forest green) for softer feel
 
 ## Project Architecture
 - **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
@@ -37,13 +38,14 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
 - `shared/schema.ts` - Database schema and types
 
 ### Design System
-- Background: `hsl(30, 15%, 7%)` - warm dark brown-black
-- Card background: `hsl(30, 10%, 11%)` - slightly lighter
-- Primary: `hsl(152, 70%, 18%)` - deep forest green
-- Accent/Gold: `hsl(42, 80%, 55%)` - warm gold
-- Text: `hsl(40, 20%, 93%)` - warm off-white
-- Muted text: `hsl(35, 10%, 55%)` - warm gray
-- Borders: `hsl(30, 8%, 20%)` - subtle dark borders
+- Background: `hsl(25, 20%, 13%)` - warm cocoa dark
+- Card background: `hsl(25, 16%, 17%)` - warm brown
+- Primary: `hsl(158, 28%, 38%)` - soft sage green
+- Accent/Honey: `hsl(34, 45%, 62%)` - gentle honey amber
+- Text: `hsl(30, 28%, 92%)` - warm cream white
+- Muted text: `hsl(28, 15%, 58%)` - warm taupe
+- Borders: `hsl(25, 10%, 25%)` - soft borders
+- Border radius: `0.625rem` - rounded, friendly
 - Heading font: `font-heading` (Cinzel)
 - Body font: `font-body` (Lora)
 
