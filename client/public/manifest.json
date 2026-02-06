@@ -1,0 +1,25 @@
+{
+  "name": "Elizabeth - Healing Journey Companion",
+  "short_name": "Elizabeth",
+  "description": "Your personalised cancer support companion based on Radical Remission research",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5efe6",
+  "theme_color": "#7A9B76",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle", "medical"]
+}

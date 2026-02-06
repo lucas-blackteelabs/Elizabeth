@@ -21,6 +21,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Redirect } from "wouter";
+import InstallPrompt from "@/components/InstallPrompt";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useUser();
@@ -152,6 +153,7 @@ function App() {
       <UserProvider>
         <TooltipProvider>
           <Toaster />
+          <InstallPrompt />
           <AppRouter />
         </TooltipProvider>
       </UserProvider>
