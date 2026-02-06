@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Sparkles, ShieldCheck } from "lucide-react";
+import { X, Send, Sparkles, ShieldCheck, Wand2 } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +57,7 @@ function ChatBubble({ role, content }: { role: "user" | "assistant"; content: st
   );
 }
 
-export default function AIChatButton() {
+export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobileNavEmbedded?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const { messages, isLoading, sendMessage } = useChat();
@@ -75,6 +75,58 @@ export default function AIChatButton() {
     await sendMessage(inputValue);
     setInputValue("");
   };
+
+  const magicButton = (
+    <button
+      onClick={() => setIsOpen(!isOpen)}
+      className={cn(
+        "relative group transition-all duration-500",
+        isMobileNavEmbedded
+          ? "w-14 h-14 -mt-7 rounded-full flex items-center justify-center"
+          : "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
+        isOpen
+          ? "scale-90"
+          : "hover:scale-110 animate-magic-float"
+      )}
+    >
+      <div className={cn(
+        "absolute inset-0 rounded-full transition-all duration-500",
+        isOpen
+          ? "bg-[hsl(25,18%,48%)]"
+          : "bg-gradient-to-br from-[hsl(158,38%,48%)] via-[hsl(158,32%,42%)] to-[hsl(158,28%,35%)]"
+      )} />
+
+      {!isOpen && (
+        <>
+          <div className="absolute inset-[-4px] rounded-full bg-primary/25 animate-ping" style={{ animationDuration: "2.5s" }} />
+          <div className="absolute inset-[-2px] rounded-full bg-gradient-to-br from-primary/40 to-[hsl(34,55%,52%)]/30 blur-sm" />
+          <div className="absolute inset-[-6px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/20 to-[hsl(34,55%,52%)]/15 blur-md" />
+        </>
+      )}
+
+      <div className={cn(
+        "absolute inset-0 rounded-full shadow-lg transition-all duration-300",
+        !isOpen && "shadow-[0_4px_20px_rgba(122,155,118,0.35)] group-hover:shadow-[0_6px_28px_rgba(122,155,118,0.5)]"
+      )} />
+
+      <div className="relative z-10 text-white">
+        {isOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <Wand2 className="h-6 w-6 transition-transform duration-700 group-hover:rotate-12" />
+        )}
+      </div>
+
+      {!isOpen && (
+        <span className="absolute -top-0.5 -right-0.5 z-20 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(34,55%,52%)] opacity-50" style={{ animationDuration: "2s" }} />
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-[hsl(34,55%,52%)] items-center justify-center">
+            <Sparkles className="h-2.5 w-2.5 text-white" />
+          </span>
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <>
@@ -139,26 +191,8 @@ export default function AIChatButton() {
         </div>
       )}
 
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300",
-          isOpen
-            ? "bg-[hsl(25,18%,48%)] text-white scale-90"
-            : "bg-primary text-white hover:bg-primary/90 hover:scale-105 hover:shadow-xl"
-        )}
-      >
-        {isOpen ? (
-          <X className="h-6 w-6" />
-        ) : (
-          <MessageCircle className="h-6 w-6" />
-        )}
-        {!isOpen && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[hsl(34,55%,52%)] rounded-full flex items-center justify-center">
-            <Sparkles className="h-2.5 w-2.5 text-white" />
-          </span>
-        )}
-      </button>
+      {!isMobileNavEmbedded && magicButton}
+      {isMobileNavEmbedded && magicButton}
     </>
   );
 }

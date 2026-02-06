@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import Sidebar from "./Sidebar";
 import Disclaimer from "./Disclaimer";
+import MobileBottomNav from "./MobileBottomNav";
 import { useLocation } from "wouter";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ export default function Layout({ children }: LayoutProps) {
         isMobile={isMobile} 
       />
 
-      <main className="flex-1 overflow-y-auto pb-16">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-16">
         {isMobile && (
           <div className="flex items-center justify-between bg-[hsl(32,35%,94%)] p-4 border-b border-[hsl(30,22%,87%)] sticky top-0 z-20">
             <Button 
@@ -53,6 +54,8 @@ export default function Layout({ children }: LayoutProps) {
 
         {children}
       </main>
+
+      {isMobile && <MobileBottomNav />}
 
       <Disclaimer />
     </div>

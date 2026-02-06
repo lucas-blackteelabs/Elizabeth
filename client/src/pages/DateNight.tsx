@@ -289,43 +289,86 @@ export default function DateNight() {
 
       {activeTab === "discover" && (
         <>
-          {!hasGenerated && (
+          {!hasGenerated && !loading && (
             <Card className="bg-gradient-to-br from-[hsl(0,40%,97%)] to-[hsl(34,40%,96%)] border-[hsl(0,30%,88%)] mb-6">
               <CardContent className="p-8 text-center">
-                {loading ? (
-                  <>
-                    <div className="relative mx-auto mb-5 w-16 h-16">
-                      <div className="absolute inset-0 rounded-full border-4 border-primary/15" />
-                      <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" style={{ animationDuration: "1s" }} />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Heart className="h-6 w-6 text-primary/70 animate-pulse" />
-                      </div>
-                    </div>
-                    <h2 className="font-heading text-lg text-[hsl(25,30%,22%)] mb-2">Finding the perfect spots...</h2>
-                    <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-1">Searching Sydney's best restaurants and activities for you two</p>
-                    <p className="text-xs text-[hsl(25,18%,60%)] font-body animate-pulse">Considering your dietary preferences</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-center gap-3 mb-4">
-                      <Utensils className="h-6 w-6 text-primary/60" />
-                      <Music className="h-6 w-6 text-[hsl(34,55%,52%)]/60" />
-                      <MapPin className="h-6 w-6 text-[hsl(0,45%,65%)]/60" />
-                    </div>
-                    <p className="text-sm text-[hsl(25,30%,28%)] font-body leading-relaxed max-w-md mx-auto mb-6">
-                      Taking time for each other is a beautiful part of healing. Connection, laughter, and love are powerful medicine.
-                      Let us find you the perfect Sydney restaurants and activities for a wonderful evening together.
-                    </p>
-                    <Button
-                      onClick={generateIdeas}
-                      className="bg-primary text-white hover:bg-primary/90 font-heading tracking-wide gap-2 px-6"
-                    >
-                      <Sparkles className="h-4 w-4" /> Find Date Night Ideas
-                    </Button>
-                  </>
-                )}
+                <div className="flex justify-center gap-3 mb-4">
+                  <Utensils className="h-6 w-6 text-primary/60" />
+                  <Music className="h-6 w-6 text-[hsl(34,55%,52%)]/60" />
+                  <MapPin className="h-6 w-6 text-[hsl(0,45%,65%)]/60" />
+                </div>
+                <p className="text-sm text-[hsl(25,30%,28%)] font-body leading-relaxed max-w-md mx-auto mb-6">
+                  Taking time for each other is a beautiful part of healing. Connection, laughter, and love are powerful medicine.
+                  Let us find you the perfect Sydney restaurants and activities for a wonderful evening together.
+                </p>
+                <Button
+                  onClick={() => generateIdeas()}
+                  className="bg-primary text-white hover:bg-primary/90 font-heading tracking-wide gap-2 px-6"
+                >
+                  <Sparkles className="h-4 w-4" /> Find Date Night Ideas
+                </Button>
               </CardContent>
             </Card>
+          )}
+
+          {loading && (
+            <div className="space-y-6">
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="relative w-24 h-24 mb-6">
+                  <div className="absolute inset-0 rounded-full border-[3px] border-primary/10" />
+                  <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary animate-spin" style={{ animationDuration: "1.2s" }} />
+                  <div className="absolute inset-2 rounded-full border-[3px] border-transparent border-b-[hsl(34,55%,52%)] animate-spin" style={{ animationDuration: "1.8s", animationDirection: "reverse" }} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles className="h-8 w-8 text-[hsl(34,55%,52%)] animate-pulse" />
+                  </div>
+                </div>
+                <h2 className="font-heading text-xl text-[hsl(25,30%,22%)] mb-2">Curating your perfect evening...</h2>
+                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Searching Sydney's best spots for you two</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="space-y-3 animate-pulse">
+                        <div className="flex justify-between">
+                          <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-2/3" />
+                          <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-12" />
+                        </div>
+                        <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-1/2" />
+                        <div className="space-y-1.5">
+                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-full" />
+                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-5/6" />
+                        </div>
+                        <div className="h-3 bg-[hsl(30,25%,93%)] rounded w-3/4 pt-2 border-t border-[hsl(30,25%,90%)]" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="space-y-3 animate-pulse">
+                        <div className="flex gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-[hsl(30,25%,90%)]" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-3/4" />
+                            <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-1/2" />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-full" />
+                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-4/5" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           )}
 
           {hasGenerated && !loading && (
@@ -334,7 +377,7 @@ export default function DateNight() {
                 <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
                   <Utensils className="h-5 w-5" /> Restaurant Picks
                 </h2>
-                <Button variant="ghost" size="sm" onClick={generateIdeas} className="text-primary hover:bg-primary/10 gap-1.5 font-body text-xs">
+                <Button variant="ghost" size="sm" onClick={() => generateIdeas()} className="text-primary hover:bg-primary/10 gap-1.5 font-body text-xs">
                   <RefreshCw className="h-3.5 w-3.5" /> New Ideas
                 </Button>
               </div>

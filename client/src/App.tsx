@@ -151,7 +151,11 @@ function AppRouter() {
 function AuthenticatedAIChatButton() {
   const { isAuthenticated } = useUser();
   if (!isAuthenticated) return null;
-  return <AIChatButton />;
+  return (
+    <div className="hidden md:block">
+      <AIChatButton />
+    </div>
+  );
 }
 
 function App() {

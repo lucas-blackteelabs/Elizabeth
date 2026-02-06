@@ -14,6 +14,7 @@ interface User {
   treatmentHistory: string | null;
   currentMedications: string | null;
   adverseEventHistory: string | null;
+  dietaryPreferences: string | null;
   oncologist: string | null;
   goals: string | null;
   medicalNotes: string | null;
