@@ -14,8 +14,6 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import type { Meal, MindBodyActivity, Exercise, ScanResult } from "@shared/schema";
 
 function todayStr() {
@@ -436,33 +434,16 @@ function useImmuneRecoveryTimer() {
 }
 
 function ImmuneRecoveryCompactTimer({ onClick }: { onClick: () => void }) {
-  const { days, hours, minutes, seconds } = useImmuneRecoveryTimer();
-  const pad = (n: number) => n.toString().padStart(2, "0");
+  const { days, weeks } = useImmuneRecoveryTimer();
 
   return (
-    <button
+    <CompactStatCard
+      icon={<Zap className="h-5 w-5" />}
+      label="Immune Recovery"
+      value={`${days}d`}
+      subtitle={`${weeks} weeks recovering`}
       onClick={onClick}
-      className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-primary/10 text-primary group-hover:bg-primary/20">
-          <Zap className="h-5 w-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-0.5">Immune Recovery</p>
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-lg font-heading font-bold text-primary tabular-nums">{days}</span>
-            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body mr-1">d</span>
-            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(hours)}</span>
-            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">:</span>
-            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(minutes)}</span>
-            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">:</span>
-            <span className="text-lg font-heading font-bold text-primary tabular-nums">{pad(seconds)}</span>
-          </div>
-        </div>
-        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
-      </div>
-    </button>
+    />
   );
 }
 
@@ -642,30 +623,14 @@ function TumourResponseWidget({ userId }: { userId: number }) {
 
   const scanDates = Array.from(new Set(scanResults.map((s) => s.scanDate))).sort();
   const tumourLabels = Array.from(new Set(scanResults.map((s) => s.tumourLabel))).sort();
-
-  const sizeData = scanDates.map((date) => {
-    const scansOnDate = scanResults.filter((s) => s.scanDate === date);
-    const label = scansOnDate[0]?.scanLabel || date;
-    const shortLabel = label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Tx" : label.includes("Surveillance") ? "Latest" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
-    const row: any = { scan: shortLabel };
-    tumourLabels.forEach((tl) => {
-      const r = scansOnDate.find((s) => s.tumourLabel === tl);
-      if (r) {
-        row[tl + "_size"] = Math.round(r.sizeX * r.sizeY);
-        row[tl + "_suv"] = r.suvMax;
-      }
-    });
-    return row;
-  });
-
   const baselineScan = scanResults.filter((s) => s.scanDate === scanDates[0]);
   const latestScan = scanResults.filter((s) => s.scanDate === scanDates[scanDates.length - 1]);
-
   const tumourColors = ["hsl(158,32%,42%)", "hsl(34,55%,52%)", "hsl(200,50%,50%)"];
+  const maxBaselineArea = Math.max(...baselineScan.map(s => s.sizeX * s.sizeY));
 
-  const chartConfig: Record<string, { label: string; color: string }> = {};
-  tumourLabels.forEach((tl, i) => {
-    chartConfig[tl + "_size"] = { label: tl + " Size", color: tumourColors[i % tumourColors.length] };
+  const scanLabels = scanDates.map((date) => {
+    const label = scanResults.find(s => s.scanDate === date)?.scanLabel || date;
+    return label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Treatment" : label.includes("Surveillance") ? "Latest Scan" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
   });
 
   return (
@@ -675,70 +640,101 @@ function TumourResponseWidget({ userId }: { userId: number }) {
           <TrendingUp className="h-5 w-5 text-primary" /> Tumour Response
         </CardTitle>
         <CardDescription className="text-[hsl(25,18%,48%)] font-body text-xs">
-          Size and metabolic activity changes across your scans
+          Visual progression showing size reduction and metabolic activity across scans
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-          {tumourLabels.map((tl, i) => {
-            const baseline = baselineScan.find((s) => s.tumourLabel === tl);
-            const latest = latestScan.find((s) => s.tumourLabel === tl);
-            if (!baseline || !latest) return null;
-            const baselineArea = baseline.sizeX * baseline.sizeY;
-            const latestArea = latest.sizeX * latest.sizeY;
-            const sizeReduction = Math.round(((baselineArea - latestArea) / baselineArea) * 100);
-            const suvChange = baseline.suvMax && latest.suvMax ? Math.round(((baseline.suvMax - latest.suvMax) / baseline.suvMax) * 100) : null;
-            const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
+        {tumourLabels.map((tl, tumourIdx) => {
+          const baseline = baselineScan.find((s) => s.tumourLabel === tl);
+          const latest = latestScan.find((s) => s.tumourLabel === tl);
+          if (!baseline || !latest) return null;
+          const baselineArea = baseline.sizeX * baseline.sizeY;
+          const latestArea = latest.sizeX * latest.sizeY;
+          const sizeReduction = Math.round(((baselineArea - latestArea) / baselineArea) * 100);
+          const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
 
-            return (
-              <div key={tl} className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-xl p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tumourColors[i] }} />
-                  <p className="text-xs font-heading text-[hsl(25,30%,28%)]">{tl}</p>
+          return (
+            <div key={tl} className={`${tumourIdx > 0 ? "mt-5 pt-5 border-t border-[hsl(30,22%,90%)]" : ""}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tumourColors[tumourIdx] }} />
+                  <p className="text-sm font-heading text-[hsl(25,30%,28%)]">{tl}</p>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-[hsl(25,18%,48%)] font-body">Size</span>
-                    <div className="flex items-center gap-1">
-                      <ArrowDown className="h-3 w-3 text-primary" />
-                      <span className="text-sm font-heading font-bold text-primary">{sizeReduction}%</span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-[hsl(30,20%,88%)] rounded-full h-1.5">
-                    <div className="bg-primary rounded-full h-1.5 transition-all duration-1000" style={{ width: `${Math.min(100, sizeReduction)}%` }} />
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-[10px] text-[hsl(25,18%,48%)] font-body">Activity (SUV)</span>
-                    {isMetabolicComplete ? (
-                      <span className="text-[10px] font-body font-medium text-primary">Metabolic Complete</span>
-                    ) : suvChange !== null ? (
-                      <div className="flex items-center gap-1">
-                        <ArrowDown className="h-3 w-3 text-[hsl(34,55%,45%)]" />
-                        <span className="text-sm font-heading font-bold text-[hsl(34,55%,45%)]">{suvChange}%</span>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-[hsl(25,18%,48%)] font-body">—</span>
-                    )}
-                  </div>
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-base font-heading font-bold text-primary">{sizeReduction}% smaller</span>
+                  {isMetabolicComplete && (
+                    <span className="text-[10px] font-body font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">No Activity</span>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        <div className="h-56">
-          <ChartContainer config={chartConfig} className="h-full w-full">
-            <BarChart data={sizeData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(30,20%,88%)" />
-              <XAxis dataKey="scan" tick={{ fontSize: 11, fill: "hsl(25,18%,48%)" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(25,18%,48%)" }} label={{ value: "Size (mm²)", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "hsl(25,18%,48%)" } }} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              {tumourLabels.map((tl, i) => (
-                <Bar key={tl} dataKey={tl + "_size"} fill={tumourColors[i]} radius={[4, 4, 0, 0]} name={tl} />
-              ))}
-            </BarChart>
-          </ChartContainer>
-        </div>
+              <div className="flex items-end justify-between gap-2 px-2">
+                {scanDates.map((date, scanIdx) => {
+                  const scan = scanResults.find(s => s.scanDate === date && s.tumourLabel === tl);
+                  if (!scan) return null;
+                  const area = scan.sizeX * scan.sizeY;
+                  const sizePct = (area / maxBaselineArea);
+                  const circleSize = Math.max(16, Math.round(sizePct * 72));
+                  const maxSuv = Math.max(...scanResults.filter(s => s.tumourLabel === tl).map(s => s.suvMax || 0));
+                  const suvPct = maxSuv > 0 && scan.suvMax ? scan.suvMax / maxSuv : 0;
+                  const hasActivity = scan.suvMax && scan.suvMax > 0;
+
+                  return (
+                    <div key={date} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="relative flex items-center justify-center" style={{ height: 80 }}>
+                        <div
+                          className="rounded-full transition-all duration-1000 relative flex items-center justify-center"
+                          style={{
+                            width: circleSize,
+                            height: circleSize,
+                            backgroundColor: hasActivity
+                              ? `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(40 + suvPct * 30)}%, ${Math.round(50 + (1 - suvPct) * 20)}%, ${0.15 + suvPct * 0.25})`
+                              : "hsla(158,32%,42%,0.08)",
+                            border: `2px solid ${hasActivity
+                              ? `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(40 + suvPct * 30)}%, ${Math.round(45 + (1 - suvPct) * 15)}%, ${0.4 + suvPct * 0.3})`
+                              : "hsla(158,32%,42%,0.25)"}`,
+                          }}
+                        >
+                          {hasActivity && (
+                            <div
+                              className="absolute rounded-full animate-pulse"
+                              style={{
+                                width: circleSize * 0.4,
+                                height: circleSize * 0.4,
+                                backgroundColor: `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(50 + suvPct * 20)}%, ${Math.round(45 + (1 - suvPct) * 10)}%, ${0.3 + suvPct * 0.4})`,
+                              }}
+                            />
+                          )}
+                          {!hasActivity && (
+                            <Check className="h-3 w-3 text-primary/50" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-heading text-[hsl(25,30%,28%)]">{scanLabels[scanIdx]}</p>
+                        <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">{Math.round(area)} mm²</p>
+                        {scan.suvMax ? (
+                          <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">SUV {scan.suvMax}</p>
+                        ) : (
+                          <p className="text-[9px] text-primary font-body font-medium">Clear</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {scanDates.length > 1 && (
+                <div className="flex items-center justify-center mt-2 px-8">
+                  <div className="flex-1 h-px bg-gradient-to-r from-[hsl(0,50%,65%)]/30 via-[hsl(34,55%,52%)]/30 to-primary/30" />
+                  <ChevronRight className="h-3 w-3 text-primary/40 mx-1" />
+                  <span className="text-[9px] text-primary/60 font-body">improving</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );
