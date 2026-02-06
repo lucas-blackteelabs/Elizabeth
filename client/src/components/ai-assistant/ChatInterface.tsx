@@ -7,6 +7,13 @@ import { useChat } from "@/hooks/use-chat";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
+function formatBoldText(text: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="text-primary">{part}</strong> : part
+  );
+}
+
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
@@ -24,15 +31,34 @@ function ChatBubble({ role, content }: ChatBubbleProps) {
       )}
     >
       {role === "assistant" ? (
-        <div dangerouslySetInnerHTML={{ 
-          __html: content.replace(/\n/g, '<br>').replace(
-            /\*\*(.*?)\*\*/g, 
-            '<strong class="text-primary">$1</strong>'
-          ).replace(
-            /•\s(.*?)(?=\n|$)/g,
-            '• <span>$1</span><br>'
-          ) 
-        }} />
+        <div className="space-y-1">
+          {content.split('\n').map((line, i) => {
+            const trimmed = line.trim();
+            if (!trimmed) return <div key={i} className="h-1" />;
+            if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+              const text = trimmed.replace(/^[-•]\s*/, '');
+              return (
+                <div key={i} className="flex items-start gap-1.5 ml-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/50 mt-2 flex-shrink-0" />
+                  <span>{formatBoldText(text)}</span>
+                </div>
+              );
+            }
+            if (/^\d+\.\s/.test(trimmed)) {
+              return (
+                <div key={i} className="flex items-start gap-1.5 ml-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/50 mt-2 flex-shrink-0" />
+                  <span>{formatBoldText(trimmed.replace(/^\d+\.\s*/, ''))}</span>
+                </div>
+              );
+            }
+            if (trimmed.startsWith('#')) {
+              const text = trimmed.replace(/^#+\s*/, '');
+              return <p key={i} className="font-heading text-primary text-sm mt-2 mb-1">{text}</p>;
+            }
+            return <p key={i}>{formatBoldText(trimmed)}</p>;
+          })}
+        </div>
       ) : (
         <p>{content}</p>
       )}
@@ -120,7 +146,7 @@ export default function ChatInterface() {
         <Separator className="my-3 bg-[hsl(30,25%,87%)]" />
         
         <div className="text-xs text-[hsl(28,15%,50%)] flex justify-between items-center font-body">
-          <span>Powered by OpenAI</span>
+          <span>Powered by Google Gemini</span>
           <span className="flex items-center">
             <ShieldCheck className="h-3 w-3 mr-1" /> HIPAA Compliant
           </span>

@@ -4,12 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { sendMessage as sendMessageToApi } from "@/lib/openai";
+import { useUser } from "@/contexts/UserContext";
+
+function formatBoldText(text: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="text-primary">{part}</strong> : part
+  );
+}
 
 export default function QuickChat() {
   const [message, setMessage] = useState("");
   const [conversation, setConversation] = useState<{role: "user" | "assistant", content: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,21 +29,13 @@ export default function QuickChat() {
     const userMessage = message;
     setMessage("");
     
-    // Add user message to conversation
     setConversation(prev => [...prev, { role: "user", content: userMessage }]);
     
     setIsLoading(true);
     
     try {
-      // In a real implementation, this would call the OpenAI API
-      // For now, we'll simulate a response since we don't have an active OpenAI API key
-      
-      setTimeout(() => {
-        const aiResponse = generateSampleResponse(userMessage);
-        setConversation(prev => [...prev, { role: "assistant", content: aiResponse }]);
-        setIsLoading(false);
-      }, 1000);
-      
+      const response = await sendMessageToApi(userMessage, user?.id);
+      setConversation(prev => [...prev, { role: "assistant", content: response.content }]);
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
@@ -41,54 +43,28 @@ export default function QuickChat() {
         description: "Failed to get a response. Please try again.",
         variant: "destructive",
       });
+      setConversation(prev => [...prev, { role: "assistant", content: "I'm having trouble connecting right now. Please try again." }]);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // This function generates sample responses based on user input keywords
-  // In a real implementation, this would be replaced with actual OpenAI API calls
-  const generateSampleResponse = (message: string) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return "Hello! I'm your AI health assistant. How can I support your healing journey today?";
-    }
-    else if (lowerMessage.includes("meditation") || lowerMessage.includes("stress")) {
-      return "Meditation can be very helpful for cancer patients. Try the 4-7-8 breathing technique: breathe in for 4 seconds, hold for 7, and exhale for 8. This activates your parasympathetic nervous system and helps reduce stress.";
-    }
-    else if (lowerMessage.includes("food") || lowerMessage.includes("diet") || lowerMessage.includes("nutrition")) {
-      return "A plant-based, anti-inflammatory diet is often recommended for cancer patients. Try incorporating more colorful vegetables, berries, leafy greens, and omega-3 rich foods like flaxseeds. Would you like some specific recipe suggestions?";
-    }
-    else if (lowerMessage.includes("exercise") || lowerMessage.includes("movement")) {
-      return "Gentle movement like walking, swimming, or yoga can be beneficial during cancer treatment. Start with just 5-10 minutes daily and gradually increase as your energy allows. Always consult your healthcare provider about what's appropriate for your specific situation.";
-    }
-    else if (lowerMessage.includes("supplement")) {
-      return "Some supplements like vitamin D, omega-3, and certain mushroom extracts may support immune function, but it's crucial to discuss any supplements with your oncologist as some can interfere with treatments. Would you like information about specific supplements?";
-    }
-    else if (lowerMessage.includes("sleep")) {
-      return "Quality sleep is essential for healing. Try maintaining a consistent sleep schedule, keeping your bedroom cool and dark, and avoiding screens before bed. Magnesium glycinate and gentle stretching before bedtime can also help improve sleep quality.";
-    }
-    else {
-      return "That's an interesting question about your health journey. The nine factors from Radical Remission research include nutrition, stress management, emotional healing, spiritual connection, exercise, and social support. Which area would you like to explore more deeply?";
-    }
-  };
-
   return (
-    <Card className="w-full shadow-md">
+    <Card className="w-full shadow-md bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
       <CardHeader className="pb-3">
-        <CardTitle className="text-xl flex items-center gap-2">
-          <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+        <CardTitle className="text-xl flex items-center gap-2 font-heading text-[hsl(34,55%,45%)]">
+          <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
             AI
           </span>
           Health Assistant
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="font-body text-[hsl(25,18%,48%)]">
           Ask me about nutrition, stress management, supplements and more
         </CardDescription>
       </CardHeader>
       <CardContent className="h-40 overflow-y-auto space-y-3 text-sm">
         {conversation.length === 0 ? (
-          <div className="text-muted-foreground text-center my-4">
+          <div className="text-[hsl(25,18%,48%)] text-center my-4 font-body">
             Ask a question to get started
           </div>
         ) : (
@@ -98,22 +74,40 @@ export default function QuickChat() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div 
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                className={`max-w-[80%] rounded-lg px-3 py-2 font-body ${
                   msg.role === "user" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted"
+                    ? "bg-primary/30 border border-primary/40 text-[hsl(25,30%,22%)]" 
+                    : "bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)]"
                 }`}
               >
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <div className="space-y-1">
+                    {msg.content.split('\n').map((line, j) => {
+                      const trimmed = line.trim();
+                      if (!trimmed) return <div key={j} className="h-1" />;
+                      if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                        return (
+                          <div key={j} className="flex items-start gap-1.5 ml-1">
+                            <span className="w-1 h-1 rounded-full bg-primary/50 mt-2 flex-shrink-0" />
+                            <span>{formatBoldText(trimmed.replace(/^[-•]\s*/, ''))}</span>
+                          </div>
+                        );
+                      }
+                      return <p key={j}>{formatBoldText(trimmed)}</p>;
+                    })}
+                  </div>
+                ) : (
+                  msg.content
+                )}
               </div>
             </div>
           ))
         )}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg px-3 py-2 bg-muted flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Thinking...</span>
+            <div className="max-w-[80%] rounded-lg px-3 py-2 bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] flex items-center gap-2 font-body">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-[hsl(25,18%,48%)]">Thinking...</span>
             </div>
           </div>
         )}
@@ -125,7 +119,7 @@ export default function QuickChat() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 bg-[hsl(30,30%,95%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body"
           />
           <Button type="submit" size="icon" disabled={isLoading || !message.trim()}>
             {isLoading ? (
