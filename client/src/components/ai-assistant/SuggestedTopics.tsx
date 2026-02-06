@@ -13,15 +13,15 @@ function SuggestedTopic({ icon, title, description, onClick }: SuggestedTopicPro
   return (
     <Button
       variant="outline"
-      className="bg-white p-4 rounded-xl shadow-sm text-left hover:shadow-md transition-shadow h-auto"
+      className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,22%)] p-4 rounded text-left hover:border-gold/30 hover:bg-[hsl(30,10%,13%)] transition-all h-auto"
       onClick={onClick}
     >
       <div className="flex flex-col items-start gap-2">
-        <div className="text-primary mb-2">
+        <div className="text-gold mb-2">
           {icon}
         </div>
-        <h3 className="font-medium mb-1">{title}</h3>
-        <p className="text-sm text-gray-600">{description}</p>
+        <h3 className="font-heading text-sm text-[hsl(40,20%,88%)] mb-1">{title}</h3>
+        <p className="text-sm text-[hsl(35,10%,50%)] font-body">{description}</p>
       </div>
     </Button>
   );
@@ -49,7 +49,7 @@ export default function SuggestedTopics({ onSelectTopic }: SuggestedTopicsProps)
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Suggested Topics</h2>
+      <h2 className="text-lg font-heading text-gold tracking-wide mb-4">Suggested Topics</h2>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {chatSuggestions.map((suggestion, index) => (

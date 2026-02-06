@@ -25,52 +25,35 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  // Extract page title from location
-  const getPageTitle = () => {
-    const path = location.split("/")[1];
-    if (!path) return "Dashboard";
-    
-    // Convert kebab-case to Title Case
-    return path
-      .split("-")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar component */}
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={closeSidebarIfMobile} 
         isMobile={isMobile} 
       />
 
-      {/* Main content area */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 pb-16">
-        {/* Mobile header */}
+      <main className="flex-1 overflow-y-auto pb-16">
         {isMobile && (
-          <div className="flex items-center justify-between bg-white p-4 shadow-sm sticky top-0 z-20">
+          <div className="flex items-center justify-between bg-[hsl(30,12%,9%)] p-4 border-b border-[hsl(30,8%,18%)] sticky top-0 z-20">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={toggleSidebar}
-              className="text-gray-600"
+              className="text-[hsl(35,15%,65%)] hover:text-gold"
             >
               <Menu className="h-6 w-6" />
             </Button>
-            <h1 className="text-lg font-bold text-gray-800">Elizabeth</h1>
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-sm font-semibold text-gray-600">L</span>
+            <h1 className="text-lg font-heading font-bold text-gold tracking-wider">Elizabeth</h1>
+            <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
+              <span className="text-sm font-heading font-semibold text-gold">L</span>
             </div>
           </div>
         )}
 
-        {/* Page content */}
         {children}
       </main>
 
-      {/* Disclaimer footer */}
       <Disclaimer />
     </div>
   );

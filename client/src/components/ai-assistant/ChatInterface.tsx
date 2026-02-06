@@ -17,17 +17,17 @@ function ChatBubble({ role, content }: ChatBubbleProps) {
   return (
     <div 
       className={cn(
-        "max-w-[80%] mb-3 p-3 rounded-lg",
+        "max-w-[80%] mb-3 p-3 rounded-lg font-body",
         isUser 
-          ? "bg-primary text-white ml-auto rounded-br-sm" 
-          : "bg-gray-100 text-gray-800 mr-auto rounded-bl-sm"
+          ? "bg-primary/30 border border-primary/40 text-[hsl(40,20%,88%)] ml-auto rounded-br-sm" 
+          : "bg-[hsl(30,8%,15%)] border border-[hsl(30,8%,22%)] text-[hsl(40,20%,85%)] mr-auto rounded-bl-sm"
       )}
     >
       {role === "assistant" ? (
         <div dangerouslySetInnerHTML={{ 
           __html: content.replace(/\n/g, '<br>').replace(
             /\*\*(.*?)\*\*/g, 
-            '<strong>$1</strong>'
+            '<strong class="text-gold">$1</strong>'
           ).replace(
             /•\s(.*?)(?=\n|$)/g,
             '• <span>$1</span><br>'
@@ -45,7 +45,6 @@ export default function ChatInterface() {
   const [inputValue, setInputValue] = useState("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -61,20 +60,20 @@ export default function ChatInterface() {
   };
   
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-primary/10 text-primary p-2 rounded-full">
+            <div className="bg-gold/10 text-gold p-2 rounded-full border border-gold/20">
               <Bot className="h-5 w-5" />
             </div>
-            <CardTitle>Elizabeth AI</CardTitle>
+            <CardTitle className="font-heading text-gold tracking-wide">Elizabeth AI</CardTitle>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-600">
+        <div className="mb-4 p-4 bg-[hsl(30,8%,13%)] rounded border border-[hsl(30,8%,20%)]">
+          <p className="text-sm text-[hsl(35,10%,55%)] font-body">
             I'm here to provide information and support for your cancer journey. I can help with questions about nutrition, exercise, supplements, and emotional wellbeing. Remember that my guidance complements but doesn't replace medical advice from your healthcare team.
           </p>
         </div>
@@ -91,10 +90,10 @@ export default function ChatInterface() {
             />
           ))}
           {isLoading && (
-            <div className="flex space-x-2 p-3 max-w-[80%] bg-gray-100 rounded-lg mr-auto">
-              <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
+            <div className="flex space-x-2 p-3 max-w-[80%] bg-[hsl(30,8%,15%)] border border-[hsl(30,8%,22%)] rounded-lg mr-auto">
+              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 rounded-full bg-gold/50 animate-bounce"></div>
             </div>
           )}
         </div>
@@ -104,23 +103,23 @@ export default function ChatInterface() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your question here..."
-            className="pr-12"
+            className="pr-12 bg-[hsl(30,8%,13%)] border-[hsl(30,8%,22%)] text-[hsl(40,20%,88%)] placeholder:text-[hsl(35,10%,40%)] font-body focus:border-gold/40"
             disabled={isLoading}
           />
           <Button 
             type="submit" 
             size="icon" 
             variant="ghost" 
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gold hover:text-gold/80"
             disabled={isLoading}
           >
             <Layers className="h-5 w-5" />
           </Button>
         </form>
         
-        <Separator className="my-3" />
+        <Separator className="my-3 bg-[hsl(30,8%,20%)]" />
         
-        <div className="text-xs text-gray-500 flex justify-between items-center">
+        <div className="text-xs text-[hsl(35,10%,45%)] flex justify-between items-center font-body">
           <span>Powered by OpenAI</span>
           <span className="flex items-center">
             <ShieldCheck className="h-3 w-3 mr-1" /> HIPAA Compliant

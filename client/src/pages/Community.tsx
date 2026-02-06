@@ -4,24 +4,23 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Users, BookOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Placeholder component for Community page
 export default function Community() {
   return (
-    <div className="p-6">
+    <div className="p-6 lg:p-8">
       <Heading 
         title="Community"
         description="Connect with others on similar healing journeys"
       />
       
       <Tabs defaultValue="forums">
-        <TabsList className="mb-6">
-          <TabsTrigger value="forums">
+        <TabsList className="mb-6 bg-[hsl(30,8%,13%)] border border-[hsl(30,8%,20%)]">
+          <TabsTrigger value="forums" className="data-[state=active]:bg-primary/20 data-[state=active]:text-gold font-body">
             <MessageSquare className="h-4 w-4 mr-2" /> Forums
           </TabsTrigger>
-          <TabsTrigger value="mentors">
+          <TabsTrigger value="mentors" className="data-[state=active]:bg-primary/20 data-[state=active]:text-gold font-body">
             <Users className="h-4 w-4 mr-2" /> Mentor Matching
           </TabsTrigger>
-          <TabsTrigger value="resources">
+          <TabsTrigger value="resources" className="data-[state=active]:bg-primary/20 data-[state=active]:text-gold font-body">
             <BookOpen className="h-4 w-4 mr-2" /> Shared Resources
           </TabsTrigger>
         </TabsList>
@@ -36,15 +35,15 @@ export default function Community() {
               {title: "Lymphoma", members: 176, posts: 654},
               {title: "General Discussion", members: 452, posts: 2134}
             ].map((forum, index) => (
-              <Card key={index}>
+              <Card key={index} className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)] hover:border-gold/20 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle>{forum.title}</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="font-heading text-[hsl(40,20%,88%)]">{forum.title}</CardTitle>
+                  <CardDescription className="text-[hsl(35,10%,50%)] font-body">
                     {forum.members} members · {forum.posts} posts
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">Join Discussion</Button>
+                  <Button className="w-full bg-primary/30 border border-primary/40 text-gold hover:bg-primary/40 font-body">Join Discussion</Button>
                 </CardContent>
               </Card>
             ))}
@@ -52,35 +51,35 @@ export default function Community() {
         </TabsContent>
         
         <TabsContent value="mentors">
-          <Card>
+          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
             <CardHeader>
-              <CardTitle>Mentor Matching</CardTitle>
-              <CardDescription>
+              <CardTitle className="font-heading text-gold">Mentor Matching</CardTitle>
+              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
                 Connect with someone who has been through a similar journey
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 text-center py-12">
+              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
                 Our mentor matching system is coming soon
               </p>
-              <Button className="mx-auto block">Join Waitlist</Button>
+              <Button className="mx-auto block bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading">Join Waitlist</Button>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="resources">
-          <Card>
+          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
             <CardHeader>
-              <CardTitle>Community Resources</CardTitle>
-              <CardDescription>
+              <CardTitle className="font-heading text-gold">Community Resources</CardTitle>
+              <CardDescription className="text-[hsl(35,10%,50%)] font-body">
                 Resources shared by community members
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 text-center py-12">
+              <p className="text-[hsl(35,10%,45%)] text-center py-12 font-body">
                 No resources have been shared yet
               </p>
-              <Button className="mx-auto block">Share a Resource</Button>
+              <Button className="mx-auto block bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading">Share a Resource</Button>
             </CardContent>
           </Card>
         </TabsContent>

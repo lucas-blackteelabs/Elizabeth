@@ -12,7 +12,7 @@ export default function AIAssistant() {
   };
   
   return (
-    <div className="p-6">
+    <div className="p-6 lg:p-8">
       <Heading 
         title="AI Health Assistant"
         description="Ask questions about your health, treatment, and wellness journey"

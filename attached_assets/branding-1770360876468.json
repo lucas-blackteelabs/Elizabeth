@@ -1,0 +1,120 @@
+{
+  "colorScheme": "dark",
+  "fonts": [
+    {
+      "family": "Lora",
+      "role": "body"
+    },
+    {
+      "family": "Cinzel",
+      "role": "heading"
+    }
+  ],
+  "colors": {
+    "primary": "#0E4E2E",
+    "accent": "#E8B430",
+    "background": "#15120E",
+    "textPrimary": "#15120E",
+    "link": "#C9C4B6"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Lora",
+      "heading": "Cinzel"
+    },
+    "fontStacks": {
+      "heading": [
+        "Cinzel",
+        "serif"
+      ],
+      "body": [
+        "Lora",
+        "serif"
+      ],
+      "paragraph": [
+        "Lora",
+        "serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "96px",
+      "h2": "48px",
+      "body": "20px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "0px"
+  },
+  "components": {
+    "buttonPrimary": {
+      "background": "#E8B430",
+      "textColor": "#15120E",
+      "borderRadius": "2px",
+      "borderRadiusCorners": {
+        "topLeft": "2px",
+        "topRight": "2px",
+        "bottomRight": "2px",
+        "bottomLeft": "2px"
+      },
+      "shadow": "rgba(232, 180, 48, 0.3) 0px 0px 30px 0px"
+    },
+    "buttonSecondary": {
+      "background": "#15120E",
+      "textColor": "#F6F4EE",
+      "borderColor": "#244233",
+      "borderRadius": "0px",
+      "borderRadiusCorners": {
+        "topLeft": "0px",
+        "topRight": "0px",
+        "bottomRight": "0px",
+        "bottomLeft": "0px"
+      },
+      "shadow": "none"
+    }
+  },
+  "images": {
+    "logo": null,
+    "favicon": "https://theinvitational.lovable.app/apple-touch-icon.png",
+    "ogImage": "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/431981cb-aef4-498c-b780-afd76ebd5fbd/id-preview-c99afd65--4aa2ab81-012b-46e7-9666-8d7fed84aecc.lovable.app-1770083132472.png"
+  },
+  "__framework_hints": [],
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Register Now",
+      "reasoning": "The 'Register Now' button is the primary CTA due to its vibrant orange color (#E8B430) and action-oriented text, making it stand out as the main call-to-action."
+    },
+    "secondary": {
+      "index": 1,
+      "text": "The FieldMeet the 8 competitors",
+      "reasoning": "The 'The FieldMeet the 8 competitors' button is selected as secondary because it has a different background color (#15120E) and serves as a supporting action with informative text."
+    },
+    "confidence": 0.95
+  },
+  "personality": {
+    "tone": "professional",
+    "energy": "medium",
+    "targetAudience": "golf enthusiasts and event attendees"
+  },
+  "designSystem": {
+    "framework": "tailwind",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.95,
+    "colors": 0.9,
+    "overall": 0.925
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": false,
+      "llmSucceeded": false,
+      "finalSource": "none"
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

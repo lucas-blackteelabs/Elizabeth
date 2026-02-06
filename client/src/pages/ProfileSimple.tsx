@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
-import Layout from "@/components/Layout";
 
 const formSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters long" }),
@@ -44,7 +43,6 @@ export default function ProfileSimple() {
     try {
       setIsLoading(true);
       
-      // For demonstration, just update the user in context
       setUser({
         ...user,
         displayName: values.displayName,
@@ -71,57 +69,107 @@ export default function ProfileSimple() {
     }
   }
 
+  const inputClasses = "bg-[hsl(30,8%,13%)] border-[hsl(30,8%,22%)] text-[hsl(40,20%,88%)] placeholder:text-[hsl(35,10%,40%)] font-body focus:border-gold/40";
+
   return (
-    <Layout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6">My Profile</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center">
-                  <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary mb-4">
-                    {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
+    <div className="p-6 lg:p-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-heading font-bold text-gold tracking-wide">My Profile</h1>
+        <div className="mt-3 h-px bg-gradient-to-r from-gold/40 via-primary/30 to-transparent" />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="col-span-1">
+          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+            <CardHeader>
+              <CardTitle className="font-heading text-gold tracking-wide">Profile Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center">
+                <div className="h-24 w-24 rounded-full bg-primary/20 border-2 border-gold/30 flex items-center justify-center text-2xl font-heading font-bold text-gold mb-4">
+                  {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
+                </div>
+                <h3 className="text-xl font-heading text-[hsl(40,20%,88%)]">{user?.displayName || 'Loading...'}</h3>
+                <p className="text-[hsl(35,10%,50%)] font-body">{user?.email || 'Loading...'}</p>
+                
+                <div className="w-full mt-4 space-y-2">
+                  <div className="flex justify-between py-2 border-b border-[hsl(30,8%,18%)]">
+                    <span className="text-sm text-[hsl(35,10%,50%)] font-body">Cancer Type:</span>
+                    <span className="font-body font-medium text-[hsl(40,20%,88%)]">{user?.cancerType || "Not specified"}</span>
                   </div>
-                  <h3 className="text-xl font-semibold">{user?.displayName || 'Loading...'}</h3>
-                  <p className="text-muted-foreground">{user?.email || 'Loading...'}</p>
-                  
-                  <div className="w-full mt-4 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Cancer Type:</span>
-                      <span className="font-medium">{user?.cancerType || "Not specified"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Cancer Stage:</span>
-                      <span className="font-medium">{user?.cancerStage || "Not specified"}</span>
-                    </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-[hsl(35,10%,50%)] font-body">Cancer Stage:</span>
+                    <span className="font-body font-medium text-[hsl(40,20%,88%)]">{user?.cancerStage || "Not specified"}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="col-span-1 md:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Edit Profile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="col-span-1 md:col-span-2">
+          <Card className="bg-[hsl(30,10%,11%)] border-[hsl(30,8%,20%)]">
+            <CardHeader>
+              <CardTitle className="font-heading text-gold tracking-wide">Edit Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="displayName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Display Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your name" {...field} className={inputClasses} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your email" {...field} className={inputClasses} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="displayName"
+                      name="cancerType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Display Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your name" {...field} />
-                          </FormControl>
+                          <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Type</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className={inputClasses}>
+                                <SelectValue placeholder="Select cancer type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-[hsl(30,10%,13%)] border-[hsl(30,8%,22%)]">
+                              <SelectItem value="breast">Breast Cancer</SelectItem>
+                              <SelectItem value="lung">Lung Cancer</SelectItem>
+                              <SelectItem value="colon">Colorectal Cancer</SelectItem>
+                              <SelectItem value="prostate">Prostate Cancer</SelectItem>
+                              <SelectItem value="melanoma">Melanoma</SelectItem>
+                              <SelectItem value="leukemia">Leukemia</SelectItem>
+                              <SelectItem value="lymphoma">Lymphoma</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -129,123 +177,76 @@ export default function ProfileSimple() {
                     
                     <FormField
                       control={form.control}
-                      name="email"
+                      name="cancerStage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your email" {...field} />
-                          </FormControl>
+                          <FormLabel className="text-[hsl(40,20%,85%)] font-body">Cancer Stage</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className={inputClasses}>
+                                <SelectValue placeholder="Select stage" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-[hsl(30,10%,13%)] border-[hsl(30,8%,22%)]">
+                              <SelectItem value="stage1">Stage I</SelectItem>
+                              <SelectItem value="stage2">Stage II</SelectItem>
+                              <SelectItem value="stage3">Stage III</SelectItem>
+                              <SelectItem value="stage4">Stage IV</SelectItem>
+                              <SelectItem value="remission">Remission</SelectItem>
+                              <SelectItem value="unknown">Unknown</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="cancerType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cancer Type</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select cancer type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="breast">Breast Cancer</SelectItem>
-                                <SelectItem value="lung">Lung Cancer</SelectItem>
-                                <SelectItem value="colon">Colorectal Cancer</SelectItem>
-                                <SelectItem value="prostate">Prostate Cancer</SelectItem>
-                                <SelectItem value="melanoma">Melanoma</SelectItem>
-                                <SelectItem value="leukemia">Leukemia</SelectItem>
-                                <SelectItem value="lymphoma">Lymphoma</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="cancerStage"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cancer Stage</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select stage" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="stage1">Stage I</SelectItem>
-                                <SelectItem value="stage2">Stage II</SelectItem>
-                                <SelectItem value="stage3">Stage III</SelectItem>
-                                <SelectItem value="stage4">Stage IV</SelectItem>
-                                <SelectItem value="remission">Remission</SelectItem>
-                                <SelectItem value="unknown">Unknown</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="diagnosis_date"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Diagnosis Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="bio"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>About Me</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Tell others about yourself..." 
-                              className="resize-none" 
-                              rows={4}
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </div>
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="diagnosis_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">Diagnosis Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className={inputClasses} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[hsl(40,20%,85%)] font-body">About Me</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Tell others about yourself..." 
+                            className={`${inputClasses} resize-none`}
+                            rows={4}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full bg-gold text-[hsl(30,15%,7%)] hover:bg-gold/90 font-heading tracking-wide glow-gold" disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }

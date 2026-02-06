@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, Settings, HelpCircle, LogOut, UserRound } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Logout Button Component
 function LogoutButton() {
   const { logout } = useUser();
   const { toast } = useToast();
@@ -24,7 +23,7 @@ function LogoutButton() {
   };
   
   return (
-    <button onClick={handleLogout} className="hover:text-primary">
+    <button onClick={handleLogout} className="hover:text-gold transition-colors">
       <LogOut className="h-5 w-5" />
     </button>
   );
@@ -53,9 +52,9 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
     { href: "/calendar", label: "Calendar", icon: <Calendar className="w-5 h-5" /> },
   ];
 
-  // Determine sidebar visibility class based on mobile and open state
   const sidebarClasses = cn(
-    "w-64 h-full bg-white shadow-md flex-shrink-0 z-30 transition-all duration-300",
+    "w-64 h-full flex-shrink-0 z-30 transition-all duration-300",
+    "bg-[hsl(30,12%,9%)] border-r border-[hsl(30,8%,18%)]",
     {
       "fixed translate-x-0": isMobile && isOpen,
       "fixed -translate-x-full": isMobile && !isOpen,
@@ -65,76 +64,74 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop for mobile */}
       {isMobile && isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20" 
+          className="fixed inset-0 bg-black/60 z-20 backdrop-blur-sm" 
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside className={sidebarClasses}>
-        {/* Logo and app name */}
-        <div className="p-5 border-b flex items-center space-x-3">
-          <div className="bg-primary text-white p-2 rounded-lg">
+        <div className="p-5 border-b border-[hsl(30,8%,18%)] flex items-center space-x-3">
+          <div className="bg-gold text-[hsl(30,15%,7%)] p-2 rounded">
             <Heart className="h-5 w-5" />
           </div>
-          <h1 className="text-xl font-bold text-gray-800">Elizabeth</h1>
+          <h1 className="text-xl font-heading font-bold text-gold tracking-wider">Elizabeth</h1>
         </div>
         
-        {/* User profile */}
-        <div className="p-3">
+        <div className="p-3 overflow-y-auto" style={{ height: 'calc(100% - 130px)' }}>
           <Link href="/profile" onClick={onClose}>
-            <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-5 cursor-pointer hover:bg-gray-200 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+            <div className="flex items-center space-x-3 p-3 bg-[hsl(30,8%,13%)] rounded mb-5 cursor-pointer hover:bg-[hsl(30,8%,16%)] transition-colors border border-[hsl(30,8%,18%)]">
+              <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-gold font-heading font-semibold">
                 {user?.displayName?.charAt(0) || 'U'}
               </div>
               <div>
-                <p className="font-medium text-gray-800">{user?.displayName || 'User'}</p>
-                <p className="text-xs text-gray-500">
+                <p className="font-medium text-[hsl(40,20%,90%)]">{user?.displayName || 'User'}</p>
+                <p className="text-xs text-[hsl(35,10%,50%)]">
                   {user?.cancerType || 'Not specified'} - {user?.cancerStage || 'Not specified'}
                 </p>
               </div>
             </div>
           </Link>
           
-          {/* Navigation links */}
           <nav className="mt-3 space-y-1">
-            {sidebarLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center space-x-3 p-3 rounded-lg transition-colors",
-                  location === link.href || (link.href === "/dashboard" && location === "/")
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                {link.icon}
-                <span>{link.label}</span>
-              </Link>
-            ))}
+            {sidebarLinks.map((link) => {
+              const isActive = location === link.href || (link.href === "/dashboard" && location === "/");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center space-x-3 p-3 rounded transition-all duration-200",
+                    isActive
+                      ? "bg-primary/20 text-gold border-l-2 border-gold"
+                      : "text-[hsl(35,15%,65%)] hover:bg-[hsl(30,8%,14%)] hover:text-[hsl(40,20%,85%)]"
+                  )}
+                >
+                  {link.icon}
+                  <span className="font-body text-sm">{link.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
         
-        {/* Footer icons */}
-        <div className="absolute bottom-0 w-full p-3 border-t">
-          <div className="flex items-center justify-between text-gray-600 text-sm px-3">
-            <Link href="/profile" onClick={onClose} className="hover:text-primary">
+        <div className="absolute bottom-0 w-full p-3 border-t border-[hsl(30,8%,18%)]">
+          <div className="flex items-center justify-between text-[hsl(35,10%,50%)] text-sm px-3">
+            <Link href="/profile" onClick={onClose} className="hover:text-gold transition-colors">
               <UserRound className="h-5 w-5" />
             </Link>
-            <button className="hover:text-primary">
+            <button className="hover:text-gold transition-colors">
               <Settings className="h-5 w-5" />
             </button>
-            <button className="hover:text-primary">
+            <button className="hover:text-gold transition-colors">
               <HelpCircle className="h-5 w-5" />
             </button>
             <button 
               onClick={() => window.location.href = '/login'}
-              className="hover:text-primary">
+              className="hover:text-gold transition-colors">
               <LogOut className="h-5 w-5" />
             </button>
           </div>
