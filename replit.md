@@ -4,6 +4,11 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Fixed authentication system
+  - Login credentials: username "Liz", password "Cookie"
+  - Persistent login with 90-day JWT + cookie session
+  - First-time users can register via /register
+  - Migrated old "." account to new "Liz" credentials
 - **Feb 2026**: Compact clickable dashboard widgets with expand-to-detail UX
   - Top stats (Scan Countdown, Treatment Journey, Immune Recovery, Healing Streak) are compact tiles
   - Clicking a compact tile opens a dialog with full detail, charts, and milestones
@@ -78,5 +83,5 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
 ### Notes
 - AI Assistant uses Google Gemini API (GOOGLE_API_KEY secret)
 - AI features: Chat assistant, personalised meal plans, meal suggestions
-- App auto-logs in as user "." / "." (Liz account)
+- Login: username "Liz", password "Cookie" (90-day persistent session)
 - Google Fonts loaded via CDN in index.html
