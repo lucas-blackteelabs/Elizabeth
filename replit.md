@@ -4,6 +4,21 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Meal Planner overhaul (DateNight-style)
+  - AI-generated structured meal cards with photos, recipes, ingredients, instructions
+  - 10 beautiful food category images (breakfast bowl, smoothie, salad, soup, fish, grain bowl, snack, tea, chicken, berry bowl)
+  - Discover tab: AI generates 6 meals with filter by type (breakfast, lunch, dinner, snack, smoothie, tea)
+  - Saved tab: shortlist recipes with pin/unpin (localStorage persistence)
+  - Shopping tab: auto-generated categorised shopping list (produce, proteins, pantry, spices)
+  - Dismiss functionality with smooth animations (dismissed meals don't reappear)
+  - Click-to-detail dialog with full recipe, healing benefits, ingredients, step-by-step instructions
+  - "More breakfast/lunch/dinner/snack" buttons to load additional recipes
+  - Tags with color-coded badges (anti-inflammatory, liver-support, omega-3, etc.)
+  - New API endpoint: /api/ai/meal-ideas (structured JSON from Gemini)
+- **Feb 2026**: Design system modernisation
+  - All hardcoded HSL color values replaced with CSS variable-based Tailwind classes
+  - text-muted-foreground, text-foreground, text-accent, bg-white, bg-muted, border-border
+  - Consistent theming across 20+ component/page files
 - **Feb 2026**: Fixed authentication system
   - Login credentials: username "Liz", password "Cookie"
   - Persistent login with 90-day JWT + cookie session

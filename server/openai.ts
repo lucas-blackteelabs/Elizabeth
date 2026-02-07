@@ -376,6 +376,144 @@ ${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone w
   }
 }
 
+export interface MealCard {
+  name: string;
+  mealType: string;
+  description: string;
+  prepTime: string;
+  servings: string;
+  ingredients: string[];
+  instructions: string[];
+  healingBenefits: string;
+  tags: string[];
+  imageCategory: string;
+}
+
+export interface MealSuggestions {
+  meals: MealCard[];
+  shoppingList: {
+    produce: string[];
+    proteins: string[];
+    pantry: string[];
+    spices: string[];
+  };
+}
+
+export async function getMealIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", mealTypes: string = "all"): Promise<MealSuggestions> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const dietaryInfo = dietaryPreferences
+      ? `\n\nDIETARY PREFERENCES:\n${dietaryPreferences}\n\nFactor these preferences into all meal suggestions. Focus on meals that align with these dietary needs.`
+      : "";
+
+    const imageCategories = [
+      "breakfast-bowl", "smoothie", "salad", "soup", "fish", 
+      "grain-bowl", "snack", "tea", "chicken", "berry-bowl"
+    ];
+
+    let mealTypeInstruction: string;
+    if (mealTypes === "breakfast") {
+      mealTypeInstruction = "Generate exactly 4 BREAKFAST recipes (morning meals, smoothies, bowls).";
+    } else if (mealTypes === "lunch") {
+      mealTypeInstruction = "Generate exactly 4 LUNCH recipes (salads, bowls, soups, wraps).";
+    } else if (mealTypes === "dinner") {
+      mealTypeInstruction = "Generate exactly 4 DINNER recipes (main courses with protein and vegetables).";
+    } else if (mealTypes === "snack") {
+      mealTypeInstruction = "Generate exactly 4 SNACK recipes (healthy bites, energy balls, dips, small plates).";
+    } else {
+      mealTypeInstruction = "Generate exactly 6 meals: 1 breakfast, 1 morning snack or smoothie, 1 lunch, 1 afternoon snack, 1 dinner, and 1 evening tea or elixir. Vary the meal types.";
+    }
+
+    const prompt = `You are Elizabeth, a nutrition-focused health companion for cancer patients following Radical Remission principles.
+
+${cancerFightingNutrition}
+
+${userContext}${dietaryInfo}
+
+${mealTypeInstruction}
+
+Each recipe MUST be:
+- Anti-inflammatory and cancer-fighting
+- Liver-supportive (patient had immunotherapy hepatotoxicity)
+- Immune-boosting
+- Practical, delicious, and achievable at home
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks). Return this exact structure:
+
+{
+  "meals": [
+    {
+      "name": "Recipe Name",
+      "mealType": "one of: breakfast, lunch, dinner, snack, smoothie, tea",
+      "description": "1-2 sentence appetising description of the dish",
+      "prepTime": "e.g. 15 mins, 30 mins",
+      "servings": "e.g. 2 serves",
+      "ingredients": ["200g salmon fillet", "1 cup quinoa", "2 cups spinach"],
+      "instructions": ["Step 1 description", "Step 2 description", "Step 3 description"],
+      "healingBenefits": "1-2 sentences explaining the cancer-fighting and healing benefits of this meal",
+      "tags": ["anti-inflammatory", "liver-support", "omega-3"],
+      "imageCategory": "one of: ${imageCategories.join(", ")}"
+    }
+  ],
+  "shoppingList": {
+    "produce": ["list of fresh produce items needed across all meals"],
+    "proteins": ["list of protein items needed"],
+    "pantry": ["list of pantry staples needed"],
+    "spices": ["list of spices and seasonings needed"]
+  }
+}
+
+Choose the imageCategory that best visually matches each meal:
+- breakfast-bowl: granola bowls, oatmeal, yogurt dishes
+- smoothie: smoothies, juices, blended drinks
+- salad: salads, raw vegetable dishes
+- soup: soups, broths, stews
+- fish: salmon, seafood dishes
+- grain-bowl: buddha bowls, quinoa bowls, rice dishes
+- snack: nuts, fruit plates, energy balls, small bites
+- tea: teas, golden lattes, elixirs, warm drinks
+- chicken: chicken dishes, poultry mains
+- berry-bowl: acai bowls, berry dishes, fruit-forward meals
+
+Keep the tone warm and encouraging. Make recipes practical and delicious.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested meals: ${excludeNames}. Suggest DIFFERENT recipes.` : ""}`;
+
+    const result = await model.generateContent({
+      contents: [
+        { role: "user", parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 4096,
+      },
+    });
+
+    const text = result.response.text() || "";
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    try {
+      const parsed = JSON.parse(cleaned) as MealSuggestions;
+      return parsed;
+    } catch (parseError) {
+      console.error("Meal ideas JSON parse error, attempting repair:", parseError);
+      const mealsMatch = cleaned.match(/"meals"\s*:\s*\[([\s\S]*?)\]\s*,\s*"shoppingList"/);
+      const meals: MealCard[] = [];
+      if (mealsMatch) {
+        try {
+          const mArr = JSON.parse("[" + mealsMatch[1] + "]");
+          meals.push(...mArr);
+        } catch {}
+      }
+      if (meals.length > 0) {
+        return { meals, shoppingList: { produce: [], proteins: [], pantry: [], spices: [] } };
+      }
+      throw parseError;
+    }
+  } catch (error) {
+    console.error("Error generating meal ideas:", error);
+    return { meals: [], shoppingList: { produce: [], proteins: [], pantry: [], spices: [] } };
+  }
+}
+
 export function addToKnowledgeBase(category: string, content: string): { success: boolean, message: string } {
   console.log(`Added to knowledge base - Category: ${category}, Content: ${content}`);
   

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas } from "./openai";
+import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -223,6 +223,26 @@ PATIENT CONTEXT:
     } catch (error) {
       console.error("Error generating meal suggestion:", error);
       return res.status(500).json({ error: "Failed to generate suggestion" });
+    }
+  });
+
+  app.post("/api/ai/meal-ideas", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const excludeNames = req.body.excludeNames || "";
+      const mealTypes = req.body.mealTypes || "all";
+      const user = await storage.getUser(userId);
+      let userContext = "";
+      let dietaryPreferences = "";
+      if (user) {
+        userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Focus: anti-inflammatory, liver-supportive, immune-boosting nutrition.`;
+        dietaryPreferences = user.dietaryPreferences || "sugar-free, dairy-free, fish or organic chicken";
+      }
+      const suggestions = await getMealIdeas(userContext, dietaryPreferences, excludeNames, mealTypes);
+      return res.json(suggestions);
+    } catch (error) {
+      console.error("Error generating meal ideas:", error);
+      return res.status(500).json({ error: "Failed to generate meal ideas" });
     }
   });
 
