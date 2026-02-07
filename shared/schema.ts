@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   scanSummary: text("scan_summary"),
   nextScanDate: date("next_scan_date"),
   dietaryPreferences: text("dietary_preferences"),
+  profilePhoto: text("profile_photo"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -44,6 +45,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   scanSummary: true,
   nextScanDate: true,
   dietaryPreferences: true,
+  profilePhoto: true,
 });
 
 export const updateUserSchema = createInsertSchema(users).omit({

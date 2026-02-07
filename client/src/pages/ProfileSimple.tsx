@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { apiRequest } from "@/lib/queryClient";
-import { Heart, Shield, Target, Clock, FileText } from "lucide-react";
+import { Heart, Shield, Target, Clock, FileText, Camera, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters long" }),
@@ -29,6 +29,27 @@ export default function ProfileSimple() {
   const { user, setUser } = useUser();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch(`/api/users/${user.id}/photo`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const updated = await res.json();
+      setUser({ ...user, ...updated });
+      toast({ title: "Photo updated!" });
+    } catch {
+      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -93,8 +114,33 @@ export default function ProfileSimple() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center">
-                <div className="h-24 w-24 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center text-2xl font-heading font-bold text-primary mb-4">
-                  {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
+                <div className="relative mb-4">
+                  {user?.profilePhoto ? (
+                    <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-primary/30 shadow-md">
+                      <img src={user.profilePhoto} alt={user.displayName} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="h-24 w-24 rounded-full bg-primary/15 border-2 border-primary/30 flex items-center justify-center text-2xl font-heading font-bold text-primary">
+                      {user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('') : '?'}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors"
+                  >
+                    {uploadingPhoto ? (
+                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4 text-primary" />
+                    )}
+                  </button>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
                 </div>
                 <h3 className="text-xl font-heading text-foreground">{user?.displayName || 'Loading...'}</h3>
                 <p className="text-muted-foreground font-body text-sm">{user?.email || ''}</p>

@@ -7,6 +7,29 @@ import bcrypt from "bcrypt";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
+import express from "express";
+import fs from "fs";
+import { authenticateToken, type AuthRequest } from "./middleware/auth";
+
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `profile-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|webp|gif)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  },
+});
 
 async function seedLizAccount() {
   const lizProfile = {
@@ -120,8 +143,25 @@ async function seedScanData(userId: number) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
+  app.use('/uploads', express.static(uploadDir));
 
   await seedLizAccount();
+
+  app.post("/api/users/:id/photo", authenticateToken, upload.single("photo"), async (req: AuthRequest, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
+      if (req.user?.id !== id) return res.status(403).json({ error: "Not authorized" });
+      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
+      const photoUrl = `/uploads/${req.file.filename}`;
+      const updated = await storage.updateUser(id, { profilePhoto: photoUrl });
+      if (!updated) return res.status(404).json({ error: "User not found" });
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      return res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
 
   app.post("/api/ai/chat", async (req, res) => {
     try {

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@/contexts/UserContext";
 import {
   MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
   Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
-  ArrowDown, Zap, ChevronRight, Wine
+  ArrowDown, Zap, ChevronRight, Wine, Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1068,7 +1068,8 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
 }
 
 export default function SimpleDashboard() {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
+  const { toast } = useToast();
   const [activeWidgets, setActiveWidgets] = useState<string[]>(loadWidgets());
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
 
@@ -1109,11 +1110,65 @@ export default function SimpleDashboard() {
     { href: "/ai-assistant", label: "AI Assistant", icon: <MessageCircle className="h-5 w-5" />, desc: "Personalised guidance" },
   ];
 
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch(`/api/users/${user.id}/photo`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const updated = await res.json();
+      setUser(updated);
+      toast({ title: "Photo updated!", description: "Looking beautiful." });
+    } catch {
+      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   return (
     <div className="p-5 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            {user.profilePhoto ? (
+              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
+                <img
+                  src={user.profilePhoto}
+                  alt={user.displayName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
+                <span className="text-2xl lg:text-3xl font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
+              </div>
+            )}
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors"
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5 text-primary" />
+              )}
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+          </div>
+          <div className="flex-1">
             <h1 className="text-2xl lg:text-3xl font-heading text-foreground">
               Welcome back, {user?.displayName || "Friend"}
             </h1>

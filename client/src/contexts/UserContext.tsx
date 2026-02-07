@@ -20,6 +20,7 @@ interface User {
   medicalNotes: string | null;
   scanSummary: string | null;
   nextScanDate: string | null;
+  profilePhoto: string | null;
 }
 
 interface UserContextType {
