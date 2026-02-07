@@ -14,22 +14,22 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   const { user, logout } = useUser();
 
   const sidebarLinks = [
-    { href: "/dashboard", label: "Dashboard", icon: <Home className="w-5 h-5" /> },
-    { href: "/ai-assistant", label: "AI Assistant", icon: <Bot className="w-5 h-5" /> },
-    { href: "/medical-tracker", label: "Medical Tracker", icon: <FileText className="w-5 h-5" /> },
-    { href: "/nutrition", label: "Nutrition", icon: <Apple className="w-5 h-5" /> },
-    { href: "/mind-body", label: "Mind & Body", icon: <Bath className="w-5 h-5" /> },
-    { href: "/movement", label: "Movement", icon: <PersonStanding className="w-5 h-5" /> },
-    { href: "/supplements", label: "Supplements", icon: <Pill className="w-5 h-5" /> },
-    { href: "/community", label: "Resources", icon: <Users className="w-5 h-5" /> },
-    { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="w-5 h-5" /> },
-    { href: "/date-night", label: "Date Night", icon: <Wine className="w-5 h-5" /> },
-    { href: "/calendar", label: "Calendar", icon: <Calendar className="w-5 h-5" /> },
+    { href: "/dashboard", label: "Dashboard", icon: <Home className="w-[18px] h-[18px]" /> },
+    { href: "/ai-assistant", label: "AI Assistant", icon: <Bot className="w-[18px] h-[18px]" /> },
+    { href: "/medical-tracker", label: "Medical Tracker", icon: <FileText className="w-[18px] h-[18px]" /> },
+    { href: "/nutrition", label: "Nutrition", icon: <Apple className="w-[18px] h-[18px]" /> },
+    { href: "/mind-body", label: "Mind & Body", icon: <Bath className="w-[18px] h-[18px]" /> },
+    { href: "/movement", label: "Movement", icon: <PersonStanding className="w-[18px] h-[18px]" /> },
+    { href: "/supplements", label: "Supplements", icon: <Pill className="w-[18px] h-[18px]" /> },
+    { href: "/community", label: "Resources", icon: <Users className="w-[18px] h-[18px]" /> },
+    { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="w-[18px] h-[18px]" /> },
+    { href: "/date-night", label: "Date Night", icon: <Wine className="w-[18px] h-[18px]" /> },
+    { href: "/calendar", label: "Calendar", icon: <Calendar className="w-[18px] h-[18px]" /> },
   ];
 
   const sidebarClasses = cn(
     "w-64 h-full flex-shrink-0 z-30 transition-all duration-300",
-    "bg-[hsl(32,35%,94%)] border-r border-[hsl(30,22%,87%)]",
+    "bg-white border-r border-border",
     {
       "fixed translate-x-0": isMobile && isOpen,
       "fixed -translate-x-full": isMobile && !isOpen,
@@ -50,36 +50,36 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
     <>
       {isMobile && isOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 z-20 backdrop-blur-sm" 
+          className="fixed inset-0 bg-black/20 z-20 backdrop-blur-sm" 
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-5 border-b border-[hsl(30,22%,87%)] flex items-center space-x-3">
-          <div className="bg-primary text-white p-2 rounded">
+        <div className="p-5 border-b border-border flex items-center space-x-3">
+          <div className="bg-primary text-white p-2 rounded-xl">
             <Heart className="h-5 w-5" />
           </div>
-          <h1 className="text-xl font-heading font-bold text-[hsl(34,55%,45%)] tracking-wider">Elizabeth</h1>
+          <h1 className="text-xl font-heading text-foreground">Elizabeth</h1>
         </div>
         
         <div className="p-3 overflow-y-auto" style={{ height: 'calc(100% - 130px)' }}>
           <Link href="/profile" onClick={onClose}>
-            <div className="flex items-center space-x-3 p-3 bg-[hsl(30,30%,95%)] rounded mb-5 cursor-pointer hover:bg-[hsl(30,28%,92%)] transition-colors border border-[hsl(30,22%,87%)]">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-heading font-semibold">
+            <div className="flex items-center space-x-3 p-3 bg-muted/60 rounded-xl mb-4 cursor-pointer hover:bg-muted transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-semibold text-lg">
                 {user?.displayName?.charAt(0) || 'U'}
               </div>
               <div>
-                <p className="font-medium text-[hsl(25,30%,28%)] font-body">{user?.displayName || 'User'}</p>
-                <p className="text-xs text-[hsl(25,18%,50%)] font-body">
+                <p className="font-medium text-foreground font-body text-sm">{user?.displayName || 'User'}</p>
+                <p className="text-xs text-muted-foreground font-body">
                   {user?.cancerType || 'Not specified'} — {user?.cancerStage || 'Not specified'}
                 </p>
               </div>
             </div>
           </Link>
           
-          <nav className="mt-3 space-y-1">
+          <nav className="space-y-0.5">
             {sidebarLinks.map((link) => {
               const isActive = location === link.href || (link.href === "/dashboard" && location === "/");
               return (
@@ -88,22 +88,22 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
                   href={link.href}
                   onClick={onClose}
                   className={cn(
-                    "flex items-center space-x-3 p-3 rounded transition-all duration-200",
+                    "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-body",
                     isActive
-                      ? "bg-primary/15 text-primary border-l-2 border-primary"
-                      : "text-[hsl(25,20%,42%)] hover:bg-[hsl(30,28%,92%)] hover:text-[hsl(25,30%,28%)]"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   {link.icon}
-                  <span className="font-body text-sm">{link.label}</span>
+                  <span>{link.label}</span>
                 </Link>
               );
             })}
           </nav>
         </div>
         
-        <div className="absolute bottom-0 w-full p-3 border-t border-[hsl(30,22%,87%)]">
-          <div className="flex items-center justify-between text-[hsl(25,18%,50%)] text-sm px-3">
+        <div className="absolute bottom-0 w-full p-3 border-t border-border">
+          <div className="flex items-center justify-between text-muted-foreground text-sm px-3">
             <Link href="/profile" onClick={onClose} className="hover:text-primary transition-colors">
               <UserRound className="h-5 w-5" />
             </Link>

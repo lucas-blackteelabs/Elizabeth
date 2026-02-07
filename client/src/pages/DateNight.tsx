@@ -81,6 +81,7 @@ function StarRating({ rating, onRate, size = "md" }: { rating: number; onRate?: 
 }
 
 const SHORTLIST_KEY = "elizabeth-date-night-shortlist";
+const DISMISSED_KEY = "elizabeth-date-night-dismissed";
 
 function loadShortlist(): { restaurants: RestaurantCard[]; activities: ActivityCard[] } {
   try {
@@ -92,6 +93,18 @@ function loadShortlist(): { restaurants: RestaurantCard[]; activities: ActivityC
 
 function saveShortlist(data: { restaurants: RestaurantCard[]; activities: ActivityCard[] }) {
   localStorage.setItem(SHORTLIST_KEY, JSON.stringify(data));
+}
+
+function loadDismissed(): string[] {
+  try {
+    const saved = localStorage.getItem(DISMISSED_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [];
+}
+
+function saveDismissed(names: string[]) {
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify(names));
 }
 
 export default function DateNight() {
@@ -113,6 +126,8 @@ export default function DateNight() {
 
   const [activeTab, setActiveTab] = useState<"discover" | "shortlist" | "history">("discover");
   const [shortlist, setShortlist] = useState(loadShortlist);
+  const [dismissedNames, setDismissedNames] = useState(loadDismissed);
+  const [dismissingCard, setDismissingCard] = useState<string | null>(null);
 
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
@@ -142,6 +157,30 @@ export default function DateNight() {
     setShortlist(updated);
     saveShortlist(updated);
     toast({ title: isActivityShortlisted(a) ? "Removed from shortlist" : "Shortlisted!", description: a.name });
+  };
+
+  const dismissRestaurant = (r: RestaurantCard, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDismissingCard(r.name);
+    setTimeout(() => {
+      setRestaurants((prev) => prev.filter((x) => x.name !== r.name));
+      const updated = [...dismissedNames, r.name];
+      setDismissedNames(updated);
+      saveDismissed(updated);
+      setDismissingCard(null);
+    }, 250);
+  };
+
+  const dismissActivity = (a: ActivityCard, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDismissingCard(a.name);
+    setTimeout(() => {
+      setActivities((prev) => prev.filter((x) => x.name !== a.name));
+      const updated = [...dismissedNames, a.name];
+      setDismissedNames(updated);
+      saveDismissed(updated);
+      setDismissingCard(null);
+    }, 250);
   };
 
   const { data: dateNightHistory = [], isLoading: historyLoading } = useQuery<DateNightType[]>({
@@ -185,14 +224,15 @@ export default function DateNight() {
       setLoading(true);
     }
     try {
-      const existingNames = append
+      const currentNames = append
         ? (type === "restaurants"
           ? restaurants.map(r => r.name)
           : type === "activities"
           ? activities.map(a => a.name)
           : [...restaurants.map(r => r.name), ...activities.map(a => a.name)]
-        ).join(", ")
-        : "";
+        )
+        : [];
+      const existingNames = [...currentNames, ...dismissedNames].join(", ");
       const res = await fetch("/api/ai/date-night", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -250,50 +290,46 @@ export default function DateNight() {
   const completed = dateNightHistory.filter((d) => d.status === "completed").sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center gap-3 mb-2">
-          <Heart className="h-6 w-6 text-[hsl(0,55%,60%)] fill-[hsl(0,55%,60%)]/20" />
-          <h1 className="text-2xl font-heading text-[hsl(25,35%,22%)] tracking-wide">Date Night</h1>
-          <Heart className="h-6 w-6 text-[hsl(0,55%,60%)] fill-[hsl(0,55%,60%)]/20" />
-        </div>
-        <p className="text-[hsl(25,18%,48%)] font-body text-sm">
-          Celebrating your love and making beautiful memories together
+    <div className="p-5 lg:p-8 max-w-5xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-heading text-foreground">Date Night</h1>
+        <p className="text-muted-foreground font-body text-sm mt-1">
+          Plan beautiful evenings together
         </p>
       </div>
 
       {user?.dietaryPreferences && (
-        <div className="mb-4 flex items-center gap-2 justify-center">
-          <Leaf className="h-4 w-4 text-primary" />
-          <span className="text-xs font-body text-[hsl(25,18%,48%)]">
-            Dietary preferences: <span className="font-medium text-[hsl(25,30%,28%)]">{user.dietaryPreferences}</span>
+        <div className="mb-4 inline-flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-full px-3 py-1.5">
+          <Leaf className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-body text-muted-foreground">
+            <span className="font-medium text-foreground">{user.dietaryPreferences}</span>
           </span>
         </div>
       )}
 
-      <div className="flex gap-1 mb-6 bg-[hsl(30,30%,93%)] rounded-xl p-1 max-w-sm mx-auto">
+      <div className="flex gap-1 mb-6 bg-muted rounded-xl p-1 max-w-sm">
         <button
           onClick={() => setActiveTab("discover")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all ${activeTab === "discover" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all ${activeTab === "discover" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Sparkles className="h-3.5 w-3.5 inline mr-1" />Discover
+          <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />Discover
         </button>
         <button
           onClick={() => setActiveTab("shortlist")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all relative ${activeTab === "shortlist" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "shortlist" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Pin className="h-3.5 w-3.5 inline mr-1" />Shortlist
+          <Pin className="h-3.5 w-3.5 inline mr-1.5" />Shortlist
           {(shortlist.restaurants.length + shortlist.activities.length) > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center">{shortlist.restaurants.length + shortlist.activities.length}</span>
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-medium">{shortlist.restaurants.length + shortlist.activities.length}</span>
           )}
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body transition-all relative ${activeTab === "history" ? "bg-white text-[hsl(25,30%,22%)] shadow-sm" : "text-[hsl(25,18%,48%)] hover:text-[hsl(25,30%,28%)]"}`}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "history" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <History className="h-3.5 w-3.5 inline mr-1" />History
+          <History className="h-3.5 w-3.5 inline mr-1.5" />History
           {planned.length > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[hsl(34,55%,52%)] text-white text-[10px] flex items-center justify-center">{planned.length}</span>
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-medium">{planned.length}</span>
           )}
         </button>
       </div>
@@ -301,20 +337,20 @@ export default function DateNight() {
       {activeTab === "discover" && (
         <>
           {!hasGenerated && !loading && (
-            <Card className="bg-gradient-to-br from-[hsl(0,40%,97%)] to-[hsl(34,40%,96%)] border-[hsl(0,30%,88%)] mb-6">
+            <Card className="bg-white border-border mb-6">
               <CardContent className="p-8 text-center">
-                <div className="flex justify-center gap-3 mb-4">
-                  <Utensils className="h-6 w-6 text-primary/60" />
-                  <Music className="h-6 w-6 text-[hsl(34,55%,52%)]/60" />
-                  <MapPin className="h-6 w-6 text-[hsl(0,45%,65%)]/60" />
+                <div className="flex justify-center gap-4 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><Utensils className="h-5 w-5 text-primary" /></div>
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center"><Music className="h-5 w-5 text-accent" /></div>
+                  <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center"><MapPin className="h-5 w-5 text-pink-500" /></div>
                 </div>
-                <p className="text-sm text-[hsl(25,30%,28%)] font-body leading-relaxed max-w-md mx-auto mb-6">
-                  Taking time for each other is a beautiful part of healing. Connection, laughter, and love are powerful medicine.
-                  Let us find you the perfect Sydney restaurants and activities for a wonderful evening together.
+                <p className="text-sm text-muted-foreground font-body leading-relaxed max-w-md mx-auto mb-6">
+                  Connection, laughter, and love are powerful medicine.
+                  Let us find the perfect Sydney restaurants and activities for a wonderful evening together.
                 </p>
                 <Button
                   onClick={() => generateIdeas()}
-                  className="bg-primary text-white hover:bg-primary/90 font-heading tracking-wide gap-2 px-6"
+                  className="bg-primary text-white hover:bg-primary/90 font-body font-medium gap-2 px-6 rounded-xl"
                 >
                   <Sparkles className="h-4 w-4" /> Find Date Night Ideas
                 </Button>
@@ -325,54 +361,31 @@ export default function DateNight() {
           {loading && (
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center py-8">
-                <div className="relative w-24 h-24 mb-6">
+                <div className="relative w-20 h-20 mb-5">
                   <div className="absolute inset-0 rounded-full border-[3px] border-primary/10" />
                   <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary animate-spin" style={{ animationDuration: "1.2s" }} />
-                  <div className="absolute inset-2 rounded-full border-[3px] border-transparent border-b-[hsl(34,55%,52%)] animate-spin" style={{ animationDuration: "1.8s", animationDirection: "reverse" }} />
+                  <div className="absolute inset-2 rounded-full border-[3px] border-transparent border-b-accent animate-spin" style={{ animationDuration: "1.8s", animationDirection: "reverse" }} />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-[hsl(34,55%,52%)] animate-pulse" />
+                    <Sparkles className="h-7 w-7 text-accent animate-pulse" />
                   </div>
                 </div>
-                <h2 className="font-heading text-xl text-[hsl(25,30%,22%)] mb-2">Curating your perfect evening...</h2>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">Searching Sydney's best spots for you two</p>
+                <h2 className="font-heading text-lg text-foreground mb-1">Curating your perfect evening...</h2>
+                <p className="text-sm text-muted-foreground font-body">Searching Sydney's best spots</p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl overflow-hidden">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="bg-white border-border rounded-2xl overflow-hidden">
                     <CardContent className="p-4">
                       <div className="space-y-3 animate-pulse">
                         <div className="flex justify-between">
-                          <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-2/3" />
-                          <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-12" />
+                          <div className="h-4 bg-muted rounded-lg w-2/3" />
+                          <div className="h-4 bg-muted rounded-lg w-12" />
                         </div>
-                        <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-1/2" />
+                        <div className="h-3 bg-muted/70 rounded-lg w-1/2" />
                         <div className="space-y-1.5">
-                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-full" />
-                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-5/6" />
-                        </div>
-                        <div className="h-3 bg-[hsl(30,25%,93%)] rounded w-3/4 pt-2 border-t border-[hsl(30,25%,90%)]" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="space-y-3 animate-pulse">
-                        <div className="flex gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-[hsl(30,25%,90%)]" />
-                          <div className="flex-1 space-y-1.5">
-                            <div className="h-4 bg-[hsl(30,25%,90%)] rounded-md w-3/4" />
-                            <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-1/2" />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-full" />
-                          <div className="h-3 bg-[hsl(30,25%,92%)] rounded w-4/5" />
+                          <div className="h-3 bg-muted/70 rounded-lg w-full" />
+                          <div className="h-3 bg-muted/70 rounded-lg w-5/6" />
                         </div>
                       </div>
                     </CardContent>
@@ -383,46 +396,58 @@ export default function DateNight() {
           )}
 
           {hasGenerated && !loading && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
-                  <Utensils className="h-5 w-5" /> Restaurant Picks
+                <h2 className="text-base font-heading text-foreground flex items-center gap-2">
+                  <Utensils className="h-4 w-4 text-primary" /> Restaurant Picks
                 </h2>
-                <Button variant="ghost" size="sm" onClick={() => generateIdeas()} className="text-primary hover:bg-primary/10 gap-1.5 font-body text-xs">
-                  <RefreshCw className="h-3.5 w-3.5" /> New Ideas
+                <Button variant="ghost" size="sm" onClick={() => generateIdeas()} className="text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 font-body text-xs rounded-lg">
+                  <RefreshCw className="h-3.5 w-3.5" /> Refresh All
                 </Button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {restaurants.map((r, i) => (
                   <Card
-                    key={i}
-                    className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group relative"
+                    key={r.name}
+                    className={`bg-white border-border rounded-2xl hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group relative ${dismissingCard === r.name ? "animate-card-dismiss" : "animate-fade-in-up"}`}
+                    style={{ animationDelay: `${i * 50}ms` }}
                     onClick={() => setSelectedRestaurant(r)}
                   >
-                    <button
-                      onClick={(e) => toggleRestaurantShortlist(r, e)}
-                      className={`absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                        isRestaurantShortlisted(r)
-                          ? "bg-primary text-white"
-                          : "bg-[hsl(30,25%,90%)] text-[hsl(25,18%,55%)] hover:bg-primary/20 hover:text-primary"
-                      }`}
-                    >
-                      <Pin className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="absolute top-2.5 right-2.5 z-10 flex gap-1">
+                      <button
+                        onClick={(e) => toggleRestaurantShortlist(r, e)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                          isRestaurantShortlisted(r)
+                            ? "bg-primary text-white"
+                            : "bg-muted/80 text-muted-foreground hover:bg-primary/15 hover:text-primary"
+                        }`}
+                        title="Shortlist"
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => dismissRestaurant(r, e)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/80 text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
+                        title="Hide"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2 pr-8">
-                        <h3 className="font-heading text-sm text-[hsl(25,30%,22%)] group-hover:text-primary transition-colors leading-tight">{r.name}</h3>
-                        <PriceIndicator range={r.priceRange} />
+                      <div className="flex items-start justify-between mb-2 pr-16">
+                        <h3 className="font-body font-semibold text-sm text-foreground group-hover:text-primary transition-colors leading-tight">{r.name}</h3>
                       </div>
                       <div className="flex items-center gap-1.5 mb-2">
-                        <MapPin className="h-3 w-3 text-[hsl(25,18%,55%)]" />
-                        <span className="text-xs text-[hsl(25,18%,55%)] font-body">{r.suburb}</span>
-                        <span className="text-xs text-[hsl(25,18%,70%)]">·</span>
-                        <span className="text-xs text-primary/80 font-body">{r.cuisineType}</span>
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground font-body">{r.suburb}</span>
+                        <span className="text-xs text-muted-foreground/40">·</span>
+                        <span className="text-xs text-primary font-body font-medium">{r.cuisineType}</span>
+                        <span className="text-xs text-muted-foreground/40">·</span>
+                        <PriceIndicator range={r.priceRange} />
                       </div>
-                      <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-3 mb-3">{r.summary}</p>
-                      <div className="flex items-center gap-1.5 pt-2 border-t border-[hsl(30,25%,90%)]">
+                      <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2 mb-3">{r.summary}</p>
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-border">
                         <Leaf className="h-3 w-3 text-primary/60" />
                         <span className="text-[10px] text-primary/70 font-body line-clamp-1">{r.dietaryNotes}</span>
                       </div>
@@ -431,13 +456,13 @@ export default function DateNight() {
                 ))}
               </div>
 
-              <div className="flex justify-end mt-3">
+              <div className="flex justify-end">
                 <Button
                   onClick={() => generateIdeas(true, "restaurants")}
                   disabled={loadingMoreRestaurants}
                   variant="ghost"
                   size="sm"
-                  className="text-primary hover:bg-primary/10 font-body text-xs gap-1.5"
+                  className="text-primary hover:bg-primary/10 font-body text-xs gap-1.5 rounded-lg"
                 >
                   {loadingMoreRestaurants ? (
                     <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding more...</>
@@ -447,44 +472,57 @@ export default function DateNight() {
                 </Button>
               </div>
 
-              <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mt-8">
-                <Music className="h-5 w-5" /> Things to Do Together
-              </h2>
+              <div className="flex items-center justify-between mt-4">
+                <h2 className="text-base font-heading text-foreground flex items-center gap-2">
+                  <Music className="h-4 w-4 text-accent" /> Things to Do Together
+                </h2>
+              </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {activities.map((a, i) => {
                   const Icon = categoryIcons[a.category] || Compass;
                   return (
                     <Card
-                      key={i}
-                      className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group relative"
+                      key={a.name}
+                      className={`bg-white border-border rounded-2xl hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group relative ${dismissingCard === a.name ? "animate-card-dismiss" : "animate-fade-in-up"}`}
+                      style={{ animationDelay: `${i * 50}ms` }}
                       onClick={() => setSelectedActivity(a)}
                     >
-                      <button
-                        onClick={(e) => toggleActivityShortlist(a, e)}
-                        className={`absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                          isActivityShortlisted(a)
-                            ? "bg-[hsl(34,55%,52%)] text-white"
-                            : "bg-[hsl(30,25%,90%)] text-[hsl(25,18%,55%)] hover:bg-[hsl(34,55%,52%)]/20 hover:text-[hsl(34,55%,52%)]"
-                        }`}
-                      >
-                        <Pin className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="absolute top-2.5 right-2.5 z-10 flex gap-1">
+                        <button
+                          onClick={(e) => toggleActivityShortlist(a, e)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                            isActivityShortlisted(a)
+                              ? "bg-accent text-white"
+                              : "bg-muted/80 text-muted-foreground hover:bg-accent/15 hover:text-accent"
+                          }`}
+                          title="Shortlist"
+                        >
+                          <Pin className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => dismissActivity(a, e)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted/80 text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
+                          title="Hide"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       <CardContent className="p-4">
-                        <div className="flex items-start gap-3 mb-2 pr-8">
-                          <div className="h-8 w-8 rounded-lg bg-[hsl(34,55%,52%)]/10 flex items-center justify-center flex-shrink-0">
-                            <Icon className="h-4 w-4 text-[hsl(34,55%,52%)]" />
+                        <div className="flex items-start gap-3 mb-2 pr-16">
+                          <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+                            <Icon className="h-4 w-4 text-accent" />
                           </div>
                           <div>
-                            <h3 className="font-heading text-sm text-[hsl(25,30%,22%)] group-hover:text-[hsl(34,55%,45%)] transition-colors leading-tight">{a.name}</h3>
+                            <h3 className="font-body font-semibold text-sm text-foreground group-hover:text-accent transition-colors leading-tight">{a.name}</h3>
                             <div className="flex items-center gap-1 mt-0.5">
-                              <MapPin className="h-3 w-3 text-[hsl(25,18%,55%)]" />
-                              <span className="text-xs text-[hsl(25,18%,55%)] font-body">{a.location}</span>
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground font-body">{a.location}</span>
                             </div>
                           </div>
                         </div>
-                        <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-3 mb-2">{a.description}</p>
-                        <div className="flex items-center gap-1 text-[10px] text-[hsl(25,18%,58%)] font-body">
+                        <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2 mb-2">{a.description}</p>
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-body">
                           <Clock className="h-3 w-3" /> {a.bestTime}
                         </div>
                       </CardContent>
@@ -493,13 +531,13 @@ export default function DateNight() {
                 })}
               </div>
 
-              <div className="flex justify-end mt-3">
+              <div className="flex justify-end">
                 <Button
                   onClick={() => generateIdeas(true, "activities")}
                   disabled={loadingMoreActivities}
                   variant="ghost"
                   size="sm"
-                  className="text-[hsl(34,55%,45%)] hover:bg-[hsl(34,55%,52%)]/10 font-body text-xs gap-1.5"
+                  className="text-accent hover:bg-accent/10 font-body text-xs gap-1.5 rounded-lg"
                 >
                   {loadingMoreActivities ? (
                     <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding more...</>

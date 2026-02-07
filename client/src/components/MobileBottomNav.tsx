@@ -15,7 +15,7 @@ export default function MobileBottomNav() {
   const [location] = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 bg-[hsl(32,35%,94%)] border-t border-[hsl(30,22%,87%)] md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-lg border-t border-border md:hidden safe-area-bottom">
       <div className="flex items-end justify-around px-1 h-16">
         {navItems.map((item) => {
           if (item.href === "__ai__") {
@@ -33,10 +33,10 @@ export default function MobileBottomNav() {
             <Link key={item.href} href={item.href}>
               <div className={cn(
                 "flex flex-col items-center justify-center py-2 px-3 transition-colors",
-                isActive ? "text-primary" : "text-[hsl(25,18%,55%)]"
+                isActive ? "text-primary" : "text-muted-foreground"
               )}>
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-body mt-0.5">{item.label}</span>
+                <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className="text-[10px] font-body font-medium mt-0.5">{item.label}</span>
               </div>
             </Link>
           );

@@ -34,20 +34,20 @@ export default function Layout({ children }: LayoutProps) {
         isMobile={isMobile} 
       />
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-16">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
         {isMobile && (
-          <div className="flex items-center justify-between bg-[hsl(32,35%,94%)] p-4 border-b border-[hsl(30,22%,87%)] sticky top-0 z-20">
+          <div className="flex items-center justify-between bg-white/80 backdrop-blur-lg p-4 border-b border-border sticky top-0 z-20">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={toggleSidebar}
-              className="text-[hsl(25,20%,42%)] hover:text-primary"
+              className="text-muted-foreground hover:text-primary rounded-xl"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-heading font-bold text-[hsl(34,55%,45%)] tracking-wider">Elizabeth</h1>
-            <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
-              <span className="text-sm font-heading font-semibold text-primary">L</span>
+            <h1 className="text-lg font-heading text-foreground">Elizabeth</h1>
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-sm font-body font-semibold text-primary">L</span>
             </div>
           </div>
         )}

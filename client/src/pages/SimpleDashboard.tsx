@@ -107,17 +107,17 @@ function LogMealDialog({ userId }: { userId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
+        <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
           <Apple className="h-3.5 w-3.5" /> Log Meal
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">Log a Meal</DialogTitle>
+          <DialogTitle className="font-heading text-foreground">Log a Meal</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <Select value={mealType} onValueChange={setMealType}>
-            <SelectTrigger className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body">
+            <SelectTrigger className="bg-muted/50 border-border font-body">
               <SelectValue placeholder="Meal type" />
             </SelectTrigger>
             <SelectContent>
@@ -132,21 +132,21 @@ function LogMealDialog({ userId }: { userId: number }) {
             placeholder="What did you eat? (e.g. turmeric latte, green salad)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body"
+            className="bg-muted/50 border-border font-body"
           />
           {mealType && (
-            <Button variant="outline" size="sm" onClick={getAiSuggestion} disabled={aiLoading} className="w-full text-xs border-[hsl(34,55%,52%)]/30 text-[hsl(34,55%,45%)] hover:bg-[hsl(34,55%,52%)]/10 font-body gap-1">
+            <Button variant="outline" size="sm" onClick={getAiSuggestion} disabled={aiLoading} className="w-full text-xs border-accent/30 text-accent hover:bg-accent/10 font-body gap-1">
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {aiLoading ? "Getting suggestion..." : `Suggest a healing ${mealType}`}
             </Button>
           )}
           {aiSuggestion && (
-            <div className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-lg p-3 max-h-48 overflow-y-auto">
-              <p className="text-[10px] uppercase tracking-wider text-[hsl(34,55%,45%)] font-heading mb-1.5">AI Suggestion</p>
-              <p className="text-xs text-[hsl(25,18%,42%)] font-body leading-relaxed whitespace-pre-line">{aiSuggestion}</p>
+            <div className="bg-muted border border-border rounded-lg p-3 max-h-48 overflow-y-auto">
+              <p className="text-[10px] uppercase tracking-wider text-accent font-heading mb-1.5">AI Suggestion</p>
+              <p className="text-xs text-foreground font-body leading-relaxed whitespace-pre-line">{aiSuggestion}</p>
             </div>
           )}
-          <Button onClick={() => mutation.mutate()} disabled={!mealType || !description || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-heading">
+          <Button onClick={() => mutation.mutate()} disabled={!mealType || !description || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
             {mutation.isPending ? "Saving..." : "Log Meal"}
           </Button>
         </div>
@@ -204,18 +204,18 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
+        <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1">
           {isMindBody ? <Sparkles className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
           {isMindBody ? "Log Mindfulness" : "Log Exercise"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+      <DialogContent className="bg-white border-border">
         <DialogHeader>
-          <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">{isMindBody ? "Log Mind-Body Activity" : "Log Exercise"}</DialogTitle>
+          <DialogTitle className="font-heading text-foreground">{isMindBody ? "Log Mind-Body Activity" : "Log Exercise"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <Select value={activityType} onValueChange={setActivityType}>
-            <SelectTrigger className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body">
+            <SelectTrigger className="bg-muted/50 border-border font-body">
               <SelectValue placeholder="Select activity" />
             </SelectTrigger>
             <SelectContent>
@@ -224,9 +224,9 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
               ))}
             </SelectContent>
           </Select>
-          <Input type="number" placeholder="Duration (minutes)" value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body" />
-          <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] font-body" />
-          <Button onClick={() => mutation.mutate()} disabled={!activityType || !duration || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-heading">
+          <Input type="number" placeholder="Duration (minutes)" value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Button onClick={() => mutation.mutate()} disabled={!activityType || !duration || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
             {mutation.isPending ? "Saving..." : "Log Activity"}
           </Button>
         </div>
@@ -255,15 +255,15 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1.5">
+        <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1.5">
           <Settings2 className="h-3.5 w-3.5" /> Customise
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-md">
+      <DialogContent className="bg-white border-border max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-heading text-[hsl(34,55%,45%)]">Choose Your Widgets</DialogTitle>
+          <DialogTitle className="font-heading text-foreground">Choose Your Widgets</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-2">Select the cards you'd like to see on your dashboard.</p>
+        <p className="text-sm text-muted-foreground font-body mb-2">Select the cards you'd like to see on your dashboard.</p>
         <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
           {ALL_WIDGETS.map((w) => {
             const isActive = selected.includes(w.id);
@@ -273,19 +273,19 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
                 onClick={() => toggle(w.id)}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
                   isActive
-                    ? "bg-primary/10 border-primary/30 text-[hsl(25,30%,22%)]"
-                    : "bg-[hsl(30,30%,95%)] border-[hsl(30,22%,87%)] text-[hsl(25,18%,48%)]"
+                    ? "bg-primary/10 border-primary/30 text-foreground"
+                    : "bg-muted border-border text-muted-foreground"
                 }`}
               >
-                <div className={`p-1.5 rounded-md ${isActive ? "bg-primary/20 text-primary" : "bg-[hsl(30,20%,90%)] text-[hsl(25,18%,55%)]"}`}>
+                <div className={`p-1.5 rounded-md ${isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                   {w.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-body font-medium text-sm">{w.label}</p>
-                  <p className="text-xs text-[hsl(25,18%,48%)] font-body">{w.description}</p>
+                  <p className="text-xs text-muted-foreground font-body">{w.description}</p>
                 </div>
                 <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                  isActive ? "bg-primary border-primary" : "border-[hsl(30,22%,80%)]"
+                  isActive ? "bg-primary border-primary" : "border-border"
                 }`}>
                   {isActive && <Check className="h-3 w-3 text-white" />}
                 </div>
@@ -294,10 +294,10 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
           })}
         </div>
         <div className="flex gap-2 mt-2">
-          <Button variant="outline" onClick={() => setSelected(getDefaultWidgets())} className="flex-1 font-body text-sm border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)]">
+          <Button variant="outline" onClick={() => setSelected(getDefaultWidgets())} className="flex-1 font-body text-sm border-border text-foreground">
             Reset
           </Button>
-          <Button onClick={apply} className="flex-1 bg-primary text-white hover:bg-primary/90 font-heading text-sm">
+          <Button onClick={apply} className="flex-1 bg-primary text-white hover:bg-primary/90 font-body font-medium text-sm">
             Save Layout
           </Button>
         </div>
@@ -316,23 +316,23 @@ function CompactStatCard({
   return (
     <button
       onClick={onClick}
-      className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
+      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full"
     >
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-          accent === "amber" ? "bg-[hsl(34,55%,52%)]/10 text-[hsl(34,55%,45%)] group-hover:bg-[hsl(34,55%,52%)]/20" : "bg-primary/10 text-primary group-hover:bg-primary/20"
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
+          accent === "amber" ? "bg-accent/10 text-accent group-hover:bg-accent/15" : "bg-primary/10 text-primary group-hover:bg-primary/15"
         }`}>
           {icon}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-0.5">{label}</p>
-          <p className={`text-xl font-heading font-bold ${
-            accent === "amber" ? "text-[hsl(34,55%,45%)]" : "text-primary"
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-0.5">{label}</p>
+          <p className={`text-xl font-heading ${
+            accent === "amber" ? "text-accent" : "text-primary"
           }`}>{value}</p>
         </div>
-        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
       </div>
-      {subtitle && <p className="text-[10px] text-[hsl(25,18%,55%)] font-body mt-2 line-clamp-1">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] text-muted-foreground font-body mt-2 line-clamp-1">{subtitle}</p>}
     </button>
   );
 }
@@ -349,23 +349,23 @@ function ScanCountdownExpanded({ nextScanDate }: { nextScanDate: string | null }
     <div className="flex flex-col items-center py-4">
       <div className="relative w-40 h-40 mb-4">
         <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(30,25%,90%)" strokeWidth="5" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(158,32%,42%)" strokeWidth="5" strokeLinecap="round"
+          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--border))" strokeWidth="5" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(var(--primary))" strokeWidth="5" strokeLinecap="round"
             strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-heading font-bold text-[hsl(25,35%,22%)]">{daysUntil ?? "—"}</span>
-          <span className="text-xs text-[hsl(25,18%,48%)] font-body uppercase tracking-wider">days to go</span>
+          <span className="text-4xl font-heading font-bold text-foreground">{daysUntil ?? "—"}</span>
+          <span className="text-xs text-muted-foreground font-body uppercase tracking-wider">days to go</span>
         </div>
       </div>
-      <p className="font-heading text-base text-[hsl(34,55%,45%)] tracking-wide">Next PET/CT Scan</p>
+      <p className="font-heading text-base text-accent tracking-wide">Next PET/CT Scan</p>
       {scanDate && (
-        <p className="text-sm text-[hsl(25,18%,48%)] font-body mt-1">
+        <p className="text-sm text-muted-foreground font-body mt-1">
           {scanDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
       )}
       <div className="mt-4 bg-primary/5 border border-primary/15 rounded-lg p-3 text-center w-full">
-        <p className="text-xs font-body text-[hsl(25,18%,48%)]">
+        <p className="text-xs font-body text-muted-foreground">
           Every day your body continues to heal. Your scans have shown consistent improvement — trust the process.
         </p>
       </div>
@@ -401,52 +401,52 @@ function TreatmentJourneyExpanded({ user }: { user: any }) {
 
   return (
     <div className="space-y-5 py-2">
-      <div className="bg-[hsl(34,55%,52%)]/5 border border-[hsl(34,55%,52%)]/15 rounded-xl p-5">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-[hsl(34,55%,52%)]/60 font-body text-center mb-3">Treatment Journey</p>
+      <div className="bg-accent/5 border border-accent/15 rounded-xl p-5">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-accent/60 font-body text-center mb-3">Treatment Journey</p>
         <div className="flex items-center justify-center gap-1">
           <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)] tabular-nums">{days}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">days</p>
+            <p className="text-4xl font-heading font-bold text-accent tabular-nums">{days}</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">days</p>
           </div>
-          <span className="text-2xl font-heading text-[hsl(34,55%,52%)]/30 mx-2">:</span>
+          <span className="text-2xl font-heading text-accent/30 mx-2">:</span>
           <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)] tabular-nums">{pad(hours)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">hrs</p>
+            <p className="text-4xl font-heading font-bold text-accent tabular-nums">{pad(hours)}</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">hrs</p>
           </div>
-          <span className="text-2xl font-heading text-[hsl(34,55%,52%)]/30 mx-1">:</span>
+          <span className="text-2xl font-heading text-accent/30 mx-1">:</span>
           <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)] tabular-nums">{pad(minutes)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">min</p>
+            <p className="text-4xl font-heading font-bold text-accent tabular-nums">{pad(minutes)}</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">min</p>
           </div>
-          <span className="text-2xl font-heading text-[hsl(34,55%,52%)]/30 mx-1">:</span>
+          <span className="text-2xl font-heading text-accent/30 mx-1">:</span>
           <div className="text-center">
             <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(seconds)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">sec</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">sec</p>
           </div>
         </div>
         <div className="flex justify-center gap-6 mt-3">
-          <span className="text-xs text-[hsl(25,18%,48%)] font-body">{months} months strong</span>
+          <span className="text-xs text-muted-foreground font-body">{months} months strong</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-primary/8 border border-primary/15 rounded-xl p-4 text-center">
           <p className="text-2xl font-heading font-bold text-primary">{daysSinceDiagnosis}</p>
-          <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">Since Diagnosis</p>
+          <p className="text-[10px] text-muted-foreground font-body mt-1">Since Diagnosis</p>
         </div>
-        <div className="bg-[hsl(34,55%,52%)]/8 border border-[hsl(34,55%,52%)]/15 rounded-xl p-4 text-center">
-          <p className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)]">{months}</p>
-          <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">Months Strong</p>
+        <div className="bg-accent/8 border border-accent/15 rounded-xl p-4 text-center">
+          <p className="text-2xl font-heading font-bold text-accent">{months}</p>
+          <p className="text-[10px] text-muted-foreground font-body mt-1">Months Strong</p>
         </div>
       </div>
-      <div className="flex items-center gap-3 bg-[hsl(30,30%,95%)] rounded-xl p-4 border border-[hsl(30,22%,87%)]">
+      <div className="flex items-center gap-3 bg-muted rounded-xl p-4 border border-border">
         <Target className="h-6 w-6 text-primary flex-shrink-0" />
         <div>
-          <p className="text-sm font-body font-medium text-[hsl(25,30%,28%)]">{user.treatmentStatus || "Active Surveillance"}</p>
-          <p className="text-xs text-[hsl(25,18%,48%)] font-body">{user.cancerType} — {user.cancerStage}</p>
+          <p className="text-sm font-body font-medium text-foreground">{user.treatmentStatus || "Active Surveillance"}</p>
+          <p className="text-xs text-muted-foreground font-body">{user.cancerType} — {user.cancerStage}</p>
         </div>
       </div>
       <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
-        <p className="text-xs font-body text-[hsl(25,18%,48%)] leading-relaxed">
+        <p className="text-xs font-body text-muted-foreground leading-relaxed">
           {user.medicalNotes || "You're showing incredible resilience on this journey. Keep going."}
         </p>
       </div>
@@ -508,38 +508,38 @@ function ImmuneRecoveryExpanded() {
         <div className="flex items-center justify-center gap-1">
           <div className="text-center">
             <p className="text-4xl font-heading font-bold text-primary tabular-nums">{days}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">days</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">days</p>
           </div>
           <span className="text-2xl font-heading text-primary/30 mx-2">:</span>
           <div className="text-center">
             <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(hours)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">hrs</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">hrs</p>
           </div>
           <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
           <div className="text-center">
             <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(minutes)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">min</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">min</p>
           </div>
           <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
           <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)] tabular-nums">{pad(seconds)}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body mt-1">sec</p>
+            <p className="text-4xl font-heading font-bold text-accent tabular-nums">{pad(seconds)}</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-1">sec</p>
           </div>
         </div>
         <div className="flex justify-center gap-6 mt-3">
-          <span className="text-xs font-body text-[hsl(25,18%,48%)]"><strong className="text-primary font-heading">{weeks}</strong> weeks</span>
-          <span className="text-xs font-body text-[hsl(25,18%,48%)]"><strong className="text-[hsl(34,55%,45%)] font-heading">{months}</strong> months</span>
+          <span className="text-xs font-body text-muted-foreground"><strong className="text-primary font-heading">{weeks}</strong> weeks</span>
+          <span className="text-xs font-body text-muted-foreground"><strong className="text-accent font-heading">{months}</strong> months</span>
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-xs font-heading text-[hsl(34,55%,45%)] uppercase tracking-wider">Recovery Milestones</p>
+        <p className="text-xs font-heading text-accent uppercase tracking-wider">Recovery Milestones</p>
         {milestones.map((m, i) => (
-          <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${m.done ? "bg-primary/8" : "bg-[hsl(30,20%,95%)]"}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${m.done ? "bg-primary text-white" : "border-2 border-[hsl(30,22%,80%)]"}`}>
+          <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${m.done ? "bg-primary/8" : "bg-muted"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${m.done ? "bg-primary text-white" : "border-2 border-border"}`}>
               {m.done && <Check className="h-3 w-3" />}
             </div>
-            <span className={`text-sm font-body ${m.done ? "text-[hsl(25,30%,28%)]" : "text-[hsl(25,18%,55%)]"}`}>{m.label}</span>
-            <span className="text-[10px] text-[hsl(25,18%,55%)] font-body ml-auto">{m.weeks}w</span>
+            <span className={`text-sm font-body ${m.done ? "text-foreground" : "text-muted-foreground"}`}>{m.label}</span>
+            <span className="text-[10px] text-muted-foreground font-body ml-auto">{m.weeks}w</span>
           </div>
         ))}
       </div>
@@ -605,30 +605,30 @@ function ActivityStreakExpanded({ userId }: { userId: number }) {
   return (
     <div className="space-y-4 py-2">
       <div className="text-center">
-        <p className="text-4xl font-heading font-bold text-[hsl(34,55%,45%)]">{streak}</p>
-        <p className="text-sm text-[hsl(25,18%,48%)] font-body">Day Activity Streak</p>
+        <p className="text-4xl font-heading font-bold text-accent">{streak}</p>
+        <p className="text-sm text-muted-foreground font-body">Day Activity Streak</p>
       </div>
       <div className="grid grid-cols-7 gap-2">
         {last7.map((d, i) => (
           <div key={i} className="flex flex-col items-center gap-1.5">
-            <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">{d.day}</p>
+            <p className="text-[9px] text-muted-foreground font-body">{d.day}</p>
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-heading transition-all ${
-              d.active ? "bg-[hsl(34,55%,52%)] text-white shadow-sm" : "bg-[hsl(30,20%,92%)] text-[hsl(25,18%,55%)]"
+              d.active ? "bg-accent text-white shadow-sm" : "bg-muted text-muted-foreground"
             }`}>
               {d.active ? <Check className="h-3.5 w-3.5" /> : "·"}
             </div>
             <div className="flex gap-0.5">
               {d.meals > 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
-              {d.mindBody > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[hsl(34,55%,52%)]" />}
-              {d.exercises > 0 && <div className="w-1.5 h-1.5 rounded-full bg-[hsl(200,50%,50%)]" />}
+              {d.mindBody > 0 && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
+              {d.exercises > 0 && <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />}
             </div>
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-4 text-[10px] text-[hsl(25,18%,55%)] font-body">
+      <div className="flex justify-center gap-4 text-[10px] text-muted-foreground font-body">
         <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Meals</span>
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)]" /> Mindfulness</span>
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[hsl(200,50%,50%)]" /> Exercise</span>
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-accent" /> Mindfulness</span>
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-sky-500" /> Exercise</span>
       </div>
     </div>
   );
@@ -691,14 +691,14 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
 
   if (isLoading) {
     return (
-      <button onClick={onClick} className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full">
+      <button onClick={onClick} className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-0.5">Tumour Response</p>
-            <p className="text-sm font-body text-[hsl(25,18%,48%)]">Loading...</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-0.5">Tumour Response</p>
+            <p className="text-sm font-body text-muted-foreground">Loading...</p>
           </div>
         </div>
       </button>
@@ -708,28 +708,28 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
   return (
     <button
       onClick={onClick}
-      className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
+      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full"
     >
       <div className="flex items-center gap-3 overflow-hidden">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300 flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary/15 transition-all duration-200 flex-shrink-0">
           <TrendingUp className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-1">Tumour Response</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-1">Tumour Response</p>
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1">
               <ArrowDown className="h-3 w-3 text-primary flex-shrink-0" />
-              <span className="text-sm font-heading font-bold text-primary">{avgSizeReduction}%</span>
-              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body truncate">size</span>
+              <span className="text-sm font-heading text-primary">{avgSizeReduction}%</span>
+              <span className="text-[10px] text-muted-foreground font-body truncate">size</span>
             </div>
             <div className="flex items-center gap-1">
-              <ArrowDown className="h-3 w-3 text-[hsl(34,55%,45%)] flex-shrink-0" />
-              <span className="text-sm font-heading font-bold text-[hsl(34,55%,45%)]">{avgActivityReduction}%</span>
-              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body truncate">activity</span>
+              <ArrowDown className="h-3 w-3 text-accent flex-shrink-0" />
+              <span className="text-sm font-heading text-accent">{avgActivityReduction}%</span>
+              <span className="text-[10px] text-muted-foreground font-body truncate">activity</span>
             </div>
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300 flex-shrink-0" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
       </div>
     </button>
   );
@@ -739,10 +739,10 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
   const { scanResults, scanDates, tumourLabels, baselineScan, latestScan } = useTumourStats(userId);
 
   if (scanResults.length === 0) {
-    return <p className="text-sm text-[hsl(25,18%,48%)] font-body text-center py-4">No scan data available yet.</p>;
+    return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
   }
 
-  const tumourColors = ["hsl(158,32%,42%)", "hsl(34,55%,52%)", "hsl(200,50%,50%)"];
+  const tumourColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(200,50%,50%)"];
   const maxBaselineArea = Math.max(...baselineScan.map(s => s.sizeX * s.sizeY));
 
   const scanLabels = scanDates.map((date) => {
@@ -762,11 +762,11 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
         const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
 
         return (
-          <div key={tl} className={`${tumourIdx > 0 ? "mt-3 pt-3 border-t border-[hsl(30,22%,90%)]" : ""}`}>
+          <div key={tl} className={`${tumourIdx > 0 ? "mt-3 pt-3 border-t border-border" : ""}`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tumourColors[tumourIdx] }} />
-                <p className="text-sm font-heading text-[hsl(25,30%,28%)]">{tl}</p>
+                <p className="text-sm font-heading text-foreground">{tl}</p>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowDown className="h-3.5 w-3.5 text-primary" />
@@ -820,10 +820,10 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                       </div>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] font-heading text-[hsl(25,30%,28%)]">{scanLabels[scanIdx]}</p>
-                      <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">{Math.round(area)} mm²</p>
+                      <p className="text-[10px] font-heading text-foreground">{scanLabels[scanIdx]}</p>
+                      <p className="text-[9px] text-muted-foreground font-body">{Math.round(area)} mm²</p>
                       {scan.suvMax ? (
-                        <p className="text-[9px] text-[hsl(25,18%,55%)] font-body">SUV {scan.suvMax}</p>
+                        <p className="text-[9px] text-muted-foreground font-body">SUV {scan.suvMax}</p>
                       ) : (
                         <p className="text-[9px] text-primary font-body font-medium">Clear</p>
                       )}
@@ -835,7 +835,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
 
             {scanDates.length > 1 && (
               <div className="flex items-center justify-center mt-2 px-8">
-                <div className="flex-1 h-px bg-gradient-to-r from-[hsl(0,50%,65%)]/30 via-[hsl(34,55%,52%)]/30 to-primary/30" />
+                <div className="flex-1 h-px bg-gradient-to-r from-red-400/30 via-accent/30 to-primary/30" />
                 <ChevronRight className="h-3 w-3 text-primary/40 mx-1" />
                 <span className="text-[9px] text-primary/60 font-body">improving</span>
               </div>
@@ -875,31 +875,31 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
   const totalExerciseMins = todayExercises.reduce((sum, e) => sum + e.durationMinutes, 0);
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+    <Card className="bg-white border-border rounded-2xl">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
-            <Heart className="h-5 w-5 text-[hsl(34,55%,52%)]" /> Today's Wellness
+          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
+            <Heart className="h-5 w-5 text-accent" /> Today's Wellness
           </CardTitle>
-          <span className="text-xs text-[hsl(25,18%,48%)] font-body">{new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <span className="text-xs text-muted-foreground font-body">{new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</span>
         </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
-            <Apple className="h-5 w-5 text-[hsl(34,55%,52%)] mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{todayMeals.length}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Meals logged</p>
+          <div className="bg-muted rounded-xl p-3 border border-border text-center">
+            <Apple className="h-5 w-5 text-accent mx-auto mb-1" />
+            <p className="text-lg font-heading font-bold text-foreground">{todayMeals.length}</p>
+            <p className="text-[10px] text-muted-foreground font-body">Meals logged</p>
           </div>
-          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
+          <div className="bg-muted rounded-xl p-3 border border-border text-center">
             <Sparkles className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalMindBodyMins}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min mindfulness</p>
+            <p className="text-lg font-heading font-bold text-foreground">{totalMindBodyMins}</p>
+            <p className="text-[10px] text-muted-foreground font-body">Min mindfulness</p>
           </div>
-          <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3 border border-[hsl(30,22%,87%)] text-center">
+          <div className="bg-muted rounded-xl p-3 border border-border text-center">
             <Activity className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-[hsl(25,35%,22%)]">{totalExerciseMins}</p>
-            <p className="text-[10px] text-[hsl(25,18%,48%)] font-body">Min exercise</p>
+            <p className="text-lg font-heading font-bold text-foreground">{totalExerciseMins}</p>
+            <p className="text-[10px] text-muted-foreground font-body">Min exercise</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -909,11 +909,11 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
         </div>
         {todayMeals.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-body font-medium text-[hsl(25,18%,48%)]">Today's meals:</p>
+            <p className="text-xs font-body font-medium text-muted-foreground">Today's meals:</p>
             {todayMeals.map((meal) => (
-              <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
+              <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-foreground">
                 <Check className="h-3 w-3 text-primary" />
-                <span className="capitalize text-[hsl(25,18%,48%)]">{meal.mealType}:</span>
+                <span className="capitalize text-muted-foreground">{meal.mealType}:</span>
                 <span>{meal.description}</span>
               </div>
             ))}
@@ -921,19 +921,19 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
         )}
         {(todayMindBody.length > 0 || todayExercises.length > 0) && (
           <div className="mt-3 space-y-2">
-            <p className="text-xs font-body font-medium text-[hsl(25,18%,48%)]">Today's activities:</p>
+            <p className="text-xs font-body font-medium text-muted-foreground">Today's activities:</p>
             {todayMindBody.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
-                <Check className="h-3 w-3 text-[hsl(34,55%,52%)]" />
+              <div key={a.id} className="flex items-center gap-2 text-xs font-body text-foreground">
+                <Check className="h-3 w-3 text-accent" />
                 <span className="capitalize">{a.activityType}</span>
-                <span className="text-[hsl(25,18%,48%)]">— {a.durationMinutes} min</span>
+                <span className="text-muted-foreground">— {a.durationMinutes} min</span>
               </div>
             ))}
             {todayExercises.map((e) => (
-              <div key={e.id} className="flex items-center gap-2 text-xs font-body text-[hsl(25,30%,28%)]">
+              <div key={e.id} className="flex items-center gap-2 text-xs font-body text-foreground">
                 <Check className="h-3 w-3 text-primary" />
                 <span className="capitalize">{e.exerciseType}</span>
-                <span className="text-[hsl(25,18%,48%)]">— {e.durationMinutes} min</span>
+                <span className="text-muted-foreground">— {e.durationMinutes} min</span>
               </div>
             ))}
           </div>
@@ -945,17 +945,17 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
 
 function TreatmentTimelineWidget() {
   const timeline = [
-    { date: "April 2025", title: "Diagnosis", desc: "Stage IV melanoma with liver metastases. Three liver tumours identified.", color: "bg-[hsl(34,55%,52%)]" },
+    { date: "April 2025", title: "Diagnosis", desc: "Stage IV melanoma with liver metastases. Three liver tumours identified.", color: "bg-accent" },
     { date: "April–July 2025", title: "Immunotherapy", desc: "4 cycles of ipilimumab + nivolumab. Major partial metabolic response achieved.", color: "bg-primary" },
-    { date: "July 2025", title: "Treatment Paused", desc: "Immunotherapy paused due to severe toxicity (Grade 4 hepatitis, colitis). Started immunosuppression.", color: "bg-[hsl(0,50%,55%)]" },
-    { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Immune system now recovering.", color: "bg-[hsl(34,55%,52%)]" },
+    { date: "July 2025", title: "Treatment Paused", desc: "Immunotherapy paused due to severe toxicity (Grade 4 hepatitis, colitis). Started immunosuppression.", color: "bg-red-500" },
+    { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Immune system now recovering.", color: "bg-accent" },
     { date: "February 2026", title: "Continued Improvement", desc: "Latest scan shows continued improvement. One lesion metabolically complete. No new disease anywhere.", color: "bg-primary" },
   ];
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+    <Card className="bg-white border-border rounded-2xl">
       <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
+        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" /> Treatment Timeline
         </CardTitle>
       </CardHeader>
@@ -965,11 +965,11 @@ function TreatmentTimelineWidget() {
             <div key={i} className="flex items-start gap-4">
               <div className="flex flex-col items-center">
                 <div className={`w-3 h-3 rounded-full ${item.color} flex-shrink-0`} />
-                {i < timeline.length && <div className="w-px h-8 bg-[hsl(30,22%,87%)]" />}
+                {i < timeline.length && <div className="w-px h-8 bg-muted" />}
               </div>
               <div className="-mt-0.5">
-                <p className="font-body font-medium text-sm text-[hsl(25,30%,28%)]">{item.date} — {item.title}</p>
-                <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-0.5">{item.desc}</p>
+                <p className="font-body font-medium text-sm text-foreground">{item.date} — {item.title}</p>
+                <p className="text-xs text-muted-foreground font-body mt-0.5">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -977,7 +977,7 @@ function TreatmentTimelineWidget() {
             <div className="w-3 h-3 rounded-full border-2 border-primary bg-white flex-shrink-0" />
             <div className="-mt-0.5">
               <p className="font-body font-medium text-sm text-primary">May 2026 — Goal: NED</p>
-              <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-0.5">Target: No Evidence of Disease confirmation at next scan.</p>
+              <p className="text-xs text-muted-foreground font-body mt-0.5">Target: No Evidence of Disease confirmation at next scan.</p>
             </div>
           </div>
         </div>
@@ -994,23 +994,23 @@ function AppointmentsWidget() {
   ];
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+    <Card className="bg-white border-border rounded-2xl">
       <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
+        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {appointments.map((appt, i) => (
-            <div key={i} className={`flex items-center justify-between pb-3 ${i < appointments.length - 1 ? "border-b border-[hsl(30,22%,87%)]" : ""}`}>
+            <div key={i} className={`flex items-center justify-between pb-3 ${i < appointments.length - 1 ? "border-b border-border" : ""}`}>
               <div>
-                <p className="font-body font-medium text-sm text-[hsl(25,30%,28%)]">{appt.title}</p>
-                <p className="text-xs text-[hsl(25,18%,48%)] font-body">{appt.person}</p>
+                <p className="font-body font-medium text-sm text-foreground">{appt.title}</p>
+                <p className="text-xs text-muted-foreground font-body">{appt.person}</p>
               </div>
               <div className="text-right">
-                <p className="font-body font-medium text-sm text-[hsl(34,55%,45%)]">{appt.date}</p>
-                <p className="text-xs text-[hsl(25,18%,48%)] font-body">{appt.time}</p>
+                <p className="font-body font-medium text-sm text-accent">{appt.date}</p>
+                <p className="text-xs text-muted-foreground font-body">{appt.time}</p>
               </div>
             </div>
           ))}
@@ -1039,11 +1039,11 @@ function InspirationWidget() {
   const affirmation = affirmations[dayOfYear % affirmations.length];
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-[hsl(34,55%,52%)]/5 border-primary/15">
+    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/15">
       <CardContent className="p-6 text-center">
-        <Sun className="h-8 w-8 text-[hsl(34,55%,52%)] mx-auto mb-3" />
-        <p className="font-body text-[hsl(25,30%,28%)] italic leading-relaxed">"{affirmation}"</p>
-        <p className="text-[10px] text-[hsl(25,18%,50%)] font-body mt-3 uppercase tracking-widest">Today's Affirmation</p>
+        <Sun className="h-8 w-8 text-accent mx-auto mb-3" />
+        <p className="font-body text-foreground italic leading-relaxed">"{affirmation}"</p>
+        <p className="text-[10px] text-muted-foreground font-body mt-3 uppercase tracking-widest">Today's Affirmation</p>
       </CardContent>
     </Card>
   );
@@ -1055,9 +1055,9 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-white border-border max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
+          <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
             {icon} {title}
           </DialogTitle>
         </DialogHeader>
@@ -1083,7 +1083,7 @@ export default function SimpleDashboard() {
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[hsl(25,18%,48%)] font-body">Loading your dashboard...</p>
+            <p className="text-muted-foreground font-body">Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -1110,23 +1110,21 @@ export default function SimpleDashboard() {
   ];
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-5 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-primary/60 font-body text-xs tracking-[0.2em] uppercase mb-1.5">Your Healing Journey</p>
-            <h1 className="text-2xl lg:text-3xl font-heading font-bold text-[hsl(25,35%,22%)] tracking-wide">
+            <h1 className="text-2xl lg:text-3xl font-heading text-foreground">
               Welcome back, {user?.displayName || "Friend"}
             </h1>
-            <p className="text-sm text-[hsl(25,18%,50%)] font-body mt-1.5">
+            <p className="text-sm text-muted-foreground font-body mt-1">
               {user.treatmentStatus === "Active Surveillance"
-                ? "Your body continues to heal beautifully. Every day brings you closer."
+                ? "Your body continues to heal beautifully"
                 : "Continue nurturing your path to wellness"}
             </p>
           </div>
           <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
         </div>
-        <div className="mt-4 h-px bg-gradient-to-r from-primary/30 via-[hsl(34,55%,52%)]/20 to-transparent" />
       </div>
 
       {(isActive("scanCountdown") || isActive("treatmentJourney") || isActive("immuneRecovery") || isActive("activityStreak") || isActive("tumourResponse")) && (
@@ -1198,7 +1196,7 @@ export default function SimpleDashboard() {
 
       <ExpandableWidget
         title="Activity Streak"
-        icon={<Flame className="h-5 w-5 text-[hsl(34,55%,45%)]" />}
+        icon={<Flame className="h-5 w-5 text-accent" />}
         open={expandedWidget === "activityStreak"}
         onOpenChange={(open) => setExpandedWidget(open ? "activityStreak" : null)}
       >
@@ -1233,27 +1231,27 @@ export default function SimpleDashboard() {
           {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
           {isActive("appointments") && <AppointmentsWidget />}
           {isActive("aiAssistant") && (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border rounded-2xl">
               <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide text-base flex items-center gap-2">
+                <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
                   <MessageCircle className="h-5 w-5 text-primary" /> Health Assistant
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-4">
+                <p className="text-sm text-muted-foreground font-body mb-4">
                   Personalised guidance for nutrition, immune support, scan preparation, and emotional wellbeing.
                 </p>
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   {["Immune Support", "Scan Anxiety", "Liver Recovery", "Supplements"].map((topic) => (
                     <Link key={topic} href="/ai-assistant">
-                      <Button variant="outline" size="sm" className="w-full text-xs border-[hsl(30,22%,85%)] text-[hsl(25,20%,42%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body">
+                      <Button variant="outline" size="sm" className="w-full text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body rounded-lg">
                         {topic}
                       </Button>
                     </Link>
                   ))}
                 </div>
                 <Link href="/ai-assistant">
-                  <Button className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide">
+                  <Button className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium rounded-xl">
                     Start Conversation
                   </Button>
                 </Link>
@@ -1264,16 +1262,16 @@ export default function SimpleDashboard() {
       )}
 
       <div className="mb-6">
-        <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide mb-4">Explore Your Healing Tools</h2>
+        <h2 className="text-base font-heading text-foreground mb-4">Explore Your Healing Tools</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <div className="group bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-center cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0">
-                <div className="mx-auto w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+              <div className="group bg-white border border-border rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0">
+                <div className="mx-auto w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5 group-hover:bg-primary/15 transition-all duration-200">
                   <span className="text-primary">{link.icon}</span>
                 </div>
-                <h3 className="font-heading text-xs text-[hsl(25,30%,28%)] group-hover:text-primary transition-colors">{link.label}</h3>
-                <p className="text-[10px] text-[hsl(25,18%,55%)] font-body mt-0.5 line-clamp-1">{link.desc}</p>
+                <h3 className="font-body font-semibold text-xs text-foreground group-hover:text-primary transition-colors">{link.label}</h3>
+                <p className="text-[10px] text-muted-foreground font-body mt-0.5 line-clamp-1">{link.desc}</p>
               </div>
             </Link>
           ))}
