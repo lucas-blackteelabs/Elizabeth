@@ -50,21 +50,21 @@ export default function QuickChat() {
   };
 
   return (
-    <Card className="w-full shadow-md bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+    <Card className="w-full shadow-md bg-white border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-xl flex items-center gap-2 font-heading text-[hsl(34,55%,45%)]">
+        <CardTitle className="text-xl flex items-center gap-2 font-heading text-accent">
           <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
             AI
           </span>
           Health Assistant
         </CardTitle>
-        <CardDescription className="font-body text-[hsl(25,18%,48%)]">
+        <CardDescription className="font-body text-muted-foreground">
           Ask me about nutrition, stress management, supplements and more
         </CardDescription>
       </CardHeader>
       <CardContent className="h-40 overflow-y-auto space-y-3 text-sm">
         {conversation.length === 0 ? (
-          <div className="text-[hsl(25,18%,48%)] text-center my-4 font-body">
+          <div className="text-muted-foreground text-center my-4 font-body">
             Ask a question to get started
           </div>
         ) : (
@@ -76,8 +76,8 @@ export default function QuickChat() {
               <div 
                 className={`max-w-[80%] rounded-lg px-3 py-2 font-body ${
                   msg.role === "user" 
-                    ? "bg-primary/30 border border-primary/40 text-[hsl(25,30%,22%)]" 
-                    : "bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)]"
+                    ? "bg-primary/30 border border-primary/40 text-foreground" 
+                    : "bg-muted border border-border text-foreground"
                 }`}
               >
                 {msg.role === "assistant" ? (
@@ -105,9 +105,9 @@ export default function QuickChat() {
         )}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg px-3 py-2 bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] flex items-center gap-2 font-body">
+            <div className="max-w-[80%] rounded-lg px-3 py-2 bg-muted border border-border flex items-center gap-2 font-body">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-[hsl(25,18%,48%)]">Thinking...</span>
+              <span className="text-muted-foreground">Thinking...</span>
             </div>
           </div>
         )}
@@ -119,7 +119,7 @@ export default function QuickChat() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             disabled={isLoading}
-            className="flex-1 bg-[hsl(30,30%,95%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body"
+            className="flex-1 bg-muted border-border text-foreground placeholder:text-muted-foreground font-body"
           />
           <Button type="submit" size="icon" disabled={isLoading || !message.trim()}>
             {isLoading ? (

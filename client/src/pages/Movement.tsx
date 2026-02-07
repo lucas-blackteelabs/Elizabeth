@@ -13,21 +13,21 @@ export default function Movement() {
 
       <Card className="bg-primary/10 border-primary/20 mb-6">
         <CardContent className="p-4">
-          <p className="text-sm text-[hsl(25,30%,28%)] font-body">
+          <p className="text-sm text-foreground font-body">
             <span className="font-medium">For your phase:</span> During active surveillance after immunotherapy, moderate exercise supports immune function, reduces fatigue, and improves mood. Start gently and build gradually — your body is still recovering from treatment and immunosuppression.
           </p>
         </CardContent>
       </Card>
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+        <Card className="bg-white border-border">
           <CardHeader>
-            <CardTitle className="font-heading text-[hsl(34,55%,45%)] flex items-center gap-2">
+            <CardTitle className="font-heading text-accent flex items-center gap-2">
               <Heart className="h-5 w-5 text-primary" />
               Why Movement Matters Now
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+          <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
             <div className="flex items-start gap-2">
               <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
               <p>Regular moderate exercise enhances natural killer cell activity — your immune system's anti-cancer fighters</p>
@@ -51,39 +51,39 @@ export default function Movement() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+        <Card className="bg-white border-border">
           <CardHeader>
-            <CardTitle className="font-heading text-[hsl(34,55%,45%)] flex items-center gap-2">
+            <CardTitle className="font-heading text-accent flex items-center gap-2">
               <Leaf className="h-5 w-5 text-primary" />
               Guidelines for You
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+          <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
               <p>Aim for 150 minutes of moderate activity per week (build up gradually)</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
               <p>Listen to your body — fatigue post-immunotherapy is normal and varies day to day</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
               <p>Outdoor exercise in nature adds extra stress-reduction benefits</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
               <p>Wear sun protection — melanoma patients need to be extra careful with UV exposure</p>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
               <p>Rest days are just as important as active days for recovery</p>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide mb-4">Recommended Activities</h2>
+      <h2 className="text-lg font-heading text-accent tracking-wide mb-4">Recommended Activities</h2>
       
       <div className="grid md:grid-cols-3 gap-6">
         {[
@@ -94,22 +94,22 @@ export default function Movement() {
           {title: "Light Resistance", desc: "Resistance bands or light weights to maintain muscle mass and bone density during recovery.", level: "Moderate", benefit: "Strength & bones"},
           {title: "Stretching & Breathwork", desc: "Combine gentle stretches with deep breathing for relaxation and improved circulation.", level: "Gentle", benefit: "Relaxation"}
         ].map((exercise, index) => (
-          <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] overflow-hidden hover:border-primary/30 transition-all duration-300">
-            <div className="w-full h-28 bg-gradient-to-br from-primary/15 to-[hsl(34,55%,52%)]/10 flex items-center justify-center">
+          <Card key={index} className="bg-white border-border overflow-hidden hover:border-primary/30 transition-all duration-300">
+            <div className="w-full h-28 bg-gradient-to-br from-primary/15 to-accent/10 flex items-center justify-center">
               <PersonStanding className="h-10 w-10 text-primary/25" />
             </div>
             <CardContent className="p-4">
-              <h3 className="font-heading text-sm text-[hsl(25,30%,28%)] mb-1">{exercise.title}</h3>
-              <p className="text-sm text-[hsl(25,18%,50%)] font-body mb-3">{exercise.desc}</p>
+              <h3 className="font-heading text-sm text-foreground mb-1">{exercise.title}</h3>
+              <p className="text-sm text-muted-foreground font-body mb-3">{exercise.desc}</p>
               <div className="flex justify-between items-center">
                 <span className={`text-xs font-body font-medium px-2 py-1 rounded border ${
                   exercise.level === "Gentle" 
                     ? "bg-primary/15 text-primary border-primary/25" 
-                    : "bg-[hsl(34,55%,52%)]/10 text-[hsl(34,55%,45%)] border-[hsl(34,55%,52%)]/20"
+                    : "bg-accent/10 text-accent border-accent/20"
                 }`}>
                   {exercise.level}
                 </span>
-                <span className="text-xs text-[hsl(25,18%,48%)] font-body">{exercise.benefit}</span>
+                <span className="text-xs text-muted-foreground font-body">{exercise.benefit}</span>
               </div>
             </CardContent>
           </Card>

@@ -17,8 +17,8 @@ function ChatBubble({ role, content }: { role: "user" | "assistant"; content: st
       className={cn(
         "max-w-[85%] mb-3 p-3 rounded-lg font-body text-sm",
         isUser
-          ? "bg-primary/30 border border-primary/40 text-[hsl(25,30%,22%)] ml-auto rounded-br-sm"
-          : "bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)] mr-auto rounded-bl-sm"
+          ? "bg-primary/30 border border-primary/40 text-foreground ml-auto rounded-br-sm"
+          : "bg-muted border border-border text-foreground mr-auto rounded-bl-sm"
       )}
     >
       {role === "assistant" ? (
@@ -92,15 +92,15 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
       <div className={cn(
         "absolute inset-0 rounded-full transition-all duration-500",
         isOpen
-          ? "bg-[hsl(25,18%,48%)]"
-          : "bg-gradient-to-br from-[hsl(158,38%,48%)] via-[hsl(158,32%,42%)] to-[hsl(158,28%,35%)]"
+          ? "bg-muted-foreground"
+          : "bg-gradient-to-br from-primary via-primary to-primary/90"
       )} />
 
       {!isOpen && (
         <>
           <div className="absolute inset-[-4px] rounded-full bg-primary/25 animate-ping" style={{ animationDuration: "2.5s" }} />
-          <div className="absolute inset-[-2px] rounded-full bg-gradient-to-br from-primary/40 to-[hsl(34,55%,52%)]/30 blur-sm" />
-          <div className="absolute inset-[-6px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/20 to-[hsl(34,55%,52%)]/15 blur-md" />
+          <div className="absolute inset-[-2px] rounded-full bg-gradient-to-br from-primary/40 to-accent/30 blur-sm" />
+          <div className="absolute inset-[-6px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-primary/20 to-accent/15 blur-md" />
         </>
       )}
 
@@ -119,8 +119,8 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
 
       {!isOpen && (
         <span className="absolute -top-0.5 -right-0.5 z-20 flex h-4 w-4">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(34,55%,52%)] opacity-50" style={{ animationDuration: "2s" }} />
-          <span className="relative inline-flex rounded-full h-4 w-4 bg-[hsl(34,55%,52%)] items-center justify-center">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-50" style={{ animationDuration: "2s" }} />
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-accent items-center justify-center">
             <Sparkles className="h-2.5 w-2.5 text-white" />
           </span>
         </span>
@@ -135,19 +135,19 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
       )}
 
       {isOpen && (
-        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:w-[420px] z-50 bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-5 duration-300" style={{ maxHeight: "70vh" }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(30,25%,87%)] bg-[hsl(32,35%,94%)] rounded-t-2xl">
+        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:w-[420px] z-50 bg-white border border-border rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-5 duration-300" style={{ maxHeight: "70vh" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted rounded-t-2xl">
             <div className="flex items-center gap-2">
               <div className="bg-primary/10 text-primary p-1.5 rounded-full">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="font-heading text-sm text-[hsl(34,55%,45%)] tracking-wide">Elizabeth AI</h3>
-                <p className="text-[10px] text-[hsl(25,18%,55%)] font-body">Ask me anything about your health journey</p>
+                <h3 className="font-heading text-sm text-accent tracking-wide">Elizabeth AI</h3>
+                <p className="text-[10px] text-muted-foreground font-body">Ask me anything about your health journey</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full hover:bg-[hsl(30,20%,88%)] flex items-center justify-center transition-colors">
-              <X className="h-4 w-4 text-[hsl(25,18%,48%)]" />
+            <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center transition-colors">
+              <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
 
@@ -156,7 +156,7 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
               <ChatBubble key={index} role={message.role} content={message.content} />
             ))}
             {isLoading && (
-              <div className="flex space-x-2 p-3 max-w-[80%] bg-[hsl(30,22%,93%)] border border-[hsl(30,22%,85%)] rounded-lg mr-auto">
+              <div className="flex space-x-2 p-3 max-w-[80%] bg-muted border border-border rounded-lg mr-auto">
                 <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:-0.3s]"></div>
                 <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:-0.15s]"></div>
                 <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce"></div>
@@ -164,13 +164,13 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
             )}
           </div>
 
-          <form onSubmit={handleSend} className="p-3 border-t border-[hsl(30,25%,87%)]">
+          <form onSubmit={handleSend} className="p-3 border-t border-border">
             <div className="flex gap-2">
               <input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask anything..."
-                className="flex-1 px-3 py-2 text-sm rounded-xl bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:outline-none focus:border-primary/40"
+                className="flex-1 px-3 py-2 text-sm rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground font-body focus:outline-none focus:border-primary/40"
                 disabled={isLoading}
               />
               <button
@@ -182,8 +182,8 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
               </button>
             </div>
             <div className="flex items-center justify-between mt-2 px-1">
-              <span className="text-[10px] text-[hsl(25,15%,55%)] font-body">Powered by Google Gemini</span>
-              <span className="text-[10px] text-[hsl(25,15%,55%)] font-body flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground font-body">Powered by Google Gemini</span>
+              <span className="text-[10px] text-muted-foreground font-body flex items-center gap-1">
                 <ShieldCheck className="h-3 w-3" /> HIPAA Compliant
               </span>
             </div>

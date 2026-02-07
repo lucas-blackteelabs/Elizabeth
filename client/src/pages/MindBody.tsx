@@ -14,14 +14,14 @@ export default function MindBody() {
 
       <Card className="bg-primary/10 border-primary/20 mb-6">
         <CardContent className="p-4">
-          <p className="text-sm text-[hsl(25,30%,28%)] font-body">
+          <p className="text-sm text-foreground font-body">
             <span className="font-medium">Research shows:</span> Mind-body practices can reduce cortisol, support immune function, and help manage scanxiety. Even 10 minutes daily makes a measurable difference in wellbeing and immune markers.
           </p>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="meditation">
-        <TabsList className="mb-6 bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)]">
+        <TabsList className="mb-6 bg-muted border border-border">
           <TabsTrigger value="meditation" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-body">
             <Bath className="h-4 w-4 mr-2" /> Meditation
           </TabsTrigger>
@@ -46,13 +46,13 @@ export default function MindBody() {
               {title: "Immune System Meditation", desc: "Visualise your T-cells patrolling and protecting. Strengthen the connection between mind and immune function.", time: "12 min"},
               {title: "Calm Before Scans", desc: "A grounding meditation specifically designed for the days leading up to surveillance scans.", time: "10 min"}
             ].map((practice, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] overflow-hidden hover:border-primary/30 transition-all duration-300">
-                <div className="w-full h-28 bg-gradient-to-br from-primary/15 to-[hsl(34,55%,52%)]/10 flex items-center justify-center">
+              <Card key={index} className="bg-white border-border overflow-hidden hover:border-primary/30 transition-all duration-300">
+                <div className="w-full h-28 bg-gradient-to-br from-primary/15 to-accent/10 flex items-center justify-center">
                   <Sparkles className="h-10 w-10 text-primary/25" />
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-heading text-sm text-[hsl(25,30%,28%)] mb-1">{practice.title}</h3>
-                  <p className="text-sm text-[hsl(25,18%,50%)] font-body mb-2">{practice.desc}</p>
+                  <h3 className="font-heading text-sm text-foreground mb-1">{practice.title}</h3>
+                  <p className="text-sm text-muted-foreground font-body mb-2">{practice.desc}</p>
                   <p className="text-xs text-primary font-body mb-3">{practice.time}</p>
                   <Button className="w-full bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 font-body">
                     Begin Practice
@@ -65,30 +65,30 @@ export default function MindBody() {
         
         <TabsContent value="breathing">
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">4-7-8 Calming Breath</CardTitle>
-                <CardDescription className="text-[hsl(25,18%,50%)] font-body">Activates the parasympathetic nervous system</CardDescription>
+                <CardTitle className="font-heading text-accent">4-7-8 Calming Breath</CardTitle>
+                <CardDescription className="text-muted-foreground font-body">Activates the parasympathetic nervous system</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+              <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
                 <p>1. Breathe in through your nose for <span className="font-medium text-primary">4 counts</span></p>
                 <p>2. Hold your breath for <span className="font-medium text-primary">7 counts</span></p>
                 <p>3. Exhale slowly through your mouth for <span className="font-medium text-primary">8 counts</span></p>
                 <p>4. Repeat 4 cycles</p>
-                <p className="text-xs italic text-[hsl(25,18%,55%)]">Especially helpful before bed or when anxiety rises</p>
+                <p className="text-xs italic text-muted-foreground">Especially helpful before bed or when anxiety rises</p>
               </CardContent>
             </Card>
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Box Breathing</CardTitle>
-                <CardDescription className="text-[hsl(25,18%,50%)] font-body">Used by special forces for calm under pressure</CardDescription>
+                <CardTitle className="font-heading text-accent">Box Breathing</CardTitle>
+                <CardDescription className="text-muted-foreground font-body">Used by special forces for calm under pressure</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+              <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
                 <p>1. Breathe in for <span className="font-medium text-primary">4 counts</span></p>
                 <p>2. Hold for <span className="font-medium text-primary">4 counts</span></p>
                 <p>3. Breathe out for <span className="font-medium text-primary">4 counts</span></p>
                 <p>4. Hold for <span className="font-medium text-primary">4 counts</span></p>
-                <p className="text-xs italic text-[hsl(25,18%,55%)]">Great for scan days or waiting for results</p>
+                <p className="text-xs italic text-muted-foreground">Great for scan days or waiting for results</p>
               </CardContent>
             </Card>
           </div>
@@ -96,11 +96,11 @@ export default function MindBody() {
         
         <TabsContent value="sleep">
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Sleep Hygiene for Healing</CardTitle>
+                <CardTitle className="font-heading text-accent">Sleep Hygiene for Healing</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+              <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                   <p>Keep a consistent sleep schedule — your immune system repairs during deep sleep</p>
@@ -123,26 +123,26 @@ export default function MindBody() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">When Sleep Eludes You</CardTitle>
+                <CardTitle className="font-heading text-accent">When Sleep Eludes You</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+              <CardContent className="space-y-3 text-sm text-muted-foreground font-body">
                 <p>It's normal for sleep to be disrupted during surveillance. Your mind may race with worry, especially around scan time.</p>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                   <p>Try the 4-7-8 breathing technique in bed</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                   <p>Write worries in a journal — get them out of your head</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                   <p>Progressive muscle relaxation from toes to head</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                   <p>If awake for 20+ minutes, get up and do something calming</p>
                 </div>
               </CardContent>
@@ -151,10 +151,10 @@ export default function MindBody() {
         </TabsContent>
         
         <TabsContent value="scanxiety">
-          <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+          <Card className="bg-white border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Managing Scanxiety</CardTitle>
-              <CardDescription className="text-[hsl(25,18%,50%)] font-body">
+              <CardTitle className="font-heading text-accent">Managing Scanxiety</CardTitle>
+              <CardDescription className="text-muted-foreground font-body">
                 Scan anxiety is one of the most common challenges during surveillance. Here are evidence-based strategies.
               </CardDescription>
             </CardHeader>
@@ -162,7 +162,7 @@ export default function MindBody() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-heading text-sm text-primary">Before the Scan</h3>
-                  <div className="space-y-2 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <div className="space-y-2 text-sm text-muted-foreground font-body">
                     <div className="flex items-start gap-2">
                       <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                       <p>Acknowledge the anxiety — it's completely normal and valid</p>
@@ -182,22 +182,22 @@ export default function MindBody() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h3 className="font-heading text-sm text-[hsl(34,55%,45%)]">While Waiting for Results</h3>
-                  <div className="space-y-2 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <h3 className="font-heading text-sm text-accent">While Waiting for Results</h3>
+                  <div className="space-y-2 text-sm text-muted-foreground font-body">
                     <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                       <p>Remember: your last scan showed continued improvement</p>
                     </div>
                     <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                       <p>Stay busy with activities that bring you joy</p>
                     </div>
                     <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                       <p>Use breathing exercises when worry thoughts arise</p>
                     </div>
                     <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[hsl(34,55%,52%)] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                       <p>Talk to your support network — you don't have to wait alone</p>
                     </div>
                   </div>

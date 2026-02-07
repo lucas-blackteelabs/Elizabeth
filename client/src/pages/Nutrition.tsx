@@ -9,7 +9,7 @@ import { useUser } from "@/contexts/UserContext";
 function AIContent({ content }: { content: string }) {
   const lines = content.split('\n');
   return (
-    <div className="text-sm text-[hsl(25,18%,42%)] font-body leading-relaxed space-y-1.5">
+    <div className="text-sm text-foreground font-body leading-relaxed space-y-1.5">
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} className="h-1" />;
@@ -43,7 +43,7 @@ function AIContent({ content }: { content: string }) {
 function formatBold(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i} className="text-[hsl(25,30%,22%)]">{part}</strong> : part
+    i % 2 === 1 ? <strong key={i} className="text-foreground">{part}</strong> : part
   );
 }
 
@@ -102,14 +102,14 @@ export default function Nutrition() {
 
       <Card className="bg-primary/10 border-primary/20 mb-6">
         <CardContent className="p-4">
-          <p className="text-sm text-[hsl(25,30%,28%)] font-body">
+          <p className="text-sm text-foreground font-body">
             <span className="font-medium">For your situation:</span> After immunotherapy-related hepatitis, focus on liver-supportive and anti-inflammatory foods. Your liver is recovering beautifully — nourish it with gentle, whole foods that also support your immune system's ongoing work against melanoma.
           </p>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="ai-plan">
-        <TabsList className="mb-6 bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)]">
+        <TabsList className="mb-6 bg-muted border border-border">
           <TabsTrigger value="ai-plan" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-body">
             <Sparkles className="h-4 w-4 mr-2" /> AI Meal Plan
           </TabsTrigger>
@@ -126,15 +126,15 @@ export default function Nutrition() {
 
         <TabsContent value="ai-plan">
           <div className="space-y-6">
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-[hsl(34,55%,52%)]" />
+                <CardTitle className="font-heading text-accent tracking-wide flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-accent" />
                   Your Personalised Daily Meal Plan
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-4">
+                <p className="text-sm text-muted-foreground font-body mb-4">
                   Get a personalised cancer-fighting meal plan based on Radical Remission nutrition principles, tailored to your specific situation — liver recovery, immune support, and anti-inflammatory focus.
                 </p>
                 
@@ -150,13 +150,13 @@ export default function Nutrition() {
                 {mealPlanLoading && (
                   <div className="flex items-center gap-3 py-8 justify-center">
                     <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                    <p className="text-sm text-[hsl(25,18%,48%)] font-body">Creating your personalised meal plan...</p>
+                    <p className="text-sm text-muted-foreground font-body">Creating your personalised meal plan...</p>
                   </div>
                 )}
 
                 {mealPlan && !mealPlanLoading && (
                   <div>
-                    <div className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-lg p-5 mb-4">
+                    <div className="bg-muted border border-border rounded-lg p-5 mb-4">
                       <AIContent content={mealPlan} />
                     </div>
                     <Button 
@@ -171,15 +171,15 @@ export default function Nutrition() {
               </CardContent>
             </Card>
 
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2">
+                <CardTitle className="font-heading text-accent tracking-wide flex items-center gap-2">
                   <Utensils className="h-5 w-5 text-primary" />
                   Quick Meal Idea
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body mb-4">
+                <p className="text-sm text-muted-foreground font-body mb-4">
                   Need inspiration for a specific meal? Get an AI-generated cancer-fighting recipe suggestion.
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -190,7 +190,7 @@ export default function Nutrition() {
                       size="sm"
                       onClick={() => generateMealSuggestion(type)}
                       disabled={suggestionLoading}
-                      className={`text-xs font-body capitalize border-[hsl(30,22%,85%)] hover:bg-primary/10 hover:text-primary hover:border-primary/30 ${selectedMealType === type && mealSuggestion ? 'bg-primary/10 text-primary border-primary/30' : 'text-[hsl(25,20%,42%)]'}`}
+                      className={`text-xs font-body capitalize border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 ${selectedMealType === type && mealSuggestion ? 'bg-primary/10 text-primary border-primary/30' : 'text-foreground'}`}
                     >
                       {type}
                     </Button>
@@ -200,12 +200,12 @@ export default function Nutrition() {
                 {suggestionLoading && (
                   <div className="flex items-center gap-3 py-6 justify-center">
                     <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                    <p className="text-sm text-[hsl(25,18%,48%)] font-body">Finding a perfect {selectedMealType} for you...</p>
+                    <p className="text-sm text-muted-foreground font-body">Finding a perfect {selectedMealType} for you...</p>
                   </div>
                 )}
 
                 {mealSuggestion && !suggestionLoading && (
-                  <div className="bg-[hsl(30,30%,95%)] border border-[hsl(30,22%,87%)] rounded-lg p-5">
+                  <div className="bg-muted border border-border rounded-lg p-5">
                     <AIContent content={mealSuggestion} />
                   </div>
                 )}
@@ -216,7 +216,7 @@ export default function Nutrition() {
         
         <TabsContent value="recipes">
           <div className="mb-4 flex justify-between items-center">
-            <h2 className="text-lg font-heading text-[hsl(25,30%,28%)]">Anti-Inflammatory & Immune-Boosting Recipes</h2>
+            <h2 className="text-lg font-heading text-foreground">Anti-Inflammatory & Immune-Boosting Recipes</h2>
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -228,13 +228,13 @@ export default function Nutrition() {
               {title: "Mediterranean Lentil Bowl", desc: "Fibre-rich lentils with olive oil, herbs, and vegetables", tag: "Gut Health"},
               {title: "Green Tea Matcha Bowl", desc: "Matcha with avocado, nuts, seeds, and fresh fruit", tag: "Immune Support"}
             ].map((recipe, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] overflow-hidden hover:border-primary/30 transition-all duration-300">
-                <div className="w-full h-32 bg-gradient-to-br from-primary/15 to-[hsl(34,55%,52%)]/10 flex items-center justify-center">
+              <Card key={index} className="bg-white border-border overflow-hidden hover:border-primary/30 transition-all duration-300">
+                <div className="w-full h-32 bg-gradient-to-br from-primary/15 to-accent/10 flex items-center justify-center">
                   <Apple className="h-10 w-10 text-primary/30" />
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-heading text-sm text-[hsl(25,30%,28%)] mb-1">{recipe.title}</h3>
-                  <p className="text-sm text-[hsl(25,18%,50%)] font-body mb-3">{recipe.desc}</p>
+                  <h3 className="font-heading text-sm text-foreground mb-1">{recipe.title}</h3>
+                  <p className="text-sm text-muted-foreground font-body mb-3">{recipe.desc}</p>
                   <span className="text-xs font-body font-medium px-2 py-1 bg-primary/10 text-primary rounded border border-primary/20">
                     {recipe.tag}
                   </span>
@@ -246,12 +246,12 @@ export default function Nutrition() {
         
         <TabsContent value="liver">
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Foods That Support Liver Recovery</CardTitle>
+                <CardTitle className="font-heading text-accent">Foods That Support Liver Recovery</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 font-body text-sm text-[hsl(25,18%,48%)]">
+                <div className="space-y-3 font-body text-sm text-muted-foreground">
                   {[
                     { name: "Cruciferous vegetables", desc: "broccoli, cauliflower, Brussels sprouts support liver detox enzymes" },
                     { name: "Beetroot", desc: "contains betaine which supports liver cell function" },
@@ -262,29 +262,29 @@ export default function Nutrition() {
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                      <p><span className="font-medium text-[hsl(25,30%,28%)]">{item.name}</span> — {item.desc}</p>
+                      <p><span className="font-medium text-foreground">{item.name}</span> — {item.desc}</p>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Foods to Minimise</CardTitle>
+                <CardTitle className="font-heading text-accent">Foods to Minimise</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 font-body text-sm text-[hsl(25,18%,48%)]">
+                <div className="space-y-3 font-body text-sm text-muted-foreground">
                   {[
-                    { name: "Alcohol", desc: "places additional burden on recovering liver", color: "bg-[hsl(0,50%,55%)]" },
-                    { name: "Processed foods", desc: "preservatives and additives stress the liver", color: "bg-[hsl(0,50%,55%)]" },
-                    { name: "Refined sugars", desc: "contribute to inflammation and fatty liver", color: "bg-[hsl(0,50%,55%)]" },
-                    { name: "Excess saturated fat", desc: "can impede liver recovery", color: "bg-[hsl(0,50%,55%)]" },
-                    { name: "Grapefruit", desc: "may interact with some medications; check with your team", color: "bg-[hsl(34,55%,52%)]" },
+                    { name: "Alcohol", desc: "places additional burden on recovering liver", color: "bg-red-500" },
+                    { name: "Processed foods", desc: "preservatives and additives stress the liver", color: "bg-red-500" },
+                    { name: "Refined sugars", desc: "contribute to inflammation and fatty liver", color: "bg-red-500" },
+                    { name: "Excess saturated fat", desc: "can impede liver recovery", color: "bg-red-500" },
+                    { name: "Grapefruit", desc: "may interact with some medications; check with your team", color: "bg-accent" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <div className={`w-2 h-2 rounded-full ${item.color} mt-1.5 flex-shrink-0`} />
-                      <p><span className="font-medium text-[hsl(25,30%,28%)]">{item.name}</span> — {item.desc}</p>
+                      <p><span className="font-medium text-foreground">{item.name}</span> — {item.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -294,15 +294,15 @@ export default function Nutrition() {
         </TabsContent>
         
         <TabsContent value="shopping">
-          <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+          <Card className="bg-white border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Healing Shopping List</CardTitle>
+              <CardTitle className="font-heading text-accent">Healing Shopping List</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <h3 className="font-heading text-sm text-primary mb-3">Vegetables</h3>
-                  <ul className="space-y-1 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <ul className="space-y-1 text-sm text-muted-foreground font-body">
                     <li>Broccoli & cauliflower</li>
                     <li>Beetroot</li>
                     <li>Spinach & kale</li>
@@ -313,7 +313,7 @@ export default function Nutrition() {
                 </div>
                 <div>
                   <h3 className="font-heading text-sm text-primary mb-3">Proteins & Fats</h3>
-                  <ul className="space-y-1 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <ul className="space-y-1 text-sm text-muted-foreground font-body">
                     <li>Wild salmon</li>
                     <li>Sardines</li>
                     <li>Walnuts & almonds</li>
@@ -324,7 +324,7 @@ export default function Nutrition() {
                 </div>
                 <div>
                   <h3 className="font-heading text-sm text-primary mb-3">Fruits & Extras</h3>
-                  <ul className="space-y-1 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <ul className="space-y-1 text-sm text-muted-foreground font-body">
                     <li>Blueberries & raspberries</li>
                     <li>Lemons & limes</li>
                     <li>Green tea / matcha</li>

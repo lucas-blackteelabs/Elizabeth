@@ -40,20 +40,20 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+      <Card className="w-full max-w-md bg-white border-border">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto bg-primary text-white p-3 rounded mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)] tracking-wide">Elizabeth</CardTitle>
-          <CardDescription className="text-[hsl(25,18%,50%)] font-body">
+          <CardTitle className="text-2xl font-heading font-bold text-accent tracking-wide">Elizabeth</CardTitle>
+          <CardDescription className="text-muted-foreground font-body">
             Your healing companion
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-[hsl(25,30%,28%)] font-body">Username</Label>
+              <Label htmlFor="username" className="text-foreground font-body">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -61,11 +61,11 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-primary/40"
+                className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground font-body focus:border-primary/40"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[hsl(25,30%,28%)] font-body">Password</Label>
+              <Label htmlFor="password" className="text-foreground font-body">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -73,7 +73,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-primary/40"
+                className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground font-body focus:border-primary/40"
               />
             </div>
             <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide" disabled={isLoading}>
@@ -81,8 +81,8 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            <Separator className="my-4 bg-[hsl(30,25%,87%)]" />
-            <p className="text-[hsl(25,18%,48%)] font-body">
+            <Separator className="my-4 bg-muted" />
+            <p className="text-muted-foreground font-body">
               Don't have an account?{' '}
               <a
                 href="/register"

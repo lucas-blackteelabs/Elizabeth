@@ -14,14 +14,14 @@ export default function Community() {
 
       <Card className="bg-primary/10 border-primary/20 mb-6">
         <CardContent className="p-4">
-          <p className="text-sm text-[hsl(25,30%,28%)] font-body">
+          <p className="text-sm text-foreground font-body">
             <span className="font-medium">Radical Remission Factor #7:</span> Embracing social support is one of the nine key healing factors. Strong connections with others who understand your journey can reduce stress, boost immune function, and improve outcomes.
           </p>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="resources">
-        <TabsList className="mb-6 bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)]">
+        <TabsList className="mb-6 bg-muted border border-border">
           <TabsTrigger value="resources" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-body">
             <BookOpen className="h-4 w-4 mr-2" /> Resources
           </TabsTrigger>
@@ -43,13 +43,13 @@ export default function Community() {
               {title: "Immunotherapy Side Effects Guide", desc: "Understanding and managing immune-related adverse events from checkpoint inhibitor therapy, including hepatitis and colitis.", link: "cancer.net"},
               {title: "Chris Wark - Chris Beat Cancer", desc: "Evidence-based holistic healing strategies alongside conventional treatment. Nutrition, supplements, and lifestyle approaches.", link: "chrisbeatcancer.com"}
             ].map((resource, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] hover:border-primary/30 transition-all duration-300">
+              <Card key={index} className="bg-white border-border hover:border-primary/30 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(25,30%,28%)] flex items-center gap-2">
+                  <CardTitle className="font-heading text-foreground flex items-center gap-2">
                     {resource.title}
-                    <ExternalLink className="h-3.5 w-3.5 text-[hsl(25,18%,48%)]" />
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                   </CardTitle>
-                  <CardDescription className="text-[hsl(25,18%,50%)] font-body">{resource.desc}</CardDescription>
+                  <CardDescription className="text-muted-foreground font-body">{resource.desc}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs text-primary font-body">{resource.link}</p>
@@ -67,10 +67,10 @@ export default function Community() {
               {title: "Cancer Wellness Groups", desc: "Holistic wellness groups focused on nutrition, meditation, and complementary therapies alongside conventional treatment.", members: "Local chapters"},
               {title: "Young Cancer Survivors Network", desc: "Support for younger adults navigating cancer, treatment aftermath, and building a new normal.", members: "National network"}
             ].map((group, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] hover:border-primary/30 transition-all duration-300">
+              <Card key={index} className="bg-white border-border hover:border-primary/30 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(25,30%,28%)]">{group.title}</CardTitle>
-                  <CardDescription className="text-[hsl(25,18%,50%)] font-body">{group.desc}</CardDescription>
+                  <CardTitle className="font-heading text-foreground">{group.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground font-body">{group.desc}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
@@ -93,13 +93,13 @@ export default function Community() {
               {title: "When Breath Becomes Air", author: "Paul Kalanithi", desc: "A powerful memoir about facing mortality and finding what makes life worth living."},
               {title: "Mind Over Medicine", author: "Dr Lissa Rankin", desc: "Scientific proof that the mind can heal the body. How beliefs, feelings, and thoughts influence health."}
             ].map((book, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] hover:border-primary/30 transition-all duration-300">
+              <Card key={index} className="bg-white border-border hover:border-primary/30 transition-all duration-300">
                 <CardHeader className="pb-2">
-                  <CardTitle className="font-heading text-[hsl(25,30%,28%)] text-base">{book.title}</CardTitle>
+                  <CardTitle className="font-heading text-foreground text-base">{book.title}</CardTitle>
                   <p className="text-sm text-primary font-body">{book.author}</p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-[hsl(25,18%,50%)] font-body">{book.desc}</p>
+                  <p className="text-sm text-muted-foreground font-body">{book.desc}</p>
                 </CardContent>
               </Card>
             ))}

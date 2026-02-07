@@ -13,12 +13,12 @@ export function Heading({ title, description, className, children }: HeadingProp
     <header className={cn("mb-8", className)}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)] tracking-wide">{title}</h1>
-          {description && <p className="text-[hsl(25,18%,48%)] font-body mt-1">{description}</p>}
+          <h1 className="text-2xl font-heading font-bold text-accent tracking-wide">{title}</h1>
+          {description && <p className="text-muted-foreground font-body mt-1">{description}</p>}
         </div>
         {children}
       </div>
-      <div className="mt-3 h-px bg-gradient-to-r from-[hsl(34,55%,52%)]/40 via-primary/30 to-transparent" />
+      <div className="mt-3 h-px bg-gradient-to-r from-accent/40 via-primary/30 to-transparent" />
     </header>
   );
 }

@@ -14,14 +14,14 @@ export default function SpiritualWellbeing() {
 
       <Card className="bg-primary/10 border-primary/20 mb-6">
         <CardContent className="p-4">
-          <p className="text-sm text-[hsl(25,30%,28%)] font-body">
+          <p className="text-sm text-foreground font-body">
             <span className="font-medium">Radical Remission research shows:</span> Having strong reasons for living, following your own intuition, and deepening your spiritual connection are among the most common factors in remarkable recoveries.
           </p>
         </CardContent>
       </Card>
       
       <Tabs defaultValue="reflection">
-        <TabsList className="mb-6 bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)]">
+        <TabsList className="mb-6 bg-muted border border-border">
           <TabsTrigger value="reflection" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-body">
             <Heart className="h-4 w-4 mr-2" /> Healing Practices
           </TabsTrigger>
@@ -43,10 +43,10 @@ export default function SpiritualWellbeing() {
               {title: "Social Connection", desc: "Strong social support is linked to better cancer outcomes. Nurture your relationships."},
               {title: "Taking Control", desc: "Identify areas of your health you can control — diet, supplements, movement, mindset."}
             ].map((practice, index) => (
-              <Card key={index} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] hover:border-primary/30 transition-all duration-300">
+              <Card key={index} className="bg-white border-border hover:border-primary/30 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(25,30%,28%)]">{practice.title}</CardTitle>
-                  <CardDescription className="text-[hsl(25,18%,50%)] font-body">{practice.desc}</CardDescription>
+                  <CardTitle className="font-heading text-foreground">{practice.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground font-body">{practice.desc}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button className="w-full bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 font-body">Start Practice</Button>
@@ -57,10 +57,10 @@ export default function SpiritualWellbeing() {
         </TabsContent>
         
         <TabsContent value="purpose">
-          <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+          <Card className="bg-white border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Strong Reasons for Living</CardTitle>
-              <CardDescription className="text-[hsl(25,18%,50%)] font-body">
+              <CardTitle className="font-heading text-accent">Strong Reasons for Living</CardTitle>
+              <CardDescription className="text-muted-foreground font-body">
                 Research shows that people with a clear sense of purpose and strong reasons for living have significantly better health outcomes. This is one of the nine key factors in Radical Remission.
               </CardDescription>
             </CardHeader>
@@ -69,7 +69,7 @@ export default function SpiritualWellbeing() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="font-heading text-sm text-primary">Reflection Prompts</h3>
-                    <div className="space-y-3 text-sm text-[hsl(25,18%,48%)] font-body">
+                    <div className="space-y-3 text-sm text-muted-foreground font-body">
                       <div className="flex items-start gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                         <p>What brings me the most joy in life?</p>
@@ -93,11 +93,11 @@ export default function SpiritualWellbeing() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="font-heading text-sm text-[hsl(34,55%,45%)]">Your NED Goal: May 2026</h3>
-                    <p className="text-sm text-[hsl(25,18%,48%)] font-body">
+                    <h3 className="font-heading text-sm text-accent">Your NED Goal: May 2026</h3>
+                    <p className="text-sm text-muted-foreground font-body">
                       You have a powerful and specific goal: achieving No Evidence of Disease by your May 2026 scan. Your body is already showing remarkable progress — one lesion metabolically complete, no new disease.
                     </p>
-                    <p className="text-sm text-[hsl(25,18%,48%)] font-body">
+                    <p className="text-sm text-muted-foreground font-body">
                       Visualise reaching that milestone. Feel the relief, the joy, the gratitude. Your immune system responded beautifully to treatment, and it continues to work even now.
                     </p>
                     <p className="text-sm text-primary font-body font-medium italic">
@@ -111,22 +111,22 @@ export default function SpiritualWellbeing() {
         </TabsContent>
         
         <TabsContent value="journal">
-          <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+          <Card className="bg-white border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-[hsl(34,55%,45%)]">Healing Journal</CardTitle>
-              <CardDescription className="text-[hsl(25,18%,50%)] font-body">
+              <CardTitle className="font-heading text-accent">Healing Journal</CardTitle>
+              <CardDescription className="text-muted-foreground font-body">
                 A private space to document your healing journey, track how you're feeling, and process emotions.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)] rounded-lg p-4">
+                <div className="bg-muted border border-border rounded-lg p-4">
                   <h3 className="font-heading text-sm text-primary mb-3">Today's Prompt</h3>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body italic">
+                  <p className="text-sm text-muted-foreground font-body italic">
                     "What is one thing my body did today that I'm grateful for? How did I support my healing today?"
                   </p>
                 </div>
-                <p className="text-sm text-[hsl(25,18%,50%)] font-body text-center py-4">
+                <p className="text-sm text-muted-foreground font-body text-center py-4">
                   Journal entries will be saved privately and securely.
                 </p>
                 <Button className="mx-auto block bg-primary text-white hover:bg-primary/90 font-heading">Start Writing</Button>

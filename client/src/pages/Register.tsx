@@ -89,17 +89,17 @@ export default function Register() {
     }
   };
 
-  const inputClasses = "bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,22%)] placeholder:text-[hsl(25,15%,55%)] font-body focus:border-primary/40";
+  const inputClasses = "bg-muted/50 border-border text-foreground placeholder:text-muted-foreground font-body focus:border-primary/40";
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background py-8">
-      <Card className="w-full max-w-lg bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+      <Card className="w-full max-w-lg bg-white border-border">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto bg-primary text-white p-3 rounded mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-heading font-bold text-[hsl(34,55%,45%)] tracking-wide">Create an account</CardTitle>
-          <CardDescription className="text-[hsl(25,18%,50%)] font-body">
+          <CardTitle className="text-2xl font-heading font-bold text-accent tracking-wide">Create an account</CardTitle>
+          <CardDescription className="text-muted-foreground font-body">
             Join Elizabeth on your healing journey
           </CardDescription>
         </CardHeader>
@@ -112,7 +112,7 @@ export default function Register() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Username</FormLabel>
+                      <FormLabel className="text-foreground font-body">Username</FormLabel>
                       <FormControl>
                         <Input placeholder="Choose a username" {...field} className={inputClasses} />
                       </FormControl>
@@ -126,7 +126,7 @@ export default function Register() {
                   name="displayName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Display Name</FormLabel>
+                      <FormLabel className="text-foreground font-body">Display Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Your name" {...field} className={inputClasses} />
                       </FormControl>
@@ -140,7 +140,7 @@ export default function Register() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Email</FormLabel>
+                      <FormLabel className="text-foreground font-body">Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="your.email@example.com" {...field} className={inputClasses} />
                       </FormControl>
@@ -154,7 +154,7 @@ export default function Register() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Password</FormLabel>
+                      <FormLabel className="text-foreground font-body">Password</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="Create a password" {...field} className={inputClasses} />
                       </FormControl>
@@ -168,7 +168,7 @@ export default function Register() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">Confirm Password</FormLabel>
+                      <FormLabel className="text-foreground font-body">Confirm Password</FormLabel>
                       <FormControl>
                         <Input type="password" placeholder="Confirm your password" {...field} className={inputClasses} />
                       </FormControl>
@@ -179,14 +179,14 @@ export default function Register() {
               </div>
               
               <div className="space-y-4">
-                <h3 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide">Health Information (Optional)</h3>
+                <h3 className="text-lg font-heading text-accent tracking-wide">Health Information (Optional)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="cancerType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(25,30%,28%)] font-body">Cancer Type</FormLabel>
+                        <FormLabel className="text-foreground font-body">Cancer Type</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Melanoma, Lymphoma" {...field} className={inputClasses} />
                         </FormControl>
@@ -200,7 +200,7 @@ export default function Register() {
                     name="cancerStage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[hsl(25,30%,28%)] font-body">Cancer Stage</FormLabel>
+                        <FormLabel className="text-foreground font-body">Cancer Stage</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Stage IV" {...field} className={inputClasses} />
                         </FormControl>
@@ -215,7 +215,7 @@ export default function Register() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[hsl(25,30%,28%)] font-body">About You</FormLabel>
+                      <FormLabel className="text-foreground font-body">About You</FormLabel>
                       <FormControl>
                         <Input placeholder="Tell us a bit about your journey" {...field} className={inputClasses} />
                       </FormControl>
@@ -232,8 +232,8 @@ export default function Register() {
           </Form>
           
           <div className="mt-4 text-center text-sm">
-            <Separator className="my-4 bg-[hsl(30,25%,87%)]" />
-            <p className="text-[hsl(25,18%,48%)] font-body">
+            <Separator className="my-4 bg-muted" />
+            <p className="text-muted-foreground font-body">
               Already have an account?{' '}
               <a
                 href="/login"

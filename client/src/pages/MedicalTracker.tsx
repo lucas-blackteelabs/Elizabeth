@@ -14,14 +14,14 @@ function ScanProgressBar({ label, baseline, current, unit }: { label: string; ba
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs font-body">
-        <span className="text-[hsl(25,18%,48%)]">{label}</span>
+        <span className="text-muted-foreground">{label}</span>
         <span className="text-primary font-medium">{pctChange > 0 ? `${pctChange.toFixed(0)}% reduction` : "stable"}</span>
       </div>
-      <div className="relative h-4 bg-[hsl(30,25%,90%)] rounded-full overflow-hidden">
-        <div className="absolute inset-0 h-full bg-[hsl(30,25%,85%)] rounded-full" style={{ width: '100%' }} />
+      <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+        <div className="absolute inset-0 h-full bg-muted rounded-full" style={{ width: '100%' }} />
         <div className="absolute inset-0 h-full bg-primary/60 rounded-full transition-all duration-1000" style={{ width: `${barWidth}%` }} />
       </div>
-      <div className="flex justify-between text-[10px] text-[hsl(25,18%,55%)] font-body">
+      <div className="flex justify-between text-[10px] text-muted-foreground font-body">
         <span>Baseline: {baseline}{unit}</span>
         <span>Current: {current}{unit}</span>
       </div>
@@ -47,9 +47,9 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
     : suvLatest === null ? "Complete" : null;
 
   return (
-    <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+    <Card className="bg-white border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="font-heading text-[hsl(25,30%,28%)] text-base flex items-center gap-2">
+        <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
           {tumourLabel}
           {suvLatest === null && (
             <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-body">No uptake</span>
@@ -59,12 +59,12 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-2 text-center">
           {sorted.map((scan, i) => (
-            <div key={i} className="bg-[hsl(30,30%,95%)] rounded p-2 border border-[hsl(30,22%,87%)]">
-              <p className="text-[10px] text-[hsl(25,18%,50%)] font-body mb-1">
+            <div key={i} className="bg-muted rounded p-2 border border-border">
+              <p className="text-[10px] text-muted-foreground font-body mb-1">
                 {new Date(scan.scanDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
               </p>
-              <p className="text-sm font-heading font-bold text-[hsl(25,30%,28%)]">{scan.sizeX}x{scan.sizeY}<span className="text-[10px] font-body">mm</span></p>
-              <p className="text-xs text-[hsl(25,18%,48%)] font-body">
+              <p className="text-sm font-heading font-bold text-foreground">{scan.sizeX}x{scan.sizeY}<span className="text-[10px] font-body">mm</span></p>
+              <p className="text-xs text-muted-foreground font-body">
                 SUV {scan.suvMax !== null ? scan.suvMax : "—"}
               </p>
             </div>
@@ -133,7 +133,7 @@ export default function MedicalTracker() {
       />
 
       <Tabs defaultValue="scans">
-        <TabsList className="mb-6 bg-[hsl(30,30%,95%)] border border-[hsl(30,25%,87%)]">
+        <TabsList className="mb-6 bg-muted border border-border">
           <TabsTrigger value="scans" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-body">
             <Scan className="h-4 w-4 mr-2" /> Scan Results
           </TabsTrigger>
@@ -157,10 +157,10 @@ export default function MedicalTracker() {
                   <div className="flex items-start gap-3">
                     <TrendingDown className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-body font-medium text-[hsl(25,30%,28%)]">
+                      <p className="text-sm font-body font-medium text-foreground">
                         All three liver tumours continue to shrink
                       </p>
-                      <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-1">
+                      <p className="text-xs text-muted-foreground font-body mt-1">
                         {scanDates.length} scans tracked from {new Date(scanDates[0]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })} to {new Date(scanDates[scanDates.length - 1]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}. Tumour 2 now shows no metabolic activity.
                       </p>
                     </div>
@@ -174,33 +174,33 @@ export default function MedicalTracker() {
                 ))}
               </div>
 
-              <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+              <Card className="bg-white border-border">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide">Scan Comparison Table</CardTitle>
+                  <CardTitle className="font-heading text-accent tracking-wide">Scan Comparison Table</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm font-body">
                       <thead>
-                        <tr className="border-b border-[hsl(30,22%,87%)]">
-                          <th className="text-left py-2 px-3 text-[hsl(25,18%,48%)]"></th>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 px-3 text-muted-foreground"></th>
                           {scanDates.map((d, i) => (
-                            <th key={d} className="text-center py-2 px-3 text-[hsl(25,30%,28%)]" colSpan={2}>
+                            <th key={d} className="text-center py-2 px-3 text-foreground" colSpan={2}>
                               <div className="font-heading text-xs">
                                 {new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </div>
-                              <div className="text-[10px] text-[hsl(25,18%,55%)] font-normal mt-0.5">
+                              <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
                                 {scanResults.find(r => r.scanDate === d)?.scanLabel?.split('(')[0]?.trim()}
                               </div>
                             </th>
                           ))}
                         </tr>
-                        <tr className="border-b border-[hsl(30,22%,87%)]">
-                          <th className="text-left py-1 px-3 text-[10px] text-[hsl(25,18%,55%)]"></th>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-1 px-3 text-[10px] text-muted-foreground"></th>
                           {scanDates.map(d => (
                             <>
-                              <th key={`${d}-size`} className="text-center py-1 px-2 text-[10px] text-[hsl(25,18%,55%)]">Size (mm)</th>
-                              <th key={`${d}-suv`} className="text-center py-1 px-2 text-[10px] text-[hsl(25,18%,55%)]">SUV Max</th>
+                              <th key={`${d}-size`} className="text-center py-1 px-2 text-[10px] text-muted-foreground">Size (mm)</th>
+                              <th key={`${d}-suv`} className="text-center py-1 px-2 text-[10px] text-muted-foreground">SUV Max</th>
                             </>
                           ))}
                         </tr>
@@ -209,14 +209,14 @@ export default function MedicalTracker() {
                         {Object.entries(tumourGroups).map(([label, scans]) => {
                           const sorted = [...scans].sort((a, b) => new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime());
                           return (
-                            <tr key={label} className="border-b border-[hsl(30,22%,90%)]">
-                              <td className="py-2 px-3 font-medium text-[hsl(25,30%,28%)]">{label}</td>
+                            <tr key={label} className="border-b border-border">
+                              <td className="py-2 px-3 font-medium text-foreground">{label}</td>
                               {sorted.map((s, i) => (
                                 <>
-                                  <td key={`${s.id}-size`} className="text-center py-2 px-2 text-[hsl(25,30%,28%)]">
+                                  <td key={`${s.id}-size`} className="text-center py-2 px-2 text-foreground">
                                     {s.sizeX}x{s.sizeY}
                                   </td>
-                                  <td key={`${s.id}-suv`} className={`text-center py-2 px-2 ${s.suvMax === null ? 'text-primary font-medium' : 'text-[hsl(25,30%,28%)]'}`}>
+                                  <td key={`${s.id}-suv`} className={`text-center py-2 px-2 ${s.suvMax === null ? 'text-primary font-medium' : 'text-foreground'}`}>
                                     {s.suvMax !== null ? s.suvMax : "No uptake"}
                                   </td>
                                 </>
@@ -231,39 +231,39 @@ export default function MedicalTracker() {
               </Card>
             </>
           ) : (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardContent className="py-12 text-center">
-                <Scan className="h-8 w-8 text-[hsl(25,18%,55%)] mx-auto mb-3" />
-                <p className="text-[hsl(25,18%,50%)] font-body">No scan results recorded yet</p>
+                <Scan className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground font-body">No scan results recorded yet</p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="timeline">
-          <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+          <Card className="bg-white border-border">
             <CardHeader>
-              <CardTitle className="font-heading text-[hsl(34,55%,45%)] tracking-wide">Treatment Timeline</CardTitle>
+              <CardTitle className="font-heading text-accent tracking-wide">Treatment Timeline</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {[
-                  { date: "22 April 2025", title: "Diagnosis", desc: "Stage IV melanoma identified. Three liver metastases found on PET/CT. BRAF wild-type. PD-L1 positive.", color: "bg-[hsl(34,55%,52%)]" },
+                  { date: "22 April 2025", title: "Diagnosis", desc: "Stage IV melanoma identified. Three liver metastases found on PET/CT. BRAF wild-type. PD-L1 positive.", color: "bg-accent" },
                   { date: "April – July 2025", title: "Immunotherapy", desc: "4 cycles of ipilimumab + nivolumab (combination checkpoint inhibitor therapy). Achieved major partial metabolic response on interim PET/CT.", color: "bg-primary" },
-                  { date: "July 2025", title: "Severe Toxicity", desc: "Grade 4 hepatitis (ALT ~750) and severe colitis. All immunotherapy ceased. High-dose corticosteroids initiated, followed by mycophenolate immunosuppression.", color: "bg-[hsl(0,50%,55%)]" },
+                  { date: "July 2025", title: "Severe Toxicity", desc: "Grade 4 hepatitis (ALT ~750) and severe colitis. All immunotherapy ceased. High-dose corticosteroids initiated, followed by mycophenolate immunosuppression.", color: "bg-red-500" },
                   { date: "5 August 2025", title: "Post-Treatment Scan", desc: "PET/CT shows major partial response. All three tumours smaller with reduced metabolic activity. Response confirmed even after treatment cessation.", color: "bg-primary" },
-                  { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Liver function recovering. Immune system beginning to rebuild naturally.", color: "bg-[hsl(34,55%,52%)]" },
+                  { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Liver function recovering. Immune system beginning to rebuild naturally.", color: "bg-accent" },
                   { date: "3 February 2026", title: "Latest Scan", desc: "Continued improvement off therapy. Tumour 2 now shows no metabolic activity (metabolically complete). Others continue shrinking with lower SUV. No new disease anywhere.", color: "bg-primary" },
                   { date: "May 2026", title: "Goal: NED", desc: "Target: No Evidence of Disease confirmation. PET/CT scheduled 15 May 2026.", color: "border-2 border-primary bg-white", isGoal: true },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div className="flex flex-col items-center">
                       <div className={`w-3 h-3 rounded-full ${item.color} flex-shrink-0`} />
-                      {i < 6 && <div className="w-px h-full bg-[hsl(30,22%,85%)]" />}
+                      {i < 6 && <div className="w-px h-full bg-muted" />}
                     </div>
                     <div className="pb-2">
-                      <p className={`font-body font-medium ${(item as any).isGoal ? 'text-primary' : 'text-[hsl(25,30%,28%)]'}`}>{item.date} — {item.title}</p>
-                      <p className="text-sm text-[hsl(25,18%,48%)] font-body mt-1">{item.desc}</p>
+                      <p className={`font-body font-medium ${(item as any).isGoal ? 'text-primary' : 'text-foreground'}`}>{item.date} — {item.title}</p>
+                      <p className="text-sm text-muted-foreground font-body mt-1">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -274,10 +274,10 @@ export default function MedicalTracker() {
 
         <TabsContent value="status">
           <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="flex items-center font-heading text-[hsl(25,30%,28%)]">
-                  <Shield className="h-5 w-5 mr-2 text-[hsl(34,55%,52%)]" />
+                <CardTitle className="flex items-center font-heading text-foreground">
+                  <Shield className="h-5 w-5 mr-2 text-accent" />
                   Current Status
                 </CardTitle>
               </CardHeader>
@@ -285,12 +285,12 @@ export default function MedicalTracker() {
                 <div className="space-y-3">
                   {[
                     { label: "Status", value: user?.treatmentStatus || "—", color: "text-primary" },
-                    { label: "Active Treatment", value: "None", color: "text-[hsl(25,30%,28%)]" },
+                    { label: "Active Treatment", value: "None", color: "text-foreground" },
                     { label: "Immunosuppression", value: "Ceased Dec 2025", color: "text-primary" },
-                    { label: "Next Scan", value: user?.nextScanDate ? new Date(user.nextScanDate).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' }) : "—", color: "text-[hsl(34,55%,45%)]" },
+                    { label: "Next Scan", value: user?.nextScanDate ? new Date(user.nextScanDate).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' }) : "—", color: "text-accent" },
                   ].map((item, i) => (
-                    <div key={i} className="flex justify-between items-center py-1.5 border-b border-[hsl(30,22%,87%)] last:border-0">
-                      <span className="text-sm text-[hsl(25,18%,48%)] font-body">{item.label}</span>
+                    <div key={i} className="flex justify-between items-center py-1.5 border-b border-border last:border-0">
+                      <span className="text-sm text-muted-foreground font-body">{item.label}</span>
                       <span className={`text-sm font-body font-medium ${item.color}`}>{item.value}</span>
                     </div>
                   ))}
@@ -298,9 +298,9 @@ export default function MedicalTracker() {
               </CardContent>
             </Card>
             
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="flex items-center font-heading text-[hsl(25,30%,28%)]">
+                <CardTitle className="flex items-center font-heading text-foreground">
                   <Heart className="h-5 w-5 mr-2 text-primary" />
                   Key Markers
                 </CardTitle>
@@ -313,8 +313,8 @@ export default function MedicalTracker() {
                     { label: "Tumour Response", value: "Improving" },
                     { label: "LDH Level", value: "Monitor" },
                   ].map((item, i) => (
-                    <div key={i} className="flex justify-between items-center py-1.5 border-b border-[hsl(30,22%,87%)] last:border-0">
-                      <span className="text-sm text-[hsl(25,18%,48%)] font-body">{item.label}</span>
+                    <div key={i} className="flex justify-between items-center py-1.5 border-b border-border last:border-0">
+                      <span className="text-sm text-muted-foreground font-body">{item.label}</span>
                       <span className="text-sm font-body font-medium text-primary">{item.value}</span>
                     </div>
                   ))}
@@ -323,17 +323,17 @@ export default function MedicalTracker() {
             </Card>
 
             {user?.adverseEventHistory && (
-              <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+              <Card className="bg-white border-border">
                 <CardHeader>
-                  <CardTitle className="font-heading text-[hsl(25,30%,28%)] flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-[hsl(34,55%,52%)]" />
+                  <CardTitle className="font-heading text-foreground flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-accent" />
                     Adverse Events
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-[hsl(25,18%,48%)] font-body leading-relaxed">{user.adverseEventHistory}</p>
-                  <div className="mt-3 bg-[hsl(34,55%,52%)]/10 border border-[hsl(34,55%,52%)]/20 p-3 rounded-lg">
-                    <p className="text-xs text-[hsl(25,30%,28%)] font-body">
+                  <p className="text-sm text-muted-foreground font-body leading-relaxed">{user.adverseEventHistory}</p>
+                  <div className="mt-3 bg-accent/10 border border-accent/20 p-3 rounded-lg">
+                    <p className="text-xs text-foreground font-body">
                       <span className="font-medium">Note:</span> Prior severe toxicity means further immunotherapy is not recommended. Current strategy is active surveillance.
                     </p>
                   </div>
@@ -343,15 +343,15 @@ export default function MedicalTracker() {
           </div>
 
           {user?.scanSummary && (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardHeader>
-                <CardTitle className="flex items-center font-heading text-[hsl(25,30%,28%)]">
+                <CardTitle className="flex items-center font-heading text-foreground">
                   <Scan className="h-5 w-5 mr-2 text-primary" />
                   Latest Scan Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body leading-relaxed">{user.scanSummary}</p>
+                <p className="text-sm text-muted-foreground font-body leading-relaxed">{user.scanSummary}</p>
               </CardContent>
             </Card>
           )}
