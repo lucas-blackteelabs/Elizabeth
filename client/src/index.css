@@ -67,15 +67,15 @@
   }
 
   .text-gold {
-    color: hsl(30 55% 45%);
+    color: hsl(var(--accent));
   }
 
   .bg-gold {
-    background-color: hsl(30 55% 52%);
+    background-color: hsl(var(--accent));
   }
 
   .border-gold {
-    border-color: hsl(30 55% 52%);
+    border-color: hsl(var(--accent));
   }
 
   .glow-gold {

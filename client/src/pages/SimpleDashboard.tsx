@@ -742,7 +742,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
     return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
   }
 
-  const tumourColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(200,50%,50%)"];
+  const tumourColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--chart-3))"];
   const maxBaselineArea = Math.max(...baselineScan.map(s => s.sizeX * s.sizeY));
 
   const scanLabels = scanDates.map((date) => {
