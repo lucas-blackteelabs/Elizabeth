@@ -478,39 +478,68 @@ Choose the imageCategory that best visually matches each meal:
 
 Keep the tone warm and encouraging. Make recipes practical and delicious.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested meals: ${excludeNames}. Suggest DIFFERENT recipes.` : ""}`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: prompt }] }
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 4096,
-      },
-    });
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    let result;
+    let lastError: any;
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        result = await m.generateContent({
+          contents: [
+            { role: "user", parts: [{ text: prompt }] }
+          ],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429) {
+          console.log(`Model ${modelName} rate-limited, trying next...`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!result) {
+      throw lastError || new Error("All AI models unavailable");
+    }
 
     const text = result.response.text() || "";
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     try {
       const parsed = JSON.parse(cleaned) as MealSuggestions;
+      if (!parsed.meals || parsed.meals.length === 0) {
+        throw new Error("No meals in response");
+      }
       return parsed;
     } catch (parseError) {
       console.error("Meal ideas JSON parse error, attempting repair:", parseError);
-      const mealsMatch = cleaned.match(/"meals"\s*:\s*\[([\s\S]*?)\]\s*,\s*"shoppingList"/);
-      const meals: MealCard[] = [];
-      if (mealsMatch) {
-        try {
-          const mArr = JSON.parse("[" + mealsMatch[1] + "]");
-          meals.push(...mArr);
-        } catch {}
+      const mealObjects: MealCard[] = [];
+      const mealRegex = /\{[^{}]*"name"\s*:\s*"[^"]+?"[^{}]*"mealType"[^{}]*\}/g;
+      const matches = cleaned.match(mealRegex);
+      if (matches) {
+        for (const match of matches) {
+          try {
+            const obj = JSON.parse(match);
+            if (obj.name && obj.mealType) mealObjects.push(obj);
+          } catch {}
+        }
       }
-      if (meals.length > 0) {
-        return { meals, shoppingList: { produce: [], proteins: [], pantry: [], spices: [] } };
+      if (mealObjects.length > 0) {
+        return { meals: mealObjects, shoppingList: { produce: [], proteins: [], pantry: [], spices: [] } };
       }
       throw parseError;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating meal ideas:", error);
-    return { meals: [], shoppingList: { produce: [], proteins: [], pantry: [], spices: [] } };
+    if (error?.status === 429) {
+      throw new Error("AI service is temporarily busy. Please try again in a moment.");
+    }
+    throw error;
   }
 }
 

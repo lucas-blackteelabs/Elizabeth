@@ -298,21 +298,19 @@ export default function Nutrition() {
                 <p className="text-sm text-muted-foreground font-body">Finding delicious healing recipes</p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="bg-white border-border rounded-2xl overflow-hidden">
-                    <div className="h-40 bg-muted animate-pulse" />
-                    <CardContent className="p-4">
-                      <div className="space-y-3 animate-pulse">
-                        <div className="h-4 bg-muted rounded-lg w-3/4" />
-                        <div className="h-3 bg-muted/70 rounded-lg w-full" />
-                        <div className="flex gap-2">
-                          <div className="h-5 bg-muted/50 rounded-full w-20" />
-                          <div className="h-5 bg-muted/50 rounded-full w-16" />
+                  <div key={i} className="rounded-2xl overflow-hidden bg-muted animate-pulse">
+                    <div className="aspect-[4/5] relative">
+                      <div className="absolute bottom-0 left-0 right-0 p-3.5 space-y-2">
+                        <div className="flex gap-1.5">
+                          <div className="h-5 bg-white/20 rounded-full w-16" />
+                          <div className="h-5 bg-white/20 rounded-full w-14" />
                         </div>
+                        <div className="h-4 bg-white/20 rounded-lg w-3/4" />
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -346,24 +344,24 @@ export default function Nutrition() {
                 </Button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                 {filteredMeals.map((m, i) => {
                   const MealIcon = mealTypeIcons[m.mealType] || Utensils;
                   const imgSrc = mealImages[m.imageCategory] || mealImages["grain-bowl"];
                   return (
-                    <Card
+                    <div
                       key={m.name}
-                      className={`bg-white border-border rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group relative ${dismissingCard === m.name ? "animate-card-dismiss" : "animate-fade-in-up"}`}
+                      className={`relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer group ${dismissingCard === m.name ? "animate-card-dismiss" : "animate-fade-in-up"}`}
                       style={{ animationDelay: `${i * 60}ms` }}
                       onClick={() => setSelectedMeal(m)}
                     >
-                      <div className="absolute top-2.5 right-2.5 z-10 flex gap-1">
+                      <div className="absolute top-2 right-2 z-10 flex gap-1">
                         <button
                           onClick={(e) => toggleShortlist(m, e)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm ${
+                          className={`w-7 h-7 rounded-full flex items-center justify-center transition-all backdrop-blur-md shadow-sm ${
                             isMealShortlisted(m)
                               ? "bg-primary text-white"
-                              : "bg-white/80 text-muted-foreground hover:bg-primary/15 hover:text-primary"
+                              : "bg-black/30 text-white hover:bg-primary/80 hover:text-white"
                           }`}
                           title="Save"
                         >
@@ -371,48 +369,37 @@ export default function Nutrition() {
                         </button>
                         <button
                           onClick={(e) => dismissMeal(m, e)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/80 text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all backdrop-blur-sm"
+                          className="w-7 h-7 rounded-full flex items-center justify-center bg-black/30 text-white hover:bg-red-500/80 transition-all backdrop-blur-md shadow-sm"
                           title="Hide"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
-                      <div className="relative h-40 overflow-hidden">
+                      <div className="aspect-[4/5] relative">
                         <img
                           src={imgSrc}
                           alt={m.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3 pt-8">
-                          <div className="flex items-center gap-1.5">
-                            <MealIcon className="h-3 w-3 text-white/80" />
-                            <span className="text-[10px] text-white/80 font-body uppercase tracking-wider">{m.mealType}</span>
-                            <span className="text-white/40 text-[10px]">·</span>
-                            <Clock className="h-3 w-3 text-white/80" />
-                            <span className="text-[10px] text-white/80 font-body">{m.prepTime}</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+                              <MealIcon className="h-3 w-3 text-white" />
+                              <span className="text-[10px] text-white font-body font-medium uppercase tracking-wider">{m.mealType}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+                              <Clock className="h-3 w-3 text-white" />
+                              <span className="text-[10px] text-white font-body font-medium">{m.prepTime}</span>
+                            </span>
                           </div>
+                          <h3 className="font-body font-bold text-sm text-white leading-tight drop-shadow-lg">
+                            {m.name}
+                          </h3>
                         </div>
                       </div>
-
-                      <CardContent className="p-4">
-                        <h3 className="font-body font-semibold text-sm text-foreground group-hover:text-primary transition-colors leading-tight mb-1.5">
-                          {m.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2 mb-3">{m.description}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {m.tags.slice(0, 3).map((tag, ti) => (
-                            <span key={ti} className={`text-[10px] font-body font-medium px-2 py-0.5 rounded-full border ${getTagColor(tag)}`}>
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-                          <Leaf className="h-3 w-3 text-primary/50" />
-                          <span className="text-[10px] text-primary/60 font-body line-clamp-1">{m.healingBenefits}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    </div>
                   );
                 })}
               </div>
@@ -451,46 +438,42 @@ export default function Nutrition() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
               {shortlist.map((m, i) => {
                 const MealIcon = mealTypeIcons[m.mealType] || Utensils;
                 const imgSrc = mealImages[m.imageCategory] || mealImages["grain-bowl"];
                 return (
-                  <Card
+                  <div
                     key={i}
-                    className="bg-white border-border rounded-2xl overflow-hidden hover:shadow-lg hover:shadow-black/5 transition-all cursor-pointer group relative"
+                    className="relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
                     onClick={() => setSelectedMeal(m)}
                   >
                     <button
                       onClick={(e) => toggleShortlist(m, e)}
-                      className="absolute top-3 right-3 z-10 w-7 h-7 rounded-lg flex items-center justify-center bg-primary text-white hover:bg-red-400 transition-all"
+                      className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full flex items-center justify-center bg-primary text-white hover:bg-red-400 transition-all backdrop-blur-md shadow-sm"
                     >
                       <PinOff className="h-3.5 w-3.5" />
                     </button>
-                    <div className="relative h-36 overflow-hidden">
-                      <img src={imgSrc} alt={m.name} className="w-full h-full object-cover" />
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3 pt-8">
-                        <div className="flex items-center gap-1.5">
-                          <MealIcon className="h-3 w-3 text-white/80" />
-                          <span className="text-[10px] text-white/80 font-body uppercase tracking-wider">{m.mealType}</span>
-                          <span className="text-white/40 text-[10px]">·</span>
-                          <Clock className="h-3 w-3 text-white/80" />
-                          <span className="text-[10px] text-white/80 font-body">{m.prepTime}</span>
+                    <div className="aspect-[4/5] relative">
+                      <img src={imgSrc} alt={m.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3.5">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+                            <MealIcon className="h-3 w-3 text-white" />
+                            <span className="text-[10px] text-white font-body font-medium uppercase tracking-wider">{m.mealType}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
+                            <Clock className="h-3 w-3 text-white" />
+                            <span className="text-[10px] text-white font-body font-medium">{m.prepTime}</span>
+                          </span>
                         </div>
+                        <h3 className="font-body font-bold text-sm text-white leading-tight drop-shadow-lg">
+                          {m.name}
+                        </h3>
                       </div>
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-body font-semibold text-sm text-foreground mb-1">{m.name}</h3>
-                      <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2">{m.description}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {m.tags.slice(0, 3).map((tag, ti) => (
-                          <span key={ti} className={`text-[10px] font-body font-medium px-2 py-0.5 rounded-full border ${getTagColor(tag)}`}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 );
               })}
             </div>

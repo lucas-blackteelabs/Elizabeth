@@ -240,9 +240,11 @@ PATIENT CONTEXT:
       }
       const suggestions = await getMealIdeas(userContext, dietaryPreferences, excludeNames, mealTypes);
       return res.json(suggestions);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating meal ideas:", error);
-      return res.status(500).json({ error: "Failed to generate meal ideas" });
+      const message = error?.message || "Failed to generate meal ideas";
+      const status = message.includes("temporarily busy") ? 503 : 500;
+      return res.status(status).json({ error: message });
     }
   });
 
