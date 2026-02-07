@@ -49,7 +49,7 @@ function PriceIndicator({ range }: { range: string }) {
   const count = (range.match(/\$/g) || []).length;
   const maxCount = Math.min(Math.max(count, 1), 4);
   return (
-    <span className="flex items-center gap-0.5 text-[hsl(34,55%,52%)]">
+    <span className="flex items-center gap-0.5 text-accent">
       {Array.from({ length: maxCount }).map((_, i) => (
         <DollarSign key={i} className="h-3.5 w-3.5" />
       ))}
@@ -72,7 +72,7 @@ function StarRating({ rating, onRate, size = "md" }: { rating: number; onRate?: 
           className={`${onRate ? "cursor-pointer hover:scale-110" : "cursor-default"} transition-transform`}
         >
           <Star
-            className={`${starSize} ${s <= rating ? "text-[hsl(34,55%,52%)] fill-[hsl(34,55%,52%)]" : "text-[hsl(30,20%,80%)]"}`}
+            className={`${starSize} ${s <= rating ? "text-accent fill-accent" : "text-muted-foreground/40"}`}
           />
         </button>
       ))}
@@ -554,25 +554,25 @@ export default function DateNight() {
       {activeTab === "shortlist" && (
         <div className="space-y-6">
           {shortlist.restaurants.length === 0 && shortlist.activities.length === 0 ? (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardContent className="p-8 text-center">
                 <Pin className="h-10 w-10 text-primary/30 mx-auto mb-3" />
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">No items shortlisted yet.</p>
-                <p className="text-xs text-[hsl(25,18%,58%)] font-body mt-1">Tap the pin icon on any restaurant or activity to save it here.</p>
+                <p className="text-sm text-muted-foreground font-body">No items shortlisted yet.</p>
+                <p className="text-xs text-muted-foreground font-body mt-1">Tap the pin icon on any restaurant or activity to save it here.</p>
               </CardContent>
             </Card>
           ) : (
             <>
               {shortlist.restaurants.length > 0 && (
                 <div>
-                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                  <h2 className="text-base font-heading text-accent tracking-wide flex items-center gap-2 mb-3">
                     <Utensils className="h-4 w-4" /> Shortlisted Restaurants
                   </h2>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {shortlist.restaurants.map((r, i) => (
                       <Card
                         key={i}
-                        className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
+                        className="bg-white border-border rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
                         onClick={() => setSelectedRestaurant(r)}
                       >
                         <button
@@ -583,16 +583,16 @@ export default function DateNight() {
                         </button>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2 pr-8">
-                            <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{r.name}</h3>
+                            <h3 className="font-heading text-sm text-foreground">{r.name}</h3>
                             <PriceIndicator range={r.priceRange} />
                           </div>
                           <div className="flex items-center gap-1.5 mb-2">
-                            <MapPin className="h-3 w-3 text-[hsl(25,18%,55%)]" />
-                            <span className="text-xs text-[hsl(25,18%,55%)] font-body">{r.suburb}</span>
-                            <span className="text-xs text-[hsl(25,18%,70%)]">·</span>
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground font-body">{r.suburb}</span>
+                            <span className="text-xs text-muted-foreground/50">·</span>
                             <span className="text-xs text-primary/80 font-body">{r.cuisineType}</span>
                           </div>
-                          <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-2">{r.summary}</p>
+                          <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2">{r.summary}</p>
                           <div className="flex gap-2 mt-3">
                             <Button
                               size="sm"
@@ -611,7 +611,7 @@ export default function DateNight() {
 
               {shortlist.activities.length > 0 && (
                 <div>
-                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                  <h2 className="text-base font-heading text-accent tracking-wide flex items-center gap-2 mb-3">
                     <Music className="h-4 w-4" /> Shortlisted Activities
                   </h2>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -620,26 +620,26 @@ export default function DateNight() {
                       return (
                         <Card
                           key={i}
-                          className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
+                          className="bg-white border-border rounded-xl hover:shadow-md transition-all cursor-pointer group relative"
                           onClick={() => setSelectedActivity(a)}
                         >
                           <button
                             onClick={(e) => toggleActivityShortlist(a, e)}
-                            className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center bg-[hsl(34,55%,52%)] text-white hover:bg-red-400 transition-all"
+                            className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full flex items-center justify-center bg-accent text-white hover:bg-red-400 transition-all"
                           >
                             <PinOff className="h-3.5 w-3.5" />
                           </button>
                           <CardContent className="p-4 pr-10">
                             <div className="flex items-start gap-3 mb-2">
-                              <div className="h-8 w-8 rounded-lg bg-[hsl(34,55%,52%)]/10 flex items-center justify-center flex-shrink-0">
-                                <Icon className="h-4 w-4 text-[hsl(34,55%,52%)]" />
+                              <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="h-4 w-4 text-accent" />
                               </div>
                               <div>
-                                <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{a.name}</h3>
-                                <p className="text-xs text-[hsl(25,18%,55%)] font-body">{a.location}</p>
+                                <h3 className="font-heading text-sm text-foreground">{a.name}</h3>
+                                <p className="text-xs text-muted-foreground font-body">{a.location}</p>
                               </div>
                             </div>
-                            <p className="text-xs text-[hsl(25,18%,48%)] font-body leading-relaxed line-clamp-2">{a.description}</p>
+                            <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2">{a.description}</p>
                           </CardContent>
                         </Card>
                       );
@@ -659,33 +659,33 @@ export default function DateNight() {
               <Loader2 className="h-6 w-6 text-primary animate-spin" />
             </div>
           ) : dateNightHistory.length === 0 ? (
-            <Card className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)]">
+            <Card className="bg-white border-border">
               <CardContent className="p-8 text-center">
-                <Heart className="h-10 w-10 text-[hsl(0,45%,75%)] mx-auto mb-3" />
-                <p className="text-sm text-[hsl(25,18%,48%)] font-body">No date nights saved yet. Head to Discover to find your first!</p>
+                <Heart className="h-10 w-10 text-pink-300 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground font-body">No date nights saved yet. Head to Discover to find your first!</p>
               </CardContent>
             </Card>
           ) : (
             <>
               {planned.length > 0 && (
                 <div>
-                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                  <h2 className="text-base font-heading text-accent tracking-wide flex items-center gap-2 mb-3">
                     <Calendar className="h-4 w-4" /> Upcoming
                   </h2>
                   <div className="space-y-3">
                     {planned.map((dn) => (
-                      <Card key={dn.id} className="bg-gradient-to-r from-[hsl(34,40%,97%)] to-[hsl(36,40%,98%)] border-[hsl(34,35%,85%)] rounded-xl">
+                      <Card key={dn.id} className="bg-white border-border rounded-xl">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <Calendar className="h-3.5 w-3.5 text-[hsl(34,55%,52%)]" />
-                                <span className="text-xs font-body font-medium text-[hsl(34,55%,45%)]">
+                                <Calendar className="h-3.5 w-3.5 text-accent" />
+                                <span className="text-xs font-body font-medium text-accent">
                                   {new Date(dn.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
                                 </span>
                               </div>
-                              <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{dn.restaurantName}</h3>
-                              {dn.restaurantSuburb && <p className="text-xs text-[hsl(25,18%,55%)] font-body">{dn.restaurantSuburb} · {dn.cuisineType}</p>}
+                              <h3 className="font-heading text-sm text-foreground">{dn.restaurantName}</h3>
+                              {dn.restaurantSuburb && <p className="text-xs text-muted-foreground font-body">{dn.restaurantSuburb} · {dn.cuisineType}</p>}
                               {dn.activity && (
                                 <p className="text-xs text-primary/70 font-body mt-1 flex items-center gap-1">
                                   <Music className="h-3 w-3" /> {dn.activity}
@@ -710,30 +710,30 @@ export default function DateNight() {
 
               {completed.length > 0 && (
                 <div>
-                  <h2 className="text-base font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mb-3">
+                  <h2 className="text-base font-heading text-accent tracking-wide flex items-center gap-2 mb-3">
                     <History className="h-4 w-4" /> Past Date Nights
                   </h2>
                   <div className="space-y-3">
                     {completed.map((dn) => (
-                      <Card key={dn.id} className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] rounded-xl">
+                      <Card key={dn.id} className="bg-white border-border rounded-xl">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs text-[hsl(25,18%,55%)] font-body">
+                                <span className="text-xs text-muted-foreground font-body">
                                   {new Date(dn.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
                                 </span>
                                 {dn.rating && <StarRating rating={dn.rating} size="sm" />}
                               </div>
-                              <h3 className="font-heading text-sm text-[hsl(25,30%,22%)]">{dn.restaurantName}</h3>
-                              {dn.restaurantSuburb && <p className="text-xs text-[hsl(25,18%,55%)] font-body">{dn.restaurantSuburb}</p>}
+                              <h3 className="font-heading text-sm text-foreground">{dn.restaurantName}</h3>
+                              {dn.restaurantSuburb && <p className="text-xs text-muted-foreground font-body">{dn.restaurantSuburb}</p>}
                               {dn.activity && (
                                 <p className="text-xs text-primary/70 font-body mt-1 flex items-center gap-1">
                                   <Music className="h-3 w-3" /> {dn.activity}
                                 </p>
                               )}
                               {dn.review && (
-                                <p className="text-xs text-[hsl(25,18%,48%)] font-body mt-2 italic bg-[hsl(30,25%,95%)] rounded-lg p-2">
+                                <p className="text-xs text-muted-foreground font-body mt-2 italic bg-muted rounded-lg p-2">
                                   "{dn.review}"
                                 </p>
                               )}
@@ -743,7 +743,7 @@ export default function DateNight() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => { setReviewingId(dn.id); setReviewRating(0); setReviewText(""); }}
-                                className="text-[hsl(34,55%,52%)] hover:bg-[hsl(34,55%,52%)]/10 text-xs gap-1"
+                                className="text-accent hover:bg-accent/10 text-xs gap-1"
                               >
                                 <MessageSquare className="h-3 w-3" /> Review
                               </Button>
@@ -761,52 +761,52 @@ export default function DateNight() {
       )}
 
       <Dialog open={!!selectedRestaurant} onOpenChange={() => setSelectedRestaurant(null)}>
-        <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-white border-border max-w-lg max-h-[85vh] overflow-y-auto">
           {selectedRestaurant && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-heading text-[hsl(25,30%,22%)] tracking-wide flex items-center gap-2">
+                <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
                   <Utensils className="h-5 w-5 text-primary" />
                   {selectedRestaurant.name}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="flex items-center gap-1 text-[hsl(25,18%,48%)] font-body">
+                  <span className="flex items-center gap-1 text-muted-foreground font-body">
                     <MapPin className="h-3.5 w-3.5" /> {selectedRestaurant.suburb}
                   </span>
                   <span className="text-primary font-body">{selectedRestaurant.cuisineType}</span>
                   <PriceIndicator range={selectedRestaurant.priceRange} />
                 </div>
 
-                <p className="text-sm text-[hsl(25,18%,42%)] font-body leading-relaxed">{selectedRestaurant.summary}</p>
+                <p className="text-sm text-foreground font-body leading-relaxed">{selectedRestaurant.summary}</p>
 
-                <div className="bg-[hsl(30,30%,95%)] rounded-xl p-4">
+                <div className="bg-muted rounded-xl p-4">
                   <h4 className="text-xs font-heading text-primary tracking-wide mb-2 uppercase">Why It Works</h4>
-                  <p className="text-sm text-[hsl(25,18%,42%)] font-body">{selectedRestaurant.whyItWorks}</p>
+                  <p className="text-sm text-foreground font-body">{selectedRestaurant.whyItWorks}</p>
                 </div>
 
-                <div className="bg-[hsl(158,25%,95%)] rounded-xl p-4">
+                <div className="bg-primary/5 rounded-xl p-4">
                   <h4 className="text-xs font-heading text-primary tracking-wide mb-2 uppercase flex items-center gap-1.5">
                     <Leaf className="h-3.5 w-3.5" /> Dietary Notes
                   </h4>
-                  <p className="text-sm text-[hsl(25,18%,42%)] font-body">{selectedRestaurant.dietaryNotes}</p>
+                  <p className="text-sm text-foreground font-body">{selectedRestaurant.dietaryNotes}</p>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-heading text-[hsl(34,55%,45%)] tracking-wide mb-2 uppercase">What to Order</h4>
+                  <h4 className="text-xs font-heading text-accent tracking-wide mb-2 uppercase">What to Order</h4>
                   <div className="space-y-2">
                     {selectedRestaurant.menuSuggestions.map((item, i) => (
                       <div key={i} className="flex items-start gap-2">
-                        <span className="h-5 w-5 rounded-full bg-[hsl(34,55%,52%)]/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] text-[hsl(34,55%,45%)] font-heading">{i + 1}</span>
-                        <span className="text-sm text-[hsl(25,18%,42%)] font-body">{item}</span>
+                        <span className="h-5 w-5 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] text-accent font-heading">{i + 1}</span>
+                        <span className="text-sm text-foreground font-body">{item}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-[hsl(0,30%,96%)] rounded-xl p-3">
-                  <p className="text-xs text-[hsl(25,18%,48%)] font-body italic">{selectedRestaurant.vibe}</p>
+                <div className="bg-muted rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground font-body italic">{selectedRestaurant.vibe}</p>
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -824,35 +824,35 @@ export default function DateNight() {
       </Dialog>
 
       <Dialog open={!!selectedActivity} onOpenChange={() => setSelectedActivity(null)}>
-        <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-lg">
+        <DialogContent className="bg-white border-border max-w-lg">
           {selectedActivity && (() => {
             const Icon = categoryIcons[selectedActivity.category] || Compass;
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle className="font-heading text-[hsl(25,30%,22%)] tracking-wide flex items-center gap-2">
-                    <Icon className="h-5 w-5 text-[hsl(34,55%,52%)]" />
+                  <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-accent" />
                     {selectedActivity.name}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-3.5 w-3.5 text-[hsl(25,18%,48%)]" />
-                    <span className="text-[hsl(25,18%,48%)] font-body">{selectedActivity.location}</span>
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground font-body">{selectedActivity.location}</span>
                   </div>
 
-                  <p className="text-sm text-[hsl(25,18%,42%)] font-body leading-relaxed">{selectedActivity.description}</p>
+                  <p className="text-sm text-foreground font-body leading-relaxed">{selectedActivity.description}</p>
 
-                  <div className="bg-[hsl(34,40%,95%)] rounded-xl p-4">
-                    <h4 className="text-xs font-heading text-[hsl(34,55%,45%)] tracking-wide mb-2 uppercase">Why It's Special</h4>
-                    <p className="text-sm text-[hsl(25,18%,42%)] font-body">{selectedActivity.whyItsSpecial}</p>
+                  <div className="bg-accent/5 rounded-xl p-4">
+                    <h4 className="text-xs font-heading text-accent tracking-wide mb-2 uppercase">Why It's Special</h4>
+                    <p className="text-sm text-foreground font-body">{selectedActivity.whyItsSpecial}</p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-sm text-[hsl(25,18%,48%)] font-body">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                     <Clock className="h-3.5 w-3.5" /> Best time: {selectedActivity.bestTime}
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 bg-[hsl(34,55%,52%)]/10 rounded-full px-3 py-1 text-xs font-body text-[hsl(34,55%,42%)] capitalize">
+                  <div className="inline-flex items-center gap-1.5 bg-accent/10 rounded-full px-3 py-1 text-xs font-body text-accent capitalize">
                     <Icon className="h-3 w-3" /> {selectedActivity.category}
                   </div>
                 </div>
@@ -863,29 +863,29 @@ export default function DateNight() {
       </Dialog>
 
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-sm">
+        <DialogContent className="bg-white border-border max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading text-[hsl(25,30%,22%)] tracking-wide flex items-center gap-2">
+            <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" /> Save Date Night
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {savingRestaurant && (
-              <div className="bg-[hsl(30,30%,95%)] rounded-xl p-3">
-                <p className="text-sm font-heading text-[hsl(25,30%,22%)]">{savingRestaurant.name}</p>
-                <p className="text-xs text-[hsl(25,18%,55%)] font-body">{savingRestaurant.suburb} · {savingRestaurant.cuisineType}</p>
+              <div className="bg-muted rounded-xl p-3">
+                <p className="text-sm font-heading text-foreground">{savingRestaurant.name}</p>
+                <p className="text-xs text-muted-foreground font-body">{savingRestaurant.suburb} · {savingRestaurant.cuisineType}</p>
               </div>
             )}
 
             {activities.length > 0 && !savingActivity && (
               <div>
-                <p className="text-xs font-body text-[hsl(25,18%,48%)] mb-2">Add an activity? (optional)</p>
+                <p className="text-xs font-body text-muted-foreground mb-2">Add an activity? (optional)</p>
                 <div className="space-y-1.5 max-h-32 overflow-y-auto">
                   {activities.map((a, i) => (
                     <button
                       key={i}
                       onClick={() => setSavingActivity(a)}
-                      className="w-full text-left p-2 rounded-lg hover:bg-primary/5 text-xs font-body text-[hsl(25,18%,42%)] transition-colors border border-transparent hover:border-primary/20"
+                      className="w-full text-left p-2 rounded-lg hover:bg-primary/5 text-xs font-body text-foreground transition-colors border border-transparent hover:border-primary/20"
                     >
                       {a.name} — {a.location}
                     </button>
@@ -895,24 +895,24 @@ export default function DateNight() {
             )}
 
             {savingActivity && (
-              <div className="bg-[hsl(34,40%,95%)] rounded-xl p-3 flex items-center justify-between">
+              <div className="bg-accent/5 rounded-xl p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-heading text-[hsl(34,55%,45%)]">{savingActivity.name}</p>
-                  <p className="text-[10px] text-[hsl(25,18%,55%)] font-body">{savingActivity.location}</p>
+                  <p className="text-xs font-heading text-accent">{savingActivity.name}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">{savingActivity.location}</p>
                 </div>
                 <button onClick={() => setSavingActivity(null)}>
-                  <X className="h-3.5 w-3.5 text-[hsl(25,18%,55%)]" />
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </div>
             )}
 
             <div>
-              <label className="text-xs font-body text-[hsl(25,18%,48%)] block mb-1.5">Date</label>
+              <label className="text-xs font-body text-muted-foreground block mb-1.5">Date</label>
               <Input
                 type="date"
                 value={saveDate}
                 onChange={(e) => setSaveDate(e.target.value)}
-                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)] font-body"
+                className="bg-muted/50 border-border text-foreground font-body"
               />
             </div>
 
@@ -929,27 +929,27 @@ export default function DateNight() {
       </Dialog>
 
       <Dialog open={!!reviewingId} onOpenChange={() => setReviewingId(null)}>
-        <DialogContent className="bg-[hsl(36,40%,98%)] border-[hsl(30,25%,87%)] max-w-sm">
+        <DialogContent className="bg-white border-border max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading text-[hsl(25,30%,22%)] tracking-wide flex items-center gap-2">
-              <Star className="h-5 w-5 text-[hsl(34,55%,52%)]" /> How Was Your Date Night?
+            <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
+              <Star className="h-5 w-5 text-accent" /> How Was Your Date Night?
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
-              <p className="text-xs font-body text-[hsl(25,18%,48%)] mb-2">Rate your experience</p>
+              <p className="text-xs font-body text-muted-foreground mb-2">Rate your experience</p>
               <div className="flex justify-center">
                 <StarRating rating={reviewRating} onRate={setReviewRating} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-body text-[hsl(25,18%,48%)] block mb-1.5">Share your thoughts (optional)</label>
+              <label className="text-xs font-body text-muted-foreground block mb-1.5">Share your thoughts (optional)</label>
               <Textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="How was the food? The experience? Any highlights?"
-                className="bg-[hsl(35,30%,96%)] border-[hsl(30,22%,85%)] text-[hsl(25,30%,28%)] font-body resize-none"
+                className="bg-muted/50 border-border text-foreground font-body resize-none"
                 rows={3}
               />
             </div>
@@ -957,7 +957,7 @@ export default function DateNight() {
             <Button
               onClick={() => reviewingId && reviewMutation.mutate({ id: reviewingId, rating: reviewRating, review: reviewText })}
               disabled={reviewMutation.isPending || reviewRating === 0}
-              className="w-full bg-[hsl(34,55%,52%)] text-white hover:bg-[hsl(34,55%,45%)] font-heading tracking-wide gap-2"
+              className="w-full bg-accent text-white hover:bg-accent/90 font-heading tracking-wide gap-2"
             >
               {reviewMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {reviewMutation.isPending ? "Saving..." : "Save Review"}
