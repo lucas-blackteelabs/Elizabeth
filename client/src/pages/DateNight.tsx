@@ -100,7 +100,8 @@ export default function DateNight() {
   const [restaurants, setRestaurants] = useState<RestaurantCard[]>([]);
   const [activities, setActivities] = useState<ActivityCard[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMoreRestaurants, setLoadingMoreRestaurants] = useState(false);
+  const [loadingMoreActivities, setLoadingMoreActivities] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
 
   const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantCard | null>(null);
@@ -175,24 +176,33 @@ export default function DateNight() {
     },
   });
 
-  const generateIdeas = async (append = false) => {
+  const generateIdeas = async (append = false, type: "both" | "restaurants" | "activities" = "both") => {
     if (append) {
-      setLoadingMore(true);
+      if (type === "restaurants") setLoadingMoreRestaurants(true);
+      else if (type === "activities") setLoadingMoreActivities(true);
+      else { setLoadingMoreRestaurants(true); setLoadingMoreActivities(true); }
     } else {
       setLoading(true);
     }
     try {
-      const existingNames = append ? [...restaurants.map(r => r.name), ...activities.map(a => a.name)].join(", ") : "";
+      const existingNames = append
+        ? (type === "restaurants"
+          ? restaurants.map(r => r.name)
+          : type === "activities"
+          ? activities.map(a => a.name)
+          : [...restaurants.map(r => r.name), ...activities.map(a => a.name)]
+        ).join(", ")
+        : "";
       const res = await fetch("/api/ai/date-night", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id, excludeNames: existingNames }),
+        body: JSON.stringify({ userId: user?.id, excludeNames: existingNames, type }),
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
       if (append) {
-        setRestaurants((prev) => [...prev, ...(data.restaurants || [])]);
-        setActivities((prev) => [...prev, ...(data.activities || [])]);
+        if (type !== "activities") setRestaurants((prev) => [...prev, ...(data.restaurants || [])]);
+        if (type !== "restaurants") setActivities((prev) => [...prev, ...(data.activities || [])]);
       } else {
         setRestaurants(data.restaurants || []);
         setActivities(data.activities || []);
@@ -202,7 +212,8 @@ export default function DateNight() {
       toast({ title: "Oops", description: "Couldn't generate ideas right now. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
-      setLoadingMore(false);
+      setLoadingMoreRestaurants(false);
+      setLoadingMoreActivities(false);
     }
   };
 
@@ -420,6 +431,22 @@ export default function DateNight() {
                 ))}
               </div>
 
+              <div className="flex justify-end mt-3">
+                <Button
+                  onClick={() => generateIdeas(true, "restaurants")}
+                  disabled={loadingMoreRestaurants}
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:bg-primary/10 font-body text-xs gap-1.5"
+                >
+                  {loadingMoreRestaurants ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding more...</>
+                  ) : (
+                    <><Plus className="h-3.5 w-3.5" /> More Restaurants</>
+                  )}
+                </Button>
+              </div>
+
               <h2 className="text-lg font-heading text-[hsl(34,55%,45%)] tracking-wide flex items-center gap-2 mt-8">
                 <Music className="h-5 w-5" /> Things to Do Together
               </h2>
@@ -466,21 +493,18 @@ export default function DateNight() {
                 })}
               </div>
 
-              <div className="flex justify-center mt-6">
+              <div className="flex justify-end mt-3">
                 <Button
-                  onClick={() => generateIdeas(true)}
-                  disabled={loadingMore}
-                  variant="outline"
-                  className="border-primary/30 text-primary hover:bg-primary/10 font-body gap-2"
+                  onClick={() => generateIdeas(true, "activities")}
+                  disabled={loadingMoreActivities}
+                  variant="ghost"
+                  size="sm"
+                  className="text-[hsl(34,55%,45%)] hover:bg-[hsl(34,55%,52%)]/10 font-body text-xs gap-1.5"
                 >
-                  {loadingMore ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Finding more ideas...
-                    </>
+                  {loadingMoreActivities ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Finding more...</>
                   ) : (
-                    <>
-                      <Plus className="h-4 w-4" /> See More Ideas
-                    </>
+                    <><Plus className="h-3.5 w-3.5" /> More Activities</>
                   )}
                 </Button>
               </div>

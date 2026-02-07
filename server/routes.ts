@@ -384,6 +384,7 @@ PATIENT CONTEXT:
     try {
       const userId = req.body.userId || 1;
       const excludeNames = req.body.excludeNames || "";
+      const type = req.body.type || "both";
       const user = await storage.getUser(userId);
       let userContext = "";
       let dietaryPreferences = "";
@@ -391,7 +392,7 @@ PATIENT CONTEXT:
         userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
         dietaryPreferences = user.dietaryPreferences || "";
       }
-      const suggestions = await getDateNightIdeas(userContext, dietaryPreferences, excludeNames);
+      const suggestions = await getDateNightIdeas(userContext, dietaryPreferences, excludeNames, type);
       return res.json(suggestions);
     } catch (error) {
       console.error("Error generating date night ideas:", error);

@@ -268,7 +268,7 @@ export interface DateNightSuggestions {
   activities: ActivityCard[];
 }
 
-export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = ""): Promise<DateNightSuggestions> {
+export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", type: string = "both"): Promise<DateNightSuggestions> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -276,16 +276,7 @@ export async function getDateNightIdeas(userContext: string = "", dietaryPrefere
       ? `\n\nDIETARY PREFERENCES (for the patient — her partner can eat anything, and restaurants can usually tailor their menu when briefed):\n${dietaryPreferences}\n\nIMPORTANT: Factor these preferences into your recommendations and highlight which dishes suit her needs, but do NOT exclude restaurants that don't strictly adhere — the partner eats other things and restaurants can usually accommodate when asked.`
       : "";
 
-    const prompt = `You are a thoughtful date night planner for a couple in Sydney, Australia. One partner is a cancer patient with specific dietary needs.
-
-${cancerFightingNutrition}
-
-${userContext}${dietaryInfo}
-
-You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation). Return this exact structure:
-
-{
-  "restaurants": [
+    const restaurantSchema = `"restaurants": [
     {
       "name": "Restaurant Name",
       "suburb": "Suburb",
@@ -297,8 +288,9 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation
       "menuSuggestions": ["Dish 1 with brief note on why it's suitable", "Dish 2", "Dish 3"],
       "whyItWorks": "Brief explanation of why this restaurant is particularly suitable"
     }
-  ],
-  "activities": [
+  ]`;
+
+    const activitySchema = `"activities": [
     {
       "name": "Activity Name",
       "location": "Location in Sydney",
@@ -307,10 +299,33 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation
       "bestTime": "When to go",
       "category": "one of: active, relaxing, creative, adventurous, romantic"
     }
-  ]
-}
+  ]`;
 
-Include exactly 3 restaurants and 3 activities. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining). Mix activity types across categories. Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT restaurants and activities.` : ""}`;
+    let jsonStructure: string;
+    let countInstruction: string;
+
+    if (type === "restaurants") {
+      jsonStructure = `{\n  ${restaurantSchema}\n}`;
+      countInstruction = "Include exactly 3 restaurants. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining).";
+    } else if (type === "activities") {
+      jsonStructure = `{\n  ${activitySchema}\n}`;
+      countInstruction = "Include exactly 3 activities. Mix activity types across categories (active, relaxing, creative, adventurous, romantic).";
+    } else {
+      jsonStructure = `{\n  ${restaurantSchema},\n  ${activitySchema}\n}`;
+      countInstruction = "Include exactly 3 restaurants and 3 activities. Use REAL Sydney restaurants that exist. Mix restaurant types (e.g. waterfront, cosy neighbourhood, fine dining). Mix activity types across categories.";
+    }
+
+    const prompt = `You are a thoughtful date night planner for a couple in Sydney, Australia. One partner is a cancer patient with specific dietary needs.
+
+${cancerFightingNutrition}
+
+${userContext}${dietaryInfo}
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks, no explanation). Return this exact structure:
+
+${jsonStructure}
+
+${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT ones.` : ""}`;
 
     const result = await model.generateContent({
       contents: [
