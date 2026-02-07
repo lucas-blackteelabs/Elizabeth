@@ -710,26 +710,26 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
       onClick={onClick}
       className="group relative bg-[hsl(36,40%,98%)] border border-[hsl(30,25%,87%)] rounded-xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 active:translate-y-0 w-full"
     >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary/20 transition-all duration-300 flex-shrink-0">
           <TrendingUp className="h-5 w-5" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <p className="text-[10px] uppercase tracking-wider text-[hsl(25,18%,55%)] font-body mb-1">Tumour Response</p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1">
-              <ArrowDown className="h-3 w-3 text-primary" />
-              <span className="text-base font-heading font-bold text-primary">{avgSizeReduction}%</span>
-              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">size</span>
+              <ArrowDown className="h-3 w-3 text-primary flex-shrink-0" />
+              <span className="text-sm font-heading font-bold text-primary">{avgSizeReduction}%</span>
+              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body truncate">size</span>
             </div>
             <div className="flex items-center gap-1">
-              <ArrowDown className="h-3 w-3 text-[hsl(34,55%,45%)]" />
-              <span className="text-base font-heading font-bold text-[hsl(34,55%,45%)]">{avgActivityReduction}%</span>
-              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body">activity</span>
+              <ArrowDown className="h-3 w-3 text-[hsl(34,55%,45%)] flex-shrink-0" />
+              <span className="text-sm font-heading font-bold text-[hsl(34,55%,45%)]">{avgActivityReduction}%</span>
+              <span className="text-[10px] text-[hsl(25,18%,55%)] font-body truncate">activity</span>
             </div>
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
+        <ChevronRight className="h-4 w-4 text-[hsl(25,18%,65%)] group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300 flex-shrink-0" />
       </div>
     </button>
   );
