@@ -118,8 +118,6 @@ Quinoa, brown rice, oats, lentils, chickpeas, black beans
 
 export async function getHealthAdvice(userQuery: string, userContext: string = ""): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const systemPrompt = `You are Elizabeth, a compassionate and knowledgeable health companion for cancer patients following the "Radical Remission" approach. You provide personalised, holistic guidance that complements conventional medical treatment.
 
 ${radicalRemissionKnowledge}
@@ -140,18 +138,29 @@ IMPORTANT GUIDELINES:
 - Keep responses concise but thorough (2-4 paragraphs)
 - Use gentle formatting with bullet points where helpful`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: systemPrompt + "\n\nUser's question: " + userQuery }] }
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      },
-    });
-
-    const response = result.response;
-    return response.text() || "I'm sorry, I couldn't process your request at this time.";
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        const result = await m.generateContent({
+          contents: [
+            { role: "user", parts: [{ text: systemPrompt + "\n\nUser's question: " + userQuery }] }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          },
+        });
+        return result.response.text() || "I'm sorry, I couldn't process your request at this time.";
+      } catch (err: any) {
+        if (err?.status === 429) {
+          console.log(`Chat: model ${modelName} rate-limited, trying next...`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    return "I'm having trouble connecting right now. Please try again in a moment.";
   } catch (error) {
     console.error("Error querying Gemini:", error);
     return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment.";
@@ -160,8 +169,6 @@ IMPORTANT GUIDELINES:
 
 export async function generateMealPlan(userContext: string = ""): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const prompt = `You are Elizabeth, a nutrition-focused health companion for cancer patients. Generate a personalised daily meal plan based on Radical Remission principles and the patient's specific medical situation.
 
 ${cancerFightingNutrition}
@@ -184,17 +191,21 @@ For each meal:
 End with a brief encouraging note about how this day of eating supports their healing.
 Format with clear headers and bullet points. Keep it warm and supportive in tone.`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: prompt }] }
-      ],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 1200,
-      },
-    });
-
-    return result.response.text() || "I couldn't generate a meal plan right now. Please try again.";
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        const result = await m.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 1200 },
+        });
+        return result.response.text() || "I couldn't generate a meal plan right now. Please try again.";
+      } catch (err: any) {
+        if (err?.status === 429) { console.log(`Meal plan: model ${modelName} rate-limited, trying next...`); continue; }
+        throw err;
+      }
+    }
+    return "I'm having trouble generating your meal plan right now. Please try again in a moment.";
   } catch (error) {
     console.error("Error generating meal plan:", error);
     return "I'm having trouble generating your meal plan right now. Please try again in a moment.";
@@ -203,8 +214,6 @@ Format with clear headers and bullet points. Keep it warm and supportive in tone
 
 export async function getMealSuggestion(mealType: string, userContext: string = ""): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const prompt = `You are Elizabeth, a nutrition companion for cancer patients following Radical Remission principles.
 
 ${cancerFightingNutrition}
@@ -225,17 +234,21 @@ Provide:
 
 Keep it warm, concise, and encouraging.`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: prompt }] }
-      ],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 600,
-      },
-    });
-
-    return result.response.text() || "I couldn't generate a suggestion right now.";
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        const result = await m.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 600 },
+        });
+        return result.response.text() || "I couldn't generate a suggestion right now.";
+      } catch (err: any) {
+        if (err?.status === 429) { console.log(`Meal suggestion: model ${modelName} rate-limited, trying next...`); continue; }
+        throw err;
+      }
+    }
+    return "I'm having trouble generating a suggestion right now. Please try again.";
   } catch (error) {
     console.error("Error generating meal suggestion:", error);
     return "I'm having trouble generating a suggestion right now. Please try again.";
@@ -327,15 +340,35 @@ ${jsonStructure}
 
 ${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT ones.` : ""}`;
 
-    const result = await model.generateContent({
-      contents: [
-        { role: "user", parts: [{ text: prompt }] }
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 4096,
-      },
-    });
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    let result;
+    let lastError: any;
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        result = await m.generateContent({
+          contents: [
+            { role: "user", parts: [{ text: prompt }] }
+          ],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429) {
+          console.log(`Date night: model ${modelName} rate-limited, trying next...`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!result) {
+      throw lastError || new Error("All AI models unavailable");
+    }
 
     const text = result.response.text() || "";
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -344,35 +377,33 @@ ${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone w
       return parsed;
     } catch (parseError) {
       console.error("JSON parse error, attempting repair:", parseError);
-      const restaurantMatch = cleaned.match(/"restaurants"\s*:\s*\[([\s\S]*?)\]\s*,\s*"activities"/);
-      const activityMatch = cleaned.match(/"activities"\s*:\s*\[([\s\S]*)/);
       const restaurants: RestaurantCard[] = [];
       const activities: ActivityCard[] = [];
-      if (restaurantMatch) {
-        try {
-          const rArr = JSON.parse("[" + restaurantMatch[1] + "]");
-          restaurants.push(...rArr);
-        } catch {}
-      }
-      if (activityMatch) {
-        let actStr = activityMatch[1].replace(/\]\s*\}\s*$/, '').trim();
-        if (!actStr.endsWith(']')) {
-          const lastBrace = actStr.lastIndexOf('}');
-          if (lastBrace > 0) actStr = actStr.substring(0, lastBrace + 1);
+      const restaurantRegex = /\{[^{}]*"name"\s*:\s*"[^"]*"[^{}]*"suburb"\s*:\s*"[^"]*"[^{}]*"cuisineType"\s*:\s*"[^"]*"[^{}]*\}/g;
+      const activityRegex = /\{[^{}]*"name"\s*:\s*"[^"]*"[^{}]*"location"\s*:\s*"[^"]*"[^{}]*"category"\s*:\s*"[^"]*"[^{}]*\}/g;
+      const rMatches = cleaned.match(restaurantRegex);
+      if (rMatches) {
+        for (const m of rMatches) {
+          try { restaurants.push(JSON.parse(m)); } catch {}
         }
-        try {
-          const aArr = JSON.parse("[" + actStr + "]");
-          activities.push(...aArr);
-        } catch {}
+      }
+      const aMatches = cleaned.match(activityRegex);
+      if (aMatches) {
+        for (const m of aMatches) {
+          try { activities.push(JSON.parse(m)); } catch {}
+        }
       }
       if (restaurants.length > 0 || activities.length > 0) {
         return { restaurants, activities };
       }
       throw parseError;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating date night ideas:", error);
-    return { restaurants: [], activities: [] };
+    if (error?.status === 429 || error?.message?.includes("temporarily busy") || error?.message?.includes("unavailable")) {
+      throw new Error("AI service is temporarily busy. Please try again in a moment.");
+    }
+    throw error;
   }
 }
 

@@ -416,8 +416,11 @@ PATIENT CONTEXT:
       }
       const suggestions = await getDateNightIdeas(userContext, dietaryPreferences, excludeNames, type);
       return res.json(suggestions);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating date night ideas:", error);
+      if (error?.message?.includes("temporarily busy")) {
+        return res.status(503).json({ error: error.message });
+      }
       return res.status(500).json({ error: "Failed to generate ideas" });
     }
   });

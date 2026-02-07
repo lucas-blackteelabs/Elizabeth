@@ -238,8 +238,15 @@ export default function DateNight() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user?.id, excludeNames: existingNames, type }),
       });
-      if (!res.ok) throw new Error("Server error");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Server error");
+      }
       const data = await res.json();
+      const hasResults = (data.restaurants?.length || 0) > 0 || (data.activities?.length || 0) > 0;
+      if (!hasResults && !append) {
+        throw new Error("No results returned. Please try again.");
+      }
       if (append) {
         if (type !== "activities") setRestaurants((prev) => [...prev, ...(data.restaurants || [])]);
         if (type !== "restaurants") setActivities((prev) => [...prev, ...(data.activities || [])]);
@@ -248,8 +255,11 @@ export default function DateNight() {
         setActivities(data.activities || []);
       }
       setHasGenerated(true);
-    } catch {
-      toast({ title: "Oops", description: "Couldn't generate ideas right now. Please try again.", variant: "destructive" });
+    } catch (err: any) {
+      const message = err?.message?.includes("temporarily busy")
+        ? "The AI is a bit busy right now. Give it a moment and try again."
+        : "Couldn't generate ideas right now. Please try again.";
+      toast({ title: "Oops", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
       setLoadingMoreRestaurants(false);
