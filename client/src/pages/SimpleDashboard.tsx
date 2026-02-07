@@ -194,6 +194,7 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
       ]
     : [
         { value: "walking", label: "Walking" },
+        { value: "strength-training", label: "Strength Training" },
         { value: "yoga", label: "Yoga" },
         { value: "swimming", label: "Swimming" },
         { value: "stretching", label: "Stretching" },
