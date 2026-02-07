@@ -4,6 +4,13 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Restaurant Search feature on Date Night page
+  - New "Search" tab: search any Sydney restaurant by name, cuisine, or suburb
+  - AI-powered dietary suitability assessment (1-10 score) with colour-coded badges
+  - Review highlights, ratings, opening hours, contact info, and menu suggestions
+  - Shortlist and "Book It" actions on searched restaurants
+  - Detail dialog with full info including dietary notes, suitability explanation, and review quotes
+  - New API endpoint: /api/ai/restaurant-search (Gemini-powered with multi-model fallback)
 - **Feb 2026**: Meal Planner overhaul (DateNight-style)
   - AI-generated structured meal cards with photos, recipes, ingredients, instructions
   - 10 beautiful food category images (breakfast bowl, smoothie, salad, soup, fish, grain bowl, snack, tea, chicken, berry bowl)

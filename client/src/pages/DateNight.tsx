@@ -7,7 +7,8 @@ import {
   Heart, Sparkles, Loader2, RefreshCw, MapPin, Utensils, Star,
   Music, Calendar, ChevronLeft, Clock, DollarSign, Leaf, X,
   MessageSquare, Check, History, Compass, Palette, Mountain, Wine,
-  Pin, PinOff, ChevronRight, Plus
+  Pin, PinOff, ChevronRight, Plus, Search, ExternalLink, Phone,
+  AlertTriangle, CheckCircle2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,16 @@ interface ActivityCard {
   whyItsSpecial: string;
   bestTime: string;
   category: string;
+}
+
+interface SearchedRestaurant extends RestaurantCard {
+  rating: number;
+  reviewHighlights: string[];
+  suitabilityScore: number;
+  suitabilityExplanation: string;
+  openingHours: string;
+  website: string;
+  phoneNumber: string;
 }
 
 const categoryIcons: Record<string, typeof Compass> = {
@@ -124,7 +135,7 @@ export default function DateNight() {
   const [savingRestaurant, setSavingRestaurant] = useState<RestaurantCard | null>(null);
   const [savingActivity, setSavingActivity] = useState<ActivityCard | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"discover" | "shortlist" | "history">("discover");
+  const [activeTab, setActiveTab] = useState<"discover" | "search" | "shortlist" | "history">("discover");
   const [shortlist, setShortlist] = useState(loadShortlist);
   const [dismissedNames, setDismissedNames] = useState(loadDismissed);
   const [dismissingCard, setDismissingCard] = useState<string | null>(null);
@@ -132,6 +143,12 @@ export default function DateNight() {
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchedRestaurant[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedSearchResult, setSelectedSearchResult] = useState<SearchedRestaurant | null>(null);
 
   const isRestaurantShortlisted = (r: RestaurantCard) =>
     shortlist.restaurants.some((s) => s.name === r.name && s.suburb === r.suburb);
@@ -267,6 +284,85 @@ export default function DateNight() {
     }
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || searchLoading) return;
+    setSearchLoading(true);
+    setHasSearched(true);
+    try {
+      const res = await fetch("/api/ai/restaurant-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery.trim(), userId: user?.id }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Search failed");
+      }
+      const data = await res.json();
+      const results = (data.restaurants || []).map((r: any) => ({
+        name: r.name || "Unknown",
+        suburb: r.suburb || "",
+        cuisineType: r.cuisineType || "",
+        priceRange: r.priceRange || "$$",
+        summary: r.summary || "",
+        dietaryNotes: r.dietaryNotes || "",
+        vibe: r.vibe || "",
+        menuSuggestions: r.menuSuggestions || [],
+        whyItWorks: r.whyItWorks || "",
+        rating: r.rating || 0,
+        reviewHighlights: r.reviewHighlights || [],
+        suitabilityScore: r.suitabilityScore || 5,
+        suitabilityExplanation: r.suitabilityExplanation || "",
+        openingHours: r.openingHours || "",
+        website: r.website || "",
+        phoneNumber: r.phoneNumber || "",
+      }));
+      setSearchResults(results);
+    } catch (err: any) {
+      const message = err?.message?.includes("temporarily busy")
+        ? "The AI is a bit busy right now. Give it a moment and try again."
+        : "Couldn't search right now. Please try again.";
+      toast({ title: "Oops", description: message, variant: "destructive" });
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const shortlistSearchResult = (r: SearchedRestaurant) => {
+    const asRestaurantCard: RestaurantCard = {
+      name: r.name,
+      suburb: r.suburb,
+      cuisineType: r.cuisineType,
+      priceRange: r.priceRange,
+      summary: r.summary,
+      dietaryNotes: r.dietaryNotes,
+      vibe: r.vibe,
+      menuSuggestions: r.menuSuggestions,
+      whyItWorks: r.whyItWorks,
+    };
+    toggleRestaurantShortlist(asRestaurantCard);
+  };
+
+  const getSuitabilityColor = (score: number) => {
+    if (score >= 8) return "text-green-600 bg-green-50 border-green-200";
+    if (score >= 5) return "text-amber-600 bg-amber-50 border-amber-200";
+    return "text-red-500 bg-red-50 border-red-200";
+  };
+
+  const getSuitabilityIcon = (score: number) => {
+    if (score >= 8) return CheckCircle2;
+    if (score >= 5) return AlertTriangle;
+    return AlertTriangle;
+  };
+
+  const getSuitabilityLabel = (score: number) => {
+    if (score >= 8) return "Great fit";
+    if (score >= 6) return "Good with modifications";
+    if (score >= 4) return "Possible with effort";
+    return "Challenging";
+  };
+
   const openSaveDialog = (restaurant: RestaurantCard, activity?: ActivityCard) => {
     setSavingRestaurant(restaurant);
     setSavingActivity(activity || null);
@@ -317,27 +413,33 @@ export default function DateNight() {
         </div>
       )}
 
-      <div className="flex gap-1 mb-6 bg-muted rounded-xl p-1 max-w-sm">
+      <div className="flex gap-1 mb-6 bg-muted rounded-xl p-1 max-w-md">
         <button
           onClick={() => setActiveTab("discover")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all ${activeTab === "discover" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-body font-medium transition-all ${activeTab === "discover" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />Discover
+          <Sparkles className="h-3.5 w-3.5 inline mr-1" />Discover
+        </button>
+        <button
+          onClick={() => setActiveTab("search")}
+          className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-body font-medium transition-all ${activeTab === "search" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Search className="h-3.5 w-3.5 inline mr-1" />Search
         </button>
         <button
           onClick={() => setActiveTab("shortlist")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "shortlist" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "shortlist" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Pin className="h-3.5 w-3.5 inline mr-1.5" />Shortlist
+          <Pin className="h-3.5 w-3.5 inline mr-1" />Saved
           {(shortlist.restaurants.length + shortlist.activities.length) > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-medium">{shortlist.restaurants.length + shortlist.activities.length}</span>
           )}
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "history" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          className={`flex-1 py-2 px-2.5 rounded-lg text-sm font-body font-medium transition-all relative ${activeTab === "history" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <History className="h-3.5 w-3.5 inline mr-1.5" />History
+          <History className="h-3.5 w-3.5 inline mr-1" />History
           {planned.length > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-medium">{planned.length}</span>
           )}
@@ -559,6 +661,134 @@ export default function DateNight() {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "search" && (
+        <div className="space-y-5">
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+            className="flex gap-2"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search a restaurant, cuisine, or suburb..."
+                className="pl-9 bg-white border-border text-foreground font-body rounded-xl h-10"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={searchLoading || !searchQuery.trim()}
+              className="bg-primary text-white hover:bg-primary/90 font-body font-medium rounded-xl px-5 h-10"
+            >
+              {searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
+            </Button>
+          </form>
+
+          {!hasSearched && !searchLoading && (
+            <Card className="bg-white border-border">
+              <CardContent className="p-8 text-center">
+                <Search className="h-10 w-10 text-primary/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground font-body leading-relaxed max-w-md mx-auto">
+                  Search for any Sydney restaurant by name, cuisine type, or area.
+                  We'll check if it's a good fit for your dietary needs and show you reviews and details.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  {["Icebergs Dining Room", "Japanese in Surry Hills", "Seafood Manly", "Thai Newtown"].map((eg) => (
+                    <button
+                      key={eg}
+                      onClick={() => { setSearchQuery(eg); }}
+                      className="text-xs font-body px-3 py-1.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
+                      {eg}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {searchLoading && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute inset-0 rounded-full border-[3px] border-primary/10" />
+                <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary animate-spin" style={{ animationDuration: "1.2s" }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Search className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground font-body">Looking up restaurant details...</p>
+            </div>
+          )}
+
+          {hasSearched && !searchLoading && searchResults.length === 0 && (
+            <Card className="bg-white border-border">
+              <CardContent className="p-6 text-center">
+                <p className="text-sm text-muted-foreground font-body">
+                  No results found for "{searchQuery}". Try a different name or search term.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!searchLoading && searchResults.length > 0 && (
+            <div className="space-y-3">
+              {searchResults.map((r, i) => {
+                const SuitIcon = getSuitabilityIcon(r.suitabilityScore);
+                return (
+                  <Card
+                    key={r.name + i}
+                    className="bg-white border-border rounded-2xl hover:shadow-lg hover:shadow-black/5 transition-all cursor-pointer group animate-fade-in-up"
+                    style={{ animationDelay: `${i * 80}ms` }}
+                    onClick={() => setSelectedSearchResult(r)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <h3 className="font-body font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{r.name}</h3>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Star className="h-3.5 w-3.5 text-accent fill-accent" />
+                              <span className="text-sm font-body font-medium text-foreground">{r.rating}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                            <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs text-muted-foreground font-body">{r.suburb}</span>
+                            <span className="text-xs text-muted-foreground/40">·</span>
+                            <span className="text-xs text-primary font-body font-medium">{r.cuisineType}</span>
+                            <span className="text-xs text-muted-foreground/40">·</span>
+                            <PriceIndicator range={r.priceRange} />
+                          </div>
+                          <p className="text-xs text-muted-foreground font-body leading-relaxed line-clamp-2 mb-3">{r.summary}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 text-xs font-body font-medium px-2.5 py-1 rounded-full border ${getSuitabilityColor(r.suitabilityScore)}`}>
+                              <SuitIcon className="h-3 w-3" />
+                              {getSuitabilityLabel(r.suitabilityScore)} ({r.suitabilityScore}/10)
+                            </span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); shortlistSearchResult(r); }}
+                              className={`inline-flex items-center gap-1 text-xs font-body px-2.5 py-1 rounded-full border transition-all ${
+                                isRestaurantShortlisted(r)
+                                  ? "bg-primary text-white border-primary"
+                                  : "bg-white text-muted-foreground border-border hover:border-primary hover:text-primary"
+                              }`}
+                            >
+                              <Pin className="h-3 w-3" />
+                              {isRestaurantShortlisted(r) ? "Saved" : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === "shortlist" && (
@@ -830,6 +1060,134 @@ export default function DateNight() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedSearchResult} onOpenChange={() => setSelectedSearchResult(null)}>
+        <DialogContent className="bg-white border-border max-w-lg max-h-[85vh] overflow-y-auto">
+          {selectedSearchResult && (() => {
+            const SuitIcon = getSuitabilityIcon(selectedSearchResult.suitabilityScore);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-foreground tracking-wide flex items-center gap-2">
+                    <Utensils className="h-5 w-5 text-primary" />
+                    {selectedSearchResult.name}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span className="flex items-center gap-1 text-muted-foreground font-body">
+                      <MapPin className="h-3.5 w-3.5" /> {selectedSearchResult.suburb}
+                    </span>
+                    <span className="text-primary font-body">{selectedSearchResult.cuisineType}</span>
+                    <PriceIndicator range={selectedSearchResult.priceRange} />
+                    <span className="flex items-center gap-1 text-foreground font-body font-medium">
+                      <Star className="h-3.5 w-3.5 text-accent fill-accent" /> {selectedSearchResult.rating}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-foreground font-body leading-relaxed">{selectedSearchResult.summary}</p>
+
+                  <div className={`rounded-xl p-4 border ${getSuitabilityColor(selectedSearchResult.suitabilityScore)}`}>
+                    <h4 className="text-xs font-heading tracking-wide mb-2 uppercase flex items-center gap-1.5">
+                      <SuitIcon className="h-3.5 w-3.5" /> Dietary Suitability — {selectedSearchResult.suitabilityScore}/10
+                    </h4>
+                    <p className="text-sm font-body">{selectedSearchResult.suitabilityExplanation}</p>
+                  </div>
+
+                  <div className="bg-primary/5 rounded-xl p-4">
+                    <h4 className="text-xs font-heading text-primary tracking-wide mb-2 uppercase flex items-center gap-1.5">
+                      <Leaf className="h-3.5 w-3.5" /> Dietary Notes
+                    </h4>
+                    <p className="text-sm text-foreground font-body">{selectedSearchResult.dietaryNotes}</p>
+                  </div>
+
+                  {selectedSearchResult.reviewHighlights.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-heading text-accent tracking-wide mb-2 uppercase flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5" /> Review Highlights
+                      </h4>
+                      <div className="space-y-1.5">
+                        {selectedSearchResult.reviewHighlights.map((review, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="text-accent mt-0.5 text-xs">"</span>
+                            <span className="text-sm text-muted-foreground font-body italic">{review}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSearchResult.menuSuggestions.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-heading text-accent tracking-wide mb-2 uppercase">Dishes to Try</h4>
+                      <div className="space-y-2">
+                        {selectedSearchResult.menuSuggestions.map((item, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="h-5 w-5 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] text-accent font-heading">{i + 1}</span>
+                            <span className="text-sm text-foreground font-body">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-muted rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground font-body italic">{selectedSearchResult.vibe}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-body">
+                    {selectedSearchResult.openingHours && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {selectedSearchResult.openingHours}
+                      </span>
+                    )}
+                    {selectedSearchResult.phoneNumber && (
+                      <a href={`tel:${selectedSearchResult.phoneNumber}`} className="flex items-center gap-1 hover:text-primary transition-colors">
+                        <Phone className="h-3 w-3" /> {selectedSearchResult.phoneNumber}
+                      </a>
+                    )}
+                    {selectedSearchResult.website && (
+                      <a href={selectedSearchResult.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                        <ExternalLink className="h-3 w-3" /> Website
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={() => { shortlistSearchResult(selectedSearchResult); }}
+                      variant={isRestaurantShortlisted(selectedSearchResult) ? "outline" : "default"}
+                      className={`flex-1 font-body gap-2 ${isRestaurantShortlisted(selectedSearchResult) ? "border-primary text-primary" : "bg-primary text-white hover:bg-primary/90"}`}
+                    >
+                      <Pin className="h-4 w-4" /> {isRestaurantShortlisted(selectedSearchResult) ? "Saved" : "Save to Shortlist"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const card: RestaurantCard = {
+                          name: selectedSearchResult.name,
+                          suburb: selectedSearchResult.suburb,
+                          cuisineType: selectedSearchResult.cuisineType,
+                          priceRange: selectedSearchResult.priceRange,
+                          summary: selectedSearchResult.summary,
+                          dietaryNotes: selectedSearchResult.dietaryNotes,
+                          vibe: selectedSearchResult.vibe,
+                          menuSuggestions: selectedSearchResult.menuSuggestions,
+                          whyItWorks: selectedSearchResult.whyItWorks,
+                        };
+                        openSaveDialog(card);
+                        setSelectedSearchResult(null);
+                      }}
+                      className="flex-1 bg-accent text-white hover:bg-accent/90 font-body gap-2"
+                    >
+                      <Calendar className="h-4 w-4" /> Book It
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

@@ -574,6 +574,122 @@ Keep the tone warm and encouraging. Make recipes practical and delicious.${exclu
   }
 }
 
+export interface SearchedRestaurant {
+  name: string;
+  suburb: string;
+  cuisineType: string;
+  priceRange: string;
+  summary: string;
+  dietaryNotes: string;
+  vibe: string;
+  menuSuggestions: string[];
+  whyItWorks: string;
+  rating: number;
+  reviewHighlights: string[];
+  suitabilityScore: number;
+  suitabilityExplanation: string;
+  openingHours: string;
+  website: string;
+  phoneNumber: string;
+}
+
+export async function searchRestaurant(query: string, dietaryPreferences: string = "", userContext: string = ""): Promise<SearchedRestaurant[]> {
+  try {
+    const dietaryInfo = dietaryPreferences
+      ? `\n\nPATIENT DIETARY PREFERENCES:\n${dietaryPreferences}\n\nAssess how well each restaurant can accommodate these dietary needs. Be honest — if a restaurant isn't a great fit, say so, but also note if they could adapt dishes.`
+      : "";
+
+    const prompt = `You are a knowledgeable Sydney restaurant guide helping a cancer patient and her partner find suitable restaurants.
+
+${cancerFightingNutrition}
+
+${userContext}${dietaryInfo}
+
+The user is searching for: "${query}"
+
+Search your knowledge for REAL Sydney restaurants matching this query. This could be:
+- A specific restaurant name (e.g. "Icebergs Dining Room")
+- A cuisine type (e.g. "Japanese in Surry Hills")
+- A suburb or area (e.g. "restaurants in Manly")
+- A general query (e.g. "seafood near the harbour")
+
+Return up to 4 real restaurants that match. For each restaurant, provide genuine details based on your knowledge. Be honest about ratings and reviews — these should reflect real public sentiment, not made up. If you're not confident about a specific detail, use reasonable estimates.
+
+The suitabilityScore should be 1-10 based on how well the restaurant can accommodate the patient's dietary needs (sugar-free, dairy-free, fish/organic chicken focus, anti-inflammatory). Score 8+ means excellent fit, 5-7 means decent with modifications, below 5 means challenging.
+
+You MUST respond with ONLY valid JSON (no markdown, no backticks). Return this exact structure:
+
+{
+  "restaurants": [
+    {
+      "name": "Restaurant Name (real name)",
+      "suburb": "Suburb, Sydney",
+      "cuisineType": "Cuisine Type",
+      "priceRange": "$$ to $$$$",
+      "summary": "2-3 sentence description of the restaurant, its reputation, and what makes it notable",
+      "dietaryNotes": "Specific assessment of how well this restaurant can accommodate sugar-free, dairy-free, fish/chicken dietary needs. Mention specific menu items or accommodation options.",
+      "vibe": "One sentence describing the atmosphere",
+      "menuSuggestions": ["Suitable dish 1 with dietary note", "Suitable dish 2", "Suitable dish 3"],
+      "whyItWorks": "Why this restaurant could work for this couple",
+      "rating": 4.2,
+      "reviewHighlights": ["Key positive review point 1", "Another highlight from reviews", "Any dietary-relevant review note"],
+      "suitabilityScore": 7,
+      "suitabilityExplanation": "Brief explanation of the suitability score — what works and what might need adaptation",
+      "openingHours": "General opening hours (e.g. 'Tue-Sun 12pm-10pm, closed Mon')",
+      "website": "Website URL if known, or empty string",
+      "phoneNumber": "Phone number if known, or empty string"
+    }
+  ]
+}
+
+If the query is very specific (a single restaurant name), return just that one restaurant with detailed information. If broader, return up to 4 matching restaurants. If you don't recognise the restaurant or query, return an empty array and be honest.`;
+
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    let result;
+    let lastError: any;
+    for (const modelName of modelsToTry) {
+      try {
+        const m = genAI.getGenerativeModel({ model: modelName });
+        result = await m.generateContent({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.status === 429) {
+          console.log(`Restaurant search: model ${modelName} rate-limited, trying next...`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!result) {
+      throw lastError || new Error("All AI models unavailable");
+    }
+
+    const text = result.response.text() || "";
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    try {
+      const parsed = JSON.parse(cleaned);
+      return parsed.restaurants || [];
+    } catch (parseError) {
+      console.error("Restaurant search JSON parse error:", parseError);
+      return [];
+    }
+  } catch (error: any) {
+    console.error("Error searching restaurants:", error);
+    if (error?.status === 429 || error?.message?.includes("temporarily busy")) {
+      throw new Error("AI service is temporarily busy. Please try again in a moment.");
+    }
+    throw error;
+  }
+}
+
 export function addToKnowledgeBase(category: string, content: string): { success: boolean, message: string } {
   console.log(`Added to knowledge base - Category: ${category}, Content: ${content}`);
   

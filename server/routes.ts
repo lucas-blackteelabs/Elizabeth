@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas } from "./openai";
+import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas, searchRestaurant } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -462,6 +462,30 @@ PATIENT CONTEXT:
         return res.status(503).json({ error: error.message });
       }
       return res.status(500).json({ error: "Failed to generate ideas" });
+    }
+  });
+
+  app.post("/api/ai/restaurant-search", async (req, res) => {
+    try {
+      const { query, userId } = req.body;
+      if (!query || typeof query !== "string" || query.trim().length < 2) {
+        return res.status(400).json({ error: "Please enter a restaurant name or search term." });
+      }
+      const user = userId ? await storage.getUser(userId) : null;
+      let userContext = "";
+      let dietaryPreferences = "";
+      if (user) {
+        userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
+        dietaryPreferences = user.dietaryPreferences || "";
+      }
+      const results = await searchRestaurant(query.trim(), dietaryPreferences, userContext);
+      return res.json({ restaurants: results });
+    } catch (error: any) {
+      console.error("Error searching restaurants:", error);
+      if (error?.message?.includes("temporarily busy")) {
+        return res.status(503).json({ error: error.message });
+      }
+      return res.status(500).json({ error: "Failed to search restaurants" });
     }
   });
 
