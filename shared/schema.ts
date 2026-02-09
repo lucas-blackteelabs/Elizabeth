@@ -396,3 +396,73 @@ export const insertMotivationalWallItemSchema = createInsertSchema(motivationalW
 
 export type MotivationalWallItem = typeof motivationalWallItems.$inferSelect;
 export type InsertMotivationalWallItem = z.infer<typeof insertMotivationalWallItemSchema>;
+
+export const communityThreads = pgTable("community_threads", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").notNull().default("general"),
+  pinned: boolean("pinned").default(false),
+  likesCount: integer("likes_count").default(0),
+  repliesCount: integer("replies_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityThreadSchema = createInsertSchema(communityThreads).pick({
+  userId: true,
+  authorName: true,
+  title: true,
+  content: true,
+  category: true,
+  pinned: true,
+});
+
+export type CommunityThread = typeof communityThreads.$inferSelect;
+export type InsertCommunityThread = z.infer<typeof insertCommunityThreadSchema>;
+
+export const communityReplies = pgTable("community_replies", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull(),
+  userId: integer("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityReplySchema = createInsertSchema(communityReplies).pick({
+  threadId: true,
+  userId: true,
+  authorName: true,
+  content: true,
+});
+
+export type CommunityReply = typeof communityReplies.$inferSelect;
+export type InsertCommunityReply = z.infer<typeof insertCommunityReplySchema>;
+
+export const medicalDocuments = pgTable("medical_documents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  documentType: text("document_type").notNull(),
+  date: date("date").notNull(),
+  summary: text("summary"),
+  notes: text("notes"),
+  fileUrl: text("file_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMedicalDocumentSchema = createInsertSchema(medicalDocuments).pick({
+  userId: true,
+  title: true,
+  documentType: true,
+  date: true,
+  summary: true,
+  notes: true,
+  fileUrl: true,
+});
+
+export type MedicalDocument = typeof medicalDocuments.$inferSelect;
+export type InsertMedicalDocument = z.infer<typeof insertMedicalDocumentSchema>;

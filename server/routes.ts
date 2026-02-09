@@ -1308,6 +1308,182 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
     }
   });
 
+  // Community Threads
+  app.get("/api/community/threads", async (req, res) => {
+    try {
+      const threads = await storage.listCommunityThreads();
+      return res.json(threads);
+    } catch (error) {
+      console.error("Error fetching threads:", error);
+      return res.status(500).json({ error: "Failed to fetch threads" });
+    }
+  });
+
+  app.get("/api/community/threads/:id", async (req, res) => {
+    try {
+      const thread = await storage.getCommunityThread(parseInt(req.params.id));
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      return res.json(thread);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch thread" });
+    }
+  });
+
+  app.post("/api/community/threads", async (req, res) => {
+    try {
+      const thread = await storage.createCommunityThread(req.body);
+      return res.json(thread);
+    } catch (error) {
+      console.error("Error creating thread:", error);
+      return res.status(500).json({ error: "Failed to create thread" });
+    }
+  });
+
+  app.patch("/api/community/threads/:id", async (req, res) => {
+    try {
+      const thread = await storage.updateCommunityThread(parseInt(req.params.id), req.body);
+      return res.json(thread);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update thread" });
+    }
+  });
+
+  app.delete("/api/community/threads/:id", async (req, res) => {
+    try {
+      await storage.deleteCommunityThread(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete thread" });
+    }
+  });
+
+  // Community Replies
+  app.get("/api/community/threads/:id/replies", async (req, res) => {
+    try {
+      const replies = await storage.listCommunityReplies(parseInt(req.params.id));
+      return res.json(replies);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch replies" });
+    }
+  });
+
+  app.post("/api/community/threads/:id/replies", async (req, res) => {
+    try {
+      const reply = await storage.createCommunityReply({
+        ...req.body,
+        threadId: parseInt(req.params.id),
+      });
+      return res.json(reply);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create reply" });
+    }
+  });
+
+  app.delete("/api/community/replies/:id", async (req, res) => {
+    try {
+      await storage.deleteCommunityReply(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete reply" });
+    }
+  });
+
+  // Medical Documents
+  app.get("/api/medical-documents", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const docs = await storage.listMedicalDocuments(userId);
+      return res.json(docs);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.post("/api/medical-documents", async (req, res) => {
+    try {
+      const doc = await storage.createMedicalDocument(req.body);
+      return res.json(doc);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create document" });
+    }
+  });
+
+  app.patch("/api/medical-documents/:id", async (req, res) => {
+    try {
+      const doc = await storage.updateMedicalDocument(parseInt(req.params.id), req.body);
+      return res.json(doc);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update document" });
+    }
+  });
+
+  app.delete("/api/medical-documents/:id", async (req, res) => {
+    try {
+      await storage.deleteMedicalDocument(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
+  // AI Medical Summary
+  app.post("/api/ai/medical-summary", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const scanData = await storage.listScanResults(userId);
+      const programs = await storage.listTreatmentPrograms(userId);
+      const documents = await storage.listMedicalDocuments(userId);
+
+      const tumourGroups: Record<string, any[]> = {};
+      scanData.forEach(r => {
+        if (!tumourGroups[r.tumourLabel]) tumourGroups[r.tumourLabel] = [];
+        tumourGroups[r.tumourLabel].push(r);
+      });
+
+      const tumourSummaries = Object.entries(tumourGroups).map(([label, scans]) => {
+        const sorted = [...scans].sort((a: any, b: any) => new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime());
+        const baseline = sorted[0];
+        const latest = sorted[sorted.length - 1];
+        const baseArea = baseline.sizeX * baseline.sizeY;
+        const latArea = latest.sizeX * latest.sizeY;
+        const isResolved = latArea === 0;
+        const reduction = baseArea > 0 ? ((baseArea - latArea) / baseArea * 100).toFixed(0) : "0";
+        return `${label}: ${isResolved ? "RESOLVED (gone)" : `${reduction}% smaller, SUV ${latest.suvMax ?? "no uptake"}`}`;
+      });
+
+      const userContext = `
+PATIENT: ${user.displayName}
+DIAGNOSIS: ${user.cancerType || "Not specified"}, ${user.cancerStage || "Not specified"}
+STATUS: ${user.treatmentStatus || "Active surveillance"}
+TREATMENT HISTORY: ${user.treatmentHistory || "None"}
+ADVERSE EVENTS: ${user.adverseEventHistory || "None"}
+SCAN SUMMARY: ${user.scanSummary || "No data"}
+NEXT SCAN: ${user.nextScanDate || "Not scheduled"}
+TUMOUR STATUS: ${tumourSummaries.join("; ")}
+ACTIVE PROGRAMS: ${programs.filter(p => p.status === "active").map(p => p.name).join(", ") || "None"}
+DOCUMENTS ON FILE: ${documents.length} documents
+`;
+
+      const { getHealthAdvice } = await import("./openai");
+      const prompt = `Write a brief, easy-to-read medical situation summary for this cancer patient. This is for the patient herself (not a doctor). Be warm but factual. Structure as:
+
+1. **Where you're at** - 2-3 sentences about current status
+2. **What's working** - 1-2 sentences about positive progress  
+3. **What to watch** - 1-2 sentences about upcoming milestones or things to monitor
+
+Keep it concise (max 150 words total). Use plain language. Be encouraging but honest. Australian English. No medical jargon.`;
+
+      const summary = await getHealthAdvice(prompt, userContext);
+      return res.json({ summary, generatedAt: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error generating medical summary:", error);
+      return res.status(500).json({ error: "Failed to generate summary" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

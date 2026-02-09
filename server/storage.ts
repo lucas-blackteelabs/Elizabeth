@@ -1,6 +1,7 @@
 import { 
   users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights, appointments, customActivityTypes,
   treatmentPrograms, treatmentSessions, journalEntries, tumourNicknames, motivationalWallItems,
+  communityThreads, communityReplies, medicalDocuments,
   type User, type InsertUser, type ChatMessage,
   type ScanResult, type InsertScanResult,
   type Meal, type InsertMeal,
@@ -15,6 +16,9 @@ import {
   type JournalEntry, type InsertJournalEntry,
   type TumourNickname, type InsertTumourNickname,
   type MotivationalWallItem, type InsertMotivationalWallItem,
+  type CommunityThread, type InsertCommunityThread,
+  type CommunityReply, type InsertCommunityReply,
+  type MedicalDocument, type InsertMedicalDocument,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -90,6 +94,21 @@ export interface IStorage {
   createMotivationalWallItem(data: InsertMotivationalWallItem): Promise<MotivationalWallItem>;
   updateMotivationalWallItem(id: number, data: Partial<MotivationalWallItem>): Promise<MotivationalWallItem>;
   deleteMotivationalWallItem(id: number): Promise<void>;
+
+  listCommunityThreads(): Promise<CommunityThread[]>;
+  getCommunityThread(id: number): Promise<CommunityThread | undefined>;
+  createCommunityThread(data: InsertCommunityThread): Promise<CommunityThread>;
+  updateCommunityThread(id: number, data: Partial<CommunityThread>): Promise<CommunityThread>;
+  deleteCommunityThread(id: number): Promise<void>;
+
+  listCommunityReplies(threadId: number): Promise<CommunityReply[]>;
+  createCommunityReply(data: InsertCommunityReply): Promise<CommunityReply>;
+  deleteCommunityReply(id: number): Promise<void>;
+
+  listMedicalDocuments(userId: number): Promise<MedicalDocument[]>;
+  createMedicalDocument(data: InsertMedicalDocument): Promise<MedicalDocument>;
+  updateMedicalDocument(id: number, data: Partial<MedicalDocument>): Promise<MedicalDocument>;
+  deleteMedicalDocument(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -395,6 +414,73 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMotivationalWallItem(id: number): Promise<void> {
     await db.delete(motivationalWallItems).where(eq(motivationalWallItems.id, id));
+  }
+
+  async listCommunityThreads(): Promise<CommunityThread[]> {
+    return db.select().from(communityThreads).orderBy(communityThreads.createdAt);
+  }
+
+  async getCommunityThread(id: number): Promise<CommunityThread | undefined> {
+    const [thread] = await db.select().from(communityThreads).where(eq(communityThreads.id, id));
+    return thread;
+  }
+
+  async createCommunityThread(data: InsertCommunityThread): Promise<CommunityThread> {
+    const [thread] = await db.insert(communityThreads).values(data).returning();
+    return thread;
+  }
+
+  async updateCommunityThread(id: number, data: Partial<CommunityThread>): Promise<CommunityThread> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [thread] = await db.update(communityThreads).set(updateData).where(eq(communityThreads.id, id)).returning();
+    return thread;
+  }
+
+  async deleteCommunityThread(id: number): Promise<void> {
+    await db.delete(communityReplies).where(eq(communityReplies.threadId, id));
+    await db.delete(communityThreads).where(eq(communityThreads.id, id));
+  }
+
+  async listCommunityReplies(threadId: number): Promise<CommunityReply[]> {
+    return db.select().from(communityReplies).where(eq(communityReplies.threadId, threadId)).orderBy(communityReplies.createdAt);
+  }
+
+  async createCommunityReply(data: InsertCommunityReply): Promise<CommunityReply> {
+    const [reply] = await db.insert(communityReplies).values(data).returning();
+    await db.update(communityThreads)
+      .set({ repliesCount: (await this.listCommunityReplies(data.threadId)).length })
+      .where(eq(communityThreads.id, data.threadId));
+    return reply;
+  }
+
+  async deleteCommunityReply(id: number): Promise<void> {
+    const [reply] = await db.select().from(communityReplies).where(eq(communityReplies.id, id));
+    if (reply) {
+      await db.delete(communityReplies).where(eq(communityReplies.id, id));
+      const remaining = await this.listCommunityReplies(reply.threadId);
+      await db.update(communityThreads)
+        .set({ repliesCount: remaining.length })
+        .where(eq(communityThreads.id, reply.threadId));
+    }
+  }
+
+  async listMedicalDocuments(userId: number): Promise<MedicalDocument[]> {
+    return db.select().from(medicalDocuments).where(eq(medicalDocuments.userId, userId));
+  }
+
+  async createMedicalDocument(data: InsertMedicalDocument): Promise<MedicalDocument> {
+    const [doc] = await db.insert(medicalDocuments).values(data).returning();
+    return doc;
+  }
+
+  async updateMedicalDocument(id: number, data: Partial<MedicalDocument>): Promise<MedicalDocument> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [doc] = await db.update(medicalDocuments).set(updateData).where(eq(medicalDocuments.id, id)).returning();
+    return doc;
+  }
+
+  async deleteMedicalDocument(id: number): Promise<void> {
+    await db.delete(medicalDocuments).where(eq(medicalDocuments.id, id));
   }
 }
 
