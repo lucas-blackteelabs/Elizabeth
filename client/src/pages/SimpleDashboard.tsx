@@ -1140,20 +1140,33 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
               return (
                 <div key={t.label} className="flex flex-col items-center">
                   <div className="relative" style={{ width: svgSize, height: svgSize }}>
-                    <svg width={svgSize} height={svgSize} className={t.isResolved ? "opacity-25" : ""}>
-                      <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="3 3" />
-                      {!t.isResolved && currentR > 0 && (
-                        <circle cx={cx} cy={cy} r={currentR} fill="hsl(142, 71%, 45%)" opacity={0.25} />
-                      )}
-                    </svg>
-                    {t.isResolved && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Check className="h-2.5 w-2.5 text-emerald-300" />
-                      </div>
+                    {t.isResolved ? (
+                      <>
+                        <svg width={svgSize} height={svgSize}>
+                          <defs>
+                            <linearGradient id={`ice-compact-${t.label}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.4" />
+                              <stop offset="50%" stopColor="#93c5fd" stopOpacity="0.25" />
+                              <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.3" />
+                            </linearGradient>
+                          </defs>
+                          <circle cx={cx} cy={cy} r={baselineR} fill={`url(#ice-compact-${t.label})`} stroke="#93c5fd" strokeWidth={1} strokeDasharray="2 3" opacity={0.5} />
+                          <line x1={cx - baselineR + 2} y1={cx + 2} x2={cx + baselineR - 2} y2={cx - 2} stroke="#60a5fa" strokeWidth={1.5} strokeLinecap="round" opacity={0.6} />
+                          <line x1={cx - baselineR + 4} y1={cx - 1} x2={cx + baselineR - 4} y2={cx + 1} stroke="#93c5fd" strokeWidth={0.8} strokeLinecap="round" opacity={0.4} />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-[8px]">❄️</div>
+                      </>
+                    ) : (
+                      <svg width={svgSize} height={svgSize}>
+                        <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="3 3" />
+                        {currentR > 0 && (
+                          <circle cx={cx} cy={cy} r={currentR} fill="hsl(142, 71%, 45%)" opacity={0.25} />
+                        )}
+                      </svg>
                     )}
                   </div>
-                  <span className="text-[8px] text-muted-foreground font-body mt-0.5 max-w-[48px] truncate text-center">
-                    {t.isResolved ? "Gone" : `↓${t.sizeReduction}%`}
+                  <span className={`text-[8px] font-body mt-0.5 max-w-[48px] truncate text-center ${t.isResolved ? "text-blue-400 font-semibold" : "text-muted-foreground"}`}>
+                    {t.isResolved ? "Axed!" : `↓${t.sizeReduction}%`}
                   </span>
                 </div>
               );
@@ -1233,19 +1246,44 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
             <div
               key={tl}
               className={`rounded-2xl border p-5 transition-all ${
-                isResolved ? "bg-white/60 border-border/50" : "bg-white border-border"
+                isResolved ? "bg-gradient-to-br from-blue-50/60 via-white to-sky-50/40 border-blue-200/50" : "bg-white border-border"
               }`}
             >
               <div className="flex items-center gap-5">
                 <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: svgSize, height: svgSize }}>
                   {isResolved ? (
                     <>
-                      <svg width={svgSize} height={svgSize} className="opacity-20">
-                        <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={2} strokeDasharray="4 4" />
+                      <svg width={svgSize} height={svgSize}>
+                        <defs>
+                          <linearGradient id={`ice-grad-${tl}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.5" />
+                            <stop offset="30%" stopColor="#93c5fd" stopOpacity="0.3" />
+                            <stop offset="70%" stopColor="#dbeafe" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#eff6ff" stopOpacity="0.4" />
+                          </linearGradient>
+                          <filter id={`frost-${tl}`}>
+                            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise" />
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+                          </filter>
+                          <clipPath id={`circle-clip-${tl}`}>
+                            <circle cx={cx} cy={cy} r={baselineR} />
+                          </clipPath>
+                        </defs>
+                        <circle cx={cx} cy={cy} r={baselineR} fill={`url(#ice-grad-${tl})`} stroke="#93c5fd" strokeWidth={1.5} strokeDasharray="3 5" opacity={0.6} />
+                        <circle cx={cx} cy={cy} r={baselineR * 0.7} fill="none" stroke="#bfdbfe" strokeWidth={0.5} strokeDasharray="2 4" opacity={0.4} />
+                        <circle cx={cx} cy={cy} r={baselineR * 0.4} fill="#dbeafe" opacity={0.2} />
+                        <g clipPath={`url(#circle-clip-${tl})`}>
+                          <line x1={cx - baselineR * 0.9} y1={cy + baselineR * 0.15} x2={cx + baselineR * 0.9} y2={cy - baselineR * 0.15} stroke="#3b82f6" strokeWidth={2.5} strokeLinecap="round" opacity={0.7} />
+                          <line x1={cx - baselineR * 0.7} y1={cy - baselineR * 0.1} x2={cx + baselineR * 0.7} y2={cy + baselineR * 0.1} stroke="#60a5fa" strokeWidth={1.5} strokeLinecap="round" opacity={0.45} />
+                          <line x1={cx - baselineR * 0.5} y1={cy + baselineR * 0.35} x2={cx + baselineR * 0.3} y2={cy - baselineR * 0.5} stroke="#93c5fd" strokeWidth={1} strokeLinecap="round" opacity={0.35} />
+                          <line x1={cx + baselineR * 0.2} y1={cy + baselineR * 0.4} x2={cx + baselineR * 0.6} y2={cy - baselineR * 0.3} stroke="#93c5fd" strokeWidth={0.8} strokeLinecap="round" opacity={0.3} />
+                        </g>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="h-5 w-5 text-emerald-300" />
+                        <span className="text-xl drop-shadow-sm" style={{ transform: "rotate(-15deg)" }}>🪓</span>
                       </div>
+                      <div className="absolute -top-0.5 -right-0.5 text-[10px]">❄️</div>
+                      <div className="absolute -bottom-0.5 -left-0.5 text-[10px]">❄️</div>
                     </>
                   ) : (
                     <svg width={svgSize} height={svgSize}>
@@ -1263,10 +1301,10 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                   </div>
                   {isResolved ? (
                     <div>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-body font-medium">
-                        <Check className="h-3 w-3" /> Gone
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-blue-50 to-sky-50 text-blue-600 text-xs font-body font-semibold border border-blue-200/50">
+                        🪓 Axed &amp; Gone Cold
                       </span>
-                      <p className="text-xs font-body text-muted-foreground/50 mt-1">No longer visible on imaging</p>
+                      <p className="text-xs font-body text-blue-400/70 mt-1.5">Frozen out — no longer visible on imaging ❄️</p>
                     </div>
                   ) : (
                     <>
@@ -1291,9 +1329,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-body">
                       <span className="text-muted-foreground">Latest</span>
-                      <span className={`font-medium ${isResolved ? "text-emerald-500" : "text-foreground"}`}>
-                        {latest.sizeX === 0 && latest.sizeY === 0 ? "Gone" : `${latest.sizeX}×${latest.sizeY}mm`}
-                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : " · Clear"}
+                      <span className={`font-medium ${isResolved ? "text-blue-500" : "text-foreground"}`}>
+                        {latest.sizeX === 0 && latest.sizeY === 0 ? "🪓 Axed!" : `${latest.sizeX}×${latest.sizeY}mm`}
+                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : isResolved ? " · Ice cold ❄️" : " · Clear"}
                       </span>
                     </div>
                   </div>
