@@ -1,5 +1,5 @@
 import { 
-  users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights,
+  users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights, appointments, customActivityTypes,
   type User, type InsertUser, type ChatMessage,
   type ScanResult, type InsertScanResult,
   type Meal, type InsertMeal,
@@ -7,6 +7,8 @@ import {
   type Exercise, type InsertExercise,
   type MedicalRecord, type InsertMedicalRecord,
   type DateNight, type InsertDateNight,
+  type Appointment, type InsertAppointment,
+  type CustomActivityType, type InsertCustomActivityType,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -22,15 +24,23 @@ export interface IStorage {
   
   listScanResults(userId: number): Promise<ScanResult[]>;
   createScanResult(data: InsertScanResult): Promise<ScanResult>;
+  updateScanResult(id: number, data: Partial<ScanResult>): Promise<ScanResult>;
+  deleteScanResult(id: number): Promise<void>;
   
   listMeals(userId: number, dateFrom?: string, dateTo?: string): Promise<Meal[]>;
   createMeal(data: InsertMeal): Promise<Meal>;
+  updateMeal(id: number, data: Partial<Meal>): Promise<Meal>;
+  deleteMeal(id: number): Promise<void>;
   
   listMindBodyActivities(userId: number, dateFrom?: string, dateTo?: string): Promise<MindBodyActivity[]>;
   createMindBodyActivity(data: InsertMindBodyActivity): Promise<MindBodyActivity>;
+  updateMindBodyActivity(id: number, data: Partial<MindBodyActivity>): Promise<MindBodyActivity>;
+  deleteMindBodyActivity(id: number): Promise<void>;
   
   listExercises(userId: number, dateFrom?: string, dateTo?: string): Promise<Exercise[]>;
   createExercise(data: InsertExercise): Promise<Exercise>;
+  updateExercise(id: number, data: Partial<Exercise>): Promise<Exercise>;
+  deleteExercise(id: number): Promise<void>;
   
   listMedicalRecords(userId: number): Promise<MedicalRecord[]>;
   createMedicalRecord(data: InsertMedicalRecord): Promise<MedicalRecord>;
@@ -39,6 +49,16 @@ export interface IStorage {
   createDateNight(data: InsertDateNight): Promise<DateNight>;
   updateDateNight(id: number, data: Partial<DateNight>): Promise<DateNight>;
   getDateNight(id: number): Promise<DateNight | undefined>;
+
+  listAppointments(userId: number): Promise<Appointment[]>;
+  createAppointment(data: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: number, data: Partial<Appointment>): Promise<Appointment>;
+  deleteAppointment(id: number): Promise<void>;
+
+  listCustomActivityTypes(userId: number, category?: string): Promise<CustomActivityType[]>;
+  createCustomActivityType(data: InsertCustomActivityType): Promise<CustomActivityType>;
+  updateCustomActivityType(id: number, data: Partial<CustomActivityType>): Promise<CustomActivityType>;
+  deleteCustomActivityType(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -96,6 +116,16 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async updateScanResult(id: number, data: Partial<ScanResult>): Promise<ScanResult> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [result] = await db.update(scanResults).set(updateData).where(eq(scanResults.id, id)).returning();
+    return result;
+  }
+
+  async deleteScanResult(id: number): Promise<void> {
+    await db.delete(scanResults).where(eq(scanResults.id, id));
+  }
+
   async listMeals(userId: number, dateFrom?: string, dateTo?: string): Promise<Meal[]> {
     const conditions = [eq(meals.userId, userId)];
     if (dateFrom) conditions.push(gte(meals.date, dateFrom));
@@ -106,6 +136,16 @@ export class DatabaseStorage implements IStorage {
   async createMeal(data: InsertMeal): Promise<Meal> {
     const [meal] = await db.insert(meals).values(data).returning();
     return meal;
+  }
+
+  async updateMeal(id: number, data: Partial<Meal>): Promise<Meal> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [meal] = await db.update(meals).set(updateData).where(eq(meals.id, id)).returning();
+    return meal;
+  }
+
+  async deleteMeal(id: number): Promise<void> {
+    await db.delete(meals).where(eq(meals.id, id));
   }
 
   async listMindBodyActivities(userId: number, dateFrom?: string, dateTo?: string): Promise<MindBodyActivity[]> {
@@ -120,6 +160,16 @@ export class DatabaseStorage implements IStorage {
     return activity;
   }
 
+  async updateMindBodyActivity(id: number, data: Partial<MindBodyActivity>): Promise<MindBodyActivity> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [activity] = await db.update(mindBodyActivities).set(updateData).where(eq(mindBodyActivities.id, id)).returning();
+    return activity;
+  }
+
+  async deleteMindBodyActivity(id: number): Promise<void> {
+    await db.delete(mindBodyActivities).where(eq(mindBodyActivities.id, id));
+  }
+
   async listExercises(userId: number, dateFrom?: string, dateTo?: string): Promise<Exercise[]> {
     const conditions = [eq(exercises.userId, userId)];
     if (dateFrom) conditions.push(gte(exercises.date, dateFrom));
@@ -130,6 +180,16 @@ export class DatabaseStorage implements IStorage {
   async createExercise(data: InsertExercise): Promise<Exercise> {
     const [exercise] = await db.insert(exercises).values(data).returning();
     return exercise;
+  }
+
+  async updateExercise(id: number, data: Partial<Exercise>): Promise<Exercise> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [exercise] = await db.update(exercises).set(updateData).where(eq(exercises.id, id)).returning();
+    return exercise;
+  }
+
+  async deleteExercise(id: number): Promise<void> {
+    await db.delete(exercises).where(eq(exercises.id, id));
   }
 
   async listMedicalRecords(userId: number): Promise<MedicalRecord[]> {
@@ -159,6 +219,46 @@ export class DatabaseStorage implements IStorage {
   async getDateNight(id: number): Promise<DateNight | undefined> {
     const [dn] = await db.select().from(dateNights).where(eq(dateNights.id, id));
     return dn;
+  }
+
+  async listAppointments(userId: number): Promise<Appointment[]> {
+    return db.select().from(appointments).where(eq(appointments.userId, userId));
+  }
+
+  async createAppointment(data: InsertAppointment): Promise<Appointment> {
+    const [appt] = await db.insert(appointments).values(data).returning();
+    return appt;
+  }
+
+  async updateAppointment(id: number, data: Partial<Appointment>): Promise<Appointment> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [appt] = await db.update(appointments).set(updateData).where(eq(appointments.id, id)).returning();
+    return appt;
+  }
+
+  async deleteAppointment(id: number): Promise<void> {
+    await db.delete(appointments).where(eq(appointments.id, id));
+  }
+
+  async listCustomActivityTypes(userId: number, category?: string): Promise<CustomActivityType[]> {
+    const conditions = [eq(customActivityTypes.userId, userId)];
+    if (category) conditions.push(eq(customActivityTypes.category, category));
+    return db.select().from(customActivityTypes).where(and(...conditions));
+  }
+
+  async createCustomActivityType(data: InsertCustomActivityType): Promise<CustomActivityType> {
+    const [type] = await db.insert(customActivityTypes).values(data).returning();
+    return type;
+  }
+
+  async updateCustomActivityType(id: number, data: Partial<CustomActivityType>): Promise<CustomActivityType> {
+    const { id: _, ...updateData } = data as any;
+    const [type] = await db.update(customActivityTypes).set(updateData).where(eq(customActivityTypes.id, id)).returning();
+    return type;
+  }
+
+  async deleteCustomActivityType(id: number): Promise<void> {
+    await db.delete(customActivityTypes).where(eq(customActivityTypes.id, id));
   }
 }
 

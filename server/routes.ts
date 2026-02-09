@@ -42,7 +42,7 @@ async function seedLizAccount() {
     oncologist: "Melanoma Oncology Team",
     goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
     medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
+    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
     diagnosis_date: "2025-04-22",
     dietaryPreferences: "Sugar-free, dairy-free, fish or organic chicken",
@@ -63,7 +63,13 @@ async function seedLizAccount() {
     const scans = await storage.listScanResults(existingUser.id);
     if (scans.length === 0) {
       await seedScanData(existingUser.id);
+    } else {
+      const hasTumour4 = scans.some(s => s.tumourLabel === "Tumour 4 (Small Bowel)");
+      if (!hasTumour4) {
+        await seedTumour4(existingUser.id);
+      }
     }
+    await seedDefaultAppointments(existingUser.id);
     return;
   }
 
@@ -75,6 +81,7 @@ async function seedLizAccount() {
     if (scans.length === 0) {
       await seedScanData(oldUser.id);
     }
+    await seedDefaultAppointments(oldUser.id);
     console.log("Migrated old Liz account (./.) to Liz/Cookie");
     return;
   }
@@ -98,30 +105,45 @@ async function seedLizAccount() {
     oncologist: "Melanoma Oncology Team",
     goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
     medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1: 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2: 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3: 42x35mm SUV 3.1 (was 49x49 SUV 9.8). No new disease — brain, lungs, bones, nodes all clear.",
+    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
   });
 
   await seedScanData(user.id);
+  await seedDefaultAppointments(user.id);
   console.log("Seeded Liz's account with medical profile and scan data");
+}
+
+async function seedTumour4(userId: number) {
+  const tumour4Data = [
+    { scanDate: "2025-04-22", scanLabel: "Baseline (before treatment)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 18, sizeY: 15, suvMax: 4.2 },
+    { scanDate: "2025-08-05", scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 8, sizeY: 6, suvMax: 1.1 },
+    { scanDate: "2026-02-03", scanLabel: "Surveillance (no treatment since Jul 2025)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 0, sizeY: 0, suvMax: null },
+  ];
+  for (const t of tumour4Data) {
+    await storage.createScanResult({ userId, ...t, notes: t.suvMax === null ? "Resolved — no longer visible on imaging" : null });
+  }
 }
 
 async function seedScanData(userId: number) {
   const scanData = [
     { scanDate: "2025-04-22", scanLabel: "Baseline (before treatment)", tumours: [
-      { label: "Tumour 1", sizeX: 82, sizeY: 57, suvMax: 7.6 },
-      { label: "Tumour 2", sizeX: 67, sizeY: 58, suvMax: 9.8 },
-      { label: "Tumour 3", sizeX: 49, sizeY: 49, suvMax: 9.8 },
+      { label: "Tumour 1 (Liver)", sizeX: 82, sizeY: 57, suvMax: 7.6 },
+      { label: "Tumour 2 (Liver)", sizeX: 67, sizeY: 58, suvMax: 9.8 },
+      { label: "Tumour 3 (Liver)", sizeX: 49, sizeY: 49, suvMax: 9.8 },
+      { label: "Tumour 4 (Small Bowel)", sizeX: 18, sizeY: 15, suvMax: 4.2 },
     ]},
     { scanDate: "2025-08-05", scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)", tumours: [
-      { label: "Tumour 1", sizeX: 65, sizeY: 54, suvMax: 4.3 },
-      { label: "Tumour 2", sizeX: 60, sizeY: 49, suvMax: 3.5 },
-      { label: "Tumour 3", sizeX: 45, sizeY: 36, suvMax: 4.3 },
+      { label: "Tumour 1 (Liver)", sizeX: 65, sizeY: 54, suvMax: 4.3 },
+      { label: "Tumour 2 (Liver)", sizeX: 60, sizeY: 49, suvMax: 3.5 },
+      { label: "Tumour 3 (Liver)", sizeX: 45, sizeY: 36, suvMax: 4.3 },
+      { label: "Tumour 4 (Small Bowel)", sizeX: 8, sizeY: 6, suvMax: 1.1 },
     ]},
     { scanDate: "2026-02-03", scanLabel: "Surveillance (no treatment since Jul 2025)", tumours: [
-      { label: "Tumour 1", sizeX: 60, sizeY: 51, suvMax: 3.2 },
-      { label: "Tumour 2", sizeX: 51, sizeY: 42, suvMax: null },
-      { label: "Tumour 3", sizeX: 42, sizeY: 35, suvMax: 3.1 },
+      { label: "Tumour 1 (Liver)", sizeX: 60, sizeY: 51, suvMax: 3.2 },
+      { label: "Tumour 2 (Liver)", sizeX: 51, sizeY: 42, suvMax: null },
+      { label: "Tumour 3 (Liver)", sizeX: 42, sizeY: 35, suvMax: 3.1 },
+      { label: "Tumour 4 (Small Bowel)", sizeX: 0, sizeY: 0, suvMax: null },
     ]},
   ];
 
@@ -135,9 +157,24 @@ async function seedScanData(userId: number) {
         sizeX: tumour.sizeX,
         sizeY: tumour.sizeY,
         suvMax: tumour.suvMax,
-        notes: null,
+        notes: tumour.suvMax === null && tumour.sizeX === 0 ? "Resolved — no longer visible on imaging" : null,
       });
     }
+  }
+}
+
+async function seedDefaultAppointments(userId: number) {
+  const existing = await storage.listAppointments(userId);
+  if (existing.length > 0) return;
+  
+  const defaultAppointments = [
+    { userId, title: "PET/CT Scan", description: "Follow-up PET/CT scan to assess treatment response", date: "2026-05-15", time: "9:00 AM", location: "Radiology Department" },
+    { userId, title: "Oncology Review", description: "Review scan results and discuss next steps", date: "2026-05-22", time: "10:30 AM", location: "Oncology Clinic" },
+    { userId, title: "Nutrition Consultation", description: "Liver-supportive and immune-boosting nutrition planning", date: "2026-03-10", time: "2:00 PM", location: "Integrative Health Centre" },
+  ];
+  
+  for (const appt of defaultAppointments) {
+    await storage.createAppointment(appt);
   }
 }
 
@@ -331,6 +368,7 @@ PATIENT CONTEXT:
     }
   });
 
+  // Scan results
   app.get("/api/scan-results", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string, 10) || 1;
@@ -352,6 +390,31 @@ PATIENT CONTEXT:
     }
   });
 
+  app.patch("/api/scan-results/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const result = await storage.updateScanResult(id, req.body);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error updating scan result:", error);
+      return res.status(500).json({ error: "Failed to update scan result" });
+    }
+  });
+
+  app.delete("/api/scan-results/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteScanResult(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting scan result:", error);
+      return res.status(500).json({ error: "Failed to delete scan result" });
+    }
+  });
+
+  // Meals
   app.get("/api/meals", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string, 10) || 1;
@@ -375,6 +438,31 @@ PATIENT CONTEXT:
     }
   });
 
+  app.patch("/api/meals/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const meal = await storage.updateMeal(id, req.body);
+      return res.json(meal);
+    } catch (error) {
+      console.error("Error updating meal:", error);
+      return res.status(500).json({ error: "Failed to update meal" });
+    }
+  });
+
+  app.delete("/api/meals/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteMeal(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting meal:", error);
+      return res.status(500).json({ error: "Failed to delete meal" });
+    }
+  });
+
+  // Mind-body activities
   app.get("/api/mind-body", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string, 10) || 1;
@@ -398,6 +486,31 @@ PATIENT CONTEXT:
     }
   });
 
+  app.patch("/api/mind-body/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const activity = await storage.updateMindBodyActivity(id, req.body);
+      return res.json(activity);
+    } catch (error) {
+      console.error("Error updating mind-body activity:", error);
+      return res.status(500).json({ error: "Failed to update activity" });
+    }
+  });
+
+  app.delete("/api/mind-body/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteMindBodyActivity(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting mind-body activity:", error);
+      return res.status(500).json({ error: "Failed to delete activity" });
+    }
+  });
+
+  // Exercises
   app.get("/api/exercises", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string, 10) || 1;
@@ -421,6 +534,31 @@ PATIENT CONTEXT:
     }
   });
 
+  app.patch("/api/exercises/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const exercise = await storage.updateExercise(id, req.body);
+      return res.json(exercise);
+    } catch (error) {
+      console.error("Error updating exercise:", error);
+      return res.status(500).json({ error: "Failed to update exercise" });
+    }
+  });
+
+  app.delete("/api/exercises/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteExercise(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting exercise:", error);
+      return res.status(500).json({ error: "Failed to delete exercise" });
+    }
+  });
+
+  // Medical records
   app.get("/api/medical-records", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string, 10) || 1;
@@ -442,6 +580,7 @@ PATIENT CONTEXT:
     }
   });
 
+  // Date nights
   app.post("/api/ai/date-night", async (req, res) => {
     try {
       const userId = req.body.userId || 1;
@@ -524,38 +663,97 @@ PATIENT CONTEXT:
     }
   });
 
-  app.get("/api/appointments", (req, res) => {
-    const appointments = [
-      {
-        id: 1,
-        title: "PET/CT Scan",
-        description: "Follow-up PET/CT scan to assess treatment response",
-        date: "2026-05-15",
-        time: "9:00 AM",
-        location: "Radiology Department",
-        person: "Radiology Team"
-      },
-      {
-        id: 2,
-        title: "Oncology Review",
-        description: "Review scan results and discuss next steps",
-        date: "2026-05-22",
-        time: "10:30 AM",
-        location: "Oncology Clinic",
-        person: "Melanoma Oncology Team"
-      },
-      {
-        id: 3,
-        title: "Nutrition Consultation",
-        description: "Liver-supportive and immune-boosting nutrition planning",
-        date: "2026-03-10",
-        time: "2:00 PM",
-        location: "Integrative Health Centre",
-        person: "Integrative Dietitian"
-      }
-    ];
-    
-    return res.json(appointments);
+  // Appointments (DB-backed)
+  app.get("/api/appointments", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const results = await storage.listAppointments(userId);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      return res.status(500).json({ error: "Failed to fetch appointments" });
+    }
+  });
+
+  app.post("/api/appointments", async (req, res) => {
+    try {
+      const appt = await storage.createAppointment(req.body);
+      return res.json(appt);
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      return res.status(500).json({ error: "Failed to create appointment" });
+    }
+  });
+
+  app.patch("/api/appointments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const appt = await storage.updateAppointment(id, req.body);
+      return res.json(appt);
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      return res.status(500).json({ error: "Failed to update appointment" });
+    }
+  });
+
+  app.delete("/api/appointments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteAppointment(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      return res.status(500).json({ error: "Failed to delete appointment" });
+    }
+  });
+
+  // Custom activity types
+  app.get("/api/activity-types", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const category = req.query.category as string | undefined;
+      const results = await storage.listCustomActivityTypes(userId, category);
+      return res.json(results);
+    } catch (error) {
+      console.error("Error fetching activity types:", error);
+      return res.status(500).json({ error: "Failed to fetch activity types" });
+    }
+  });
+
+  app.post("/api/activity-types", async (req, res) => {
+    try {
+      const type = await storage.createCustomActivityType(req.body);
+      return res.json(type);
+    } catch (error) {
+      console.error("Error creating activity type:", error);
+      return res.status(500).json({ error: "Failed to create activity type" });
+    }
+  });
+
+  app.patch("/api/activity-types/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const type = await storage.updateCustomActivityType(id, req.body);
+      return res.json(type);
+    } catch (error) {
+      console.error("Error updating activity type:", error);
+      return res.status(500).json({ error: "Failed to update activity type" });
+    }
+  });
+
+  app.delete("/api/activity-types/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteCustomActivityType(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting activity type:", error);
+      return res.status(500).json({ error: "Failed to delete activity type" });
+    }
   });
 
   const httpServer = createServer(app);

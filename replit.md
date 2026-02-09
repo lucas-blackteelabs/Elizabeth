@@ -4,6 +4,31 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Full CRUD & Data Management Overhaul
+  - Edit/delete past movement, meals, mind-body activities from dashboard wellness widget
+  - Date picker on all log dialogs — log activities for any date (past or future)
+  - DB-backed appointments with full add/edit/delete (replaced hardcoded data)
+  - Appointment seeding for new users with default PET/CT, oncology, nutrition entries
+  - Edit goals dialog on dashboard
+  - Customizable activity type dropdowns (add/edit/delete custom exercise, mind-body, therapy types)
+  - Custom activity types stored in `custom_activity_types` DB table with CRUD API
+  - PATCH/DELETE endpoints for meals, exercises, mind-body, appointments, scan results
+  - Future-dated scans and events supported in all date inputs
+- **Feb 2026**: 4th Tumour Tracking (Small Bowel)
+  - Added Tumour 4 (Small Bowel) to scan data: 18x15mm SUV 4.2 → 8x6mm SUV 1.1 → Resolved
+  - Handles resolved tumours (size 0x0, no SUV) with "Resolved" badge and "Gone" label
+  - Updated MedicalTracker timeline and summary text
+  - Scan comparison table now handles 4 tumours with responsive grid
+- **Feb 2026**: Apple Rings Tumour Visualization
+  - TumourResponseExpanded widget uses Apple Watch-style concentric SVG rings
+  - Outer ring: % size reduction (green); Inner ring: % SUV activity reduction (amber)
+  - Full rings with labels for resolved and metabolically complete tumours
+  - Per-tumour percentage display in center of rings
+- **Feb 2026**: Accumulated Therapy Totals Widget
+  - New "Healing Therapies" widget in dashboard widget picker
+  - Shows total sessions and minutes for each therapy type (acupuncture, hyperbaric, etc.)
+  - Colorful gradient cards with therapy-specific icons
+  - Aggregates all historical mind-body activities and exercises
 - **Feb 2026**: Restaurant Search feature on Date Night page
   - New "Search" tab: search any Sydney restaurant by name, cuisine, or suburb
   - AI-powered dietary suitability assessment (1-10 score) with colour-coded badges
@@ -54,7 +79,7 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
   - Database table: date_nights (with rating, review, status fields)
   - API endpoints: /api/ai/date-night (structured JSON), /api/date-nights (CRUD)
 - **Feb 2026**: Customizable dashboard with pick-and-mix widget system
-  - 10 widgets: Scan Countdown, Treatment Journey, Tumour Response chart, Today's Wellness, Immune Recovery, Healing Streak, Treatment Timeline, AI Assistant, Appointments, Daily Inspiration
+  - 11 widgets: Scan Countdown, Treatment Journey, Tumour Response (Apple rings), Today's Wellness, Immune Recovery, Healing Streak, Treatment Timeline, AI Assistant, Appointments (DB-backed CRUD), Daily Inspiration, Healing Therapies
   - Widget picker dialog stores preferences in localStorage
   - Tumour Response widget with recharts bar chart showing size/SUV reduction
   - Reframed "days off treatment" to "Days of Treatment Journey"

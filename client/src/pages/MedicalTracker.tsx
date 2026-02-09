@@ -38,7 +38,8 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
   
   const baselineArea = baseline.sizeX * baseline.sizeY;
   const latestArea = latest.sizeX * latest.sizeY;
-  const areaReduction = ((baselineArea - latestArea) / baselineArea * 100).toFixed(0);
+  const isResolved = latestArea === 0 && latest.suvMax === null;
+  const areaReduction = baselineArea > 0 ? ((baselineArea - latestArea) / baselineArea * 100).toFixed(0) : "0";
   
   const suvBaseline = baseline.suvMax;
   const suvLatest = latest.suvMax;
@@ -49,21 +50,29 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
   return (
     <Card className="bg-white border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
+        <CardTitle className="font-heading text-foreground text-base flex items-center gap-2 flex-wrap">
           {tumourLabel}
-          {suvLatest === null && (
+          {isResolved ? (
+            <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-body">Resolved</span>
+          ) : suvLatest === null ? (
             <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-body">No uptake</span>
-          )}
+          ) : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid gap-2 text-center" style={{ gridTemplateColumns: `repeat(${sorted.length}, minmax(0, 1fr))` }}>
           {sorted.map((scan, i) => (
             <div key={i} className="bg-muted rounded p-2 border border-border">
               <p className="text-[10px] text-muted-foreground font-body mb-1">
                 {new Date(scan.scanDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
               </p>
-              <p className="text-sm font-heading font-bold text-foreground">{scan.sizeX}x{scan.sizeY}<span className="text-[10px] font-body">mm</span></p>
+              <p className="text-sm font-heading font-bold text-foreground">
+                {scan.sizeX === 0 && scan.sizeY === 0 ? (
+                  <span className="text-primary">Gone</span>
+                ) : (
+                  <>{scan.sizeX}x{scan.sizeY}<span className="text-[10px] font-body">mm</span></>
+                )}
+              </p>
               <p className="text-xs text-muted-foreground font-body">
                 SUV {scan.suvMax !== null ? scan.suvMax : "—"}
               </p>
@@ -71,12 +80,14 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
           ))}
         </div>
         
-        <ScanProgressBar 
-          label="Size (area)" 
-          baseline={baselineArea} 
-          current={latestArea} 
-          unit="mm²" 
-        />
+        {baselineArea > 0 && (
+          <ScanProgressBar 
+            label="Size (area)" 
+            baseline={baselineArea} 
+            current={latestArea} 
+            unit="mm²" 
+          />
+        )}
         
         {suvBaseline && (
           <ScanProgressBar 
@@ -87,16 +98,25 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
           />
         )}
         
-        <div className="flex gap-3">
-          <div className="flex items-center gap-1 text-xs text-primary font-body">
-            <ArrowDown className="h-3 w-3" />
-            <span>{areaReduction}% smaller</span>
-          </div>
-          {suvChange && (
-            <div className="flex items-center gap-1 text-xs text-primary font-body">
-              <TrendingDown className="h-3 w-3" />
-              <span>SUV {suvChange === "Complete" ? "metabolically complete" : `${suvChange}% lower`}</span>
+        <div className="flex gap-3 flex-wrap">
+          {isResolved ? (
+            <div className="flex items-center gap-1 text-xs text-primary font-body font-medium">
+              <ArrowDown className="h-3 w-3" />
+              <span>100% resolved — no longer visible</span>
             </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1 text-xs text-primary font-body">
+                <ArrowDown className="h-3 w-3" />
+                <span>{areaReduction}% smaller</span>
+              </div>
+              {suvChange && (
+                <div className="flex items-center gap-1 text-xs text-primary font-body">
+                  <TrendingDown className="h-3 w-3" />
+                  <span>SUV {suvChange === "Complete" ? "metabolically complete" : `${suvChange}% lower`}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardContent>
@@ -158,17 +178,17 @@ export default function MedicalTracker() {
                     <TrendingDown className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-body font-medium text-foreground">
-                        All three liver tumours continue to shrink
+                        All tumours responding — liver lesions shrinking, small bowel tumour resolved
                       </p>
                       <p className="text-xs text-muted-foreground font-body mt-1">
-                        {scanDates.length} scans tracked from {new Date(scanDates[0]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })} to {new Date(scanDates[scanDates.length - 1]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}. Tumour 2 now shows no metabolic activity.
+                        {scanDates.length} scans tracked from {new Date(scanDates[0]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })} to {new Date(scanDates[scanDates.length - 1]).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}. Tumour 2 shows no metabolic activity. Tumour 4 (small bowel) fully resolved.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 {Object.entries(tumourGroups).map(([label, scans]) => (
                   <TumourCard key={label} tumourLabel={label} scans={scans} />
                 ))}
@@ -248,12 +268,12 @@ export default function MedicalTracker() {
             <CardContent>
               <div className="space-y-6">
                 {[
-                  { date: "22 April 2025", title: "Diagnosis", desc: "Stage IV melanoma identified. Three liver metastases found on PET/CT. BRAF wild-type. PD-L1 positive.", color: "bg-accent" },
+                  { date: "22 April 2025", title: "Diagnosis", desc: "Stage IV melanoma identified. Three liver metastases and one small bowel lesion found on PET/CT. BRAF wild-type. PD-L1 positive.", color: "bg-accent" },
                   { date: "April – July 2025", title: "Immunotherapy", desc: "4 cycles of ipilimumab + nivolumab (combination checkpoint inhibitor therapy). Achieved major partial metabolic response on interim PET/CT.", color: "bg-primary" },
                   { date: "July 2025", title: "Severe Toxicity", desc: "Grade 4 hepatitis (ALT ~750) and severe colitis. All immunotherapy ceased. High-dose corticosteroids initiated, followed by mycophenolate immunosuppression.", color: "bg-red-500" },
                   { date: "5 August 2025", title: "Post-Treatment Scan", desc: "PET/CT shows major partial response. All three tumours smaller with reduced metabolic activity. Response confirmed even after treatment cessation.", color: "bg-primary" },
                   { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Liver function recovering. Immune system beginning to rebuild naturally.", color: "bg-accent" },
-                  { date: "3 February 2026", title: "Latest Scan", desc: "Continued improvement off therapy. Tumour 2 now shows no metabolic activity (metabolically complete). Others continue shrinking with lower SUV. No new disease anywhere.", color: "bg-primary" },
+                  { date: "3 February 2026", title: "Latest Scan", desc: "Continued improvement off therapy. Tumour 2 metabolically complete. Tumour 4 (small bowel) fully resolved — no longer visible. Others continue shrinking. No new disease anywhere.", color: "bg-primary" },
                   { date: "May 2026", title: "Goal: NED", desc: "Target: No Evidence of Disease confirmation. PET/CT scheduled 15 May 2026.", color: "border-2 border-primary bg-white", isGoal: true },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-4">

@@ -246,3 +246,21 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+
+export const customActivityTypes = pgTable("custom_activity_types", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  category: text("category").notNull(),
+  value: text("value").notNull(),
+  label: text("label").notNull(),
+});
+
+export const insertCustomActivityTypeSchema = createInsertSchema(customActivityTypes).pick({
+  userId: true,
+  category: true,
+  value: true,
+  label: true,
+});
+
+export type CustomActivityType = typeof customActivityTypes.$inferSelect;
+export type InsertCustomActivityType = z.infer<typeof insertCustomActivityTypeSchema>;

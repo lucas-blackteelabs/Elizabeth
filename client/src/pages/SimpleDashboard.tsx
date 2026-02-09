@@ -3,7 +3,7 @@ import { useUser } from "@/contexts/UserContext";
 import {
   MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
   Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
-  ArrowDown, Zap, ChevronRight, Wine, Camera
+  ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Meal, MindBodyActivity, Exercise, ScanResult } from "@shared/schema";
+import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType } from "@shared/schema";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -37,6 +37,7 @@ const ALL_WIDGETS: WidgetDef[] = [
   { id: "todayWellness", label: "Today's Wellness", description: "Log meals, mindfulness, and exercise", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
   { id: "immuneRecovery", label: "Immune Recovery", description: "Track your immune system recovery", icon: <Zap className="h-4 w-4" />, defaultVisible: true },
   { id: "activityStreak", label: "Activity Streak", description: "Track meals, exercise & mindfulness streaks", icon: <Flame className="h-4 w-4" />, defaultVisible: true },
+  { id: "healingTherapies", label: "Healing Therapies", description: "Accumulated therapy sessions and minutes", icon: <Stethoscope className="h-4 w-4" />, defaultVisible: false },
   { id: "treatmentTimeline", label: "Treatment Timeline", description: "Your full treatment history", icon: <Clock className="h-4 w-4" />, defaultVisible: false },
   { id: "aiAssistant", label: "AI Health Assistant", description: "Quick access to personalised guidance", icon: <MessageCircle className="h-4 w-4" />, defaultVisible: false },
   { id: "appointments", label: "Upcoming Appointments", description: "Your scheduled appointments", icon: <Calendar className="h-4 w-4" />, defaultVisible: false },
@@ -59,8 +60,115 @@ function saveWidgets(ids: string[]) {
   localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(ids));
 }
 
-function LogMealDialog({ userId }: { userId: number }) {
+function ManageActivityTypesDialog({ userId, category }: { userId: number; category: string }) {
   const [open, setOpen] = useState(false);
+  const [newValue, setNewValue] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const { toast } = useToast();
+
+  const { data: customTypes = [] } = useQuery<CustomActivityType[]>({
+    queryKey: ["/api/activity-types", { userId, category }],
+    queryFn: async () => {
+      const res = await fetch(`/api/activity-types?userId=${userId}&category=${category}`);
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/activity-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, category, value: newValue.toLowerCase().replace(/\s+/g, "-"), label: newLabel }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/activity-types"] });
+      setNewValue("");
+      setNewLabel("");
+      toast({ title: "Type added" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/activity-types/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: editLabel }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/activity-types"] });
+      setEditingId(null);
+      toast({ title: "Type updated" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/activity-types/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/activity-types"] });
+      toast({ title: "Type removed" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-[10px] text-muted-foreground hover:text-primary font-body gap-1 h-6 px-2">
+          <Settings2 className="h-3 w-3" /> Manage Types
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Manage {category === "mindBody" ? "Mind-Body" : category === "exercise" ? "Exercise" : "Therapy"} Types</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {customTypes.map((t) => (
+              <div key={t.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg border border-border">
+                {editingId === t.id ? (
+                  <>
+                    <Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className="flex-1 h-8 text-xs bg-white font-body" />
+                    <Button size="sm" className="h-7 text-xs bg-primary text-white" onClick={() => updateMutation.mutate(t.id)}>Save</Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm font-body text-foreground">{t.label}</span>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingId(t.id); setEditLabel(t.label); }}>
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deleteMutation.mutate(t.id)}>
+                      <Trash2 className="h-3 w-3 text-red-400" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+            {customTypes.length === 0 && <p className="text-xs text-muted-foreground font-body text-center py-2">No custom types yet.</p>}
+          </div>
+          <div className="border-t border-border pt-3 space-y-2">
+            <p className="text-xs font-body font-medium text-foreground">Add New Type</p>
+            <Input placeholder="Label (e.g. Acupuncture)" value={newLabel} onChange={(e) => { setNewLabel(e.target.value); setNewValue(e.target.value); }} className="bg-muted/50 border-border font-body text-sm" />
+            <Button onClick={() => createMutation.mutate()} disabled={!newLabel || createMutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium text-sm">
+              {createMutation.isPending ? "Adding..." : "Add Type"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LogMealDialog({ userId, defaultDate }: { userId: number; defaultDate?: string }) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(defaultDate || todayStr());
   const [mealType, setMealType] = useState("");
   const [description, setDescription] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
@@ -72,7 +180,7 @@ function LogMealDialog({ userId }: { userId: number }) {
       return apiRequest("/api/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, date: todayStr(), mealType, description, antiInflammatoryScore: null }),
+        body: JSON.stringify({ userId, date, mealType, description, antiInflammatoryScore: null }),
       });
     },
     onSuccess: () => {
@@ -116,6 +224,7 @@ function LogMealDialog({ userId }: { userId: number }) {
           <DialogTitle className="font-heading text-foreground">Log a Meal</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-muted/50 border-border font-body" />
           <Select value={mealType} onValueChange={setMealType}>
             <SelectTrigger className="bg-muted/50 border-border font-body">
               <SelectValue placeholder="Meal type" />
@@ -155,8 +264,9 @@ function LogMealDialog({ userId }: { userId: number }) {
   );
 }
 
-function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" | "exercise" }) {
+function LogActivityDialog({ userId, type, defaultDate }: { userId: number; type: "mindBody" | "exercise"; defaultDate?: string }) {
   const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(defaultDate || todayStr());
   const [activityType, setActivityType] = useState("");
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
@@ -165,12 +275,21 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
   const isMindBody = type === "mindBody";
   const endpoint = isMindBody ? "/api/mind-body" : "/api/exercises";
   const queryKey = isMindBody ? "/api/mind-body" : "/api/exercises";
+  const category = isMindBody ? "mindBody" : "exercise";
+
+  const { data: customTypes = [] } = useQuery<CustomActivityType[]>({
+    queryKey: ["/api/activity-types", { userId, category }],
+    queryFn: async () => {
+      const res = await fetch(`/api/activity-types?userId=${userId}&category=${category}`);
+      return res.json();
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
       const body = isMindBody
-        ? { userId, date: todayStr(), activityType, durationMinutes: parseInt(duration), notes: notes || null }
-        : { userId, date: todayStr(), exerciseType: activityType, durationMinutes: parseInt(duration), intensity: "moderate", notes: notes || null };
+        ? { userId, date, activityType, durationMinutes: parseInt(duration), notes: notes || null }
+        : { userId, date, exerciseType: activityType, durationMinutes: parseInt(duration), intensity: "moderate", notes: notes || null };
       return apiRequest(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     },
     onSuccess: () => {
@@ -183,7 +302,7 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
     },
   });
 
-  const options = isMindBody
+  const builtInOptions = isMindBody
     ? [
         { value: "meditation", label: "Meditation" },
         { value: "breathwork", label: "Breathwork" },
@@ -202,6 +321,9 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
         { value: "other", label: "Other" },
       ];
 
+  const customOptions = customTypes.filter(ct => !builtInOptions.some(b => b.value === ct.value)).map(ct => ({ value: ct.value, label: ct.label }));
+  const options = [...builtInOptions, ...customOptions];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -215,20 +337,205 @@ function LogActivityDialog({ userId, type }: { userId: number; type: "mindBody" 
           <DialogTitle className="font-heading text-foreground">{isMindBody ? "Log Mind-Body Activity" : "Log Exercise"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Select value={activityType} onValueChange={setActivityType}>
-            <SelectTrigger className="bg-muted/50 border-border font-body">
-              <SelectValue placeholder="Select activity" />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <div className="flex items-center gap-2">
+            <Select value={activityType} onValueChange={setActivityType}>
+              <SelectTrigger className="bg-muted/50 border-border font-body flex-1">
+                <SelectValue placeholder="Select activity" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ManageActivityTypesDialog userId={userId} category={category} />
+          </div>
           <Input type="number" placeholder="Duration (minutes)" value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-muted/50 border-border font-body" />
           <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-muted/50 border-border font-body" />
           <Button onClick={() => mutation.mutate()} disabled={!activityType || !duration || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
             {mutation.isPending ? "Saving..." : "Log Activity"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditMealDialog({ meal, open, onOpenChange }: { meal: Meal; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [mealType, setMealType] = useState(meal.mealType);
+  const [description, setDescription] = useState(meal.description);
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/meals/${meal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mealType, description }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/meals"] });
+      onOpenChange(false);
+      toast({ title: "Meal updated" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border-border">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Edit Meal</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Select value={mealType} onValueChange={setMealType}>
+            <SelectTrigger className="bg-muted/50 border-border font-body">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="breakfast">Breakfast</SelectItem>
+              <SelectItem value="lunch">Lunch</SelectItem>
+              <SelectItem value="dinner">Dinner</SelectItem>
+              <SelectItem value="snack">Snack</SelectItem>
+              <SelectItem value="juice">Juice / Smoothie</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
+            {mutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditMindBodyDialog({ activity, open, onOpenChange }: { activity: MindBodyActivity; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [activityType, setActivityType] = useState(activity.activityType);
+  const [duration, setDuration] = useState(String(activity.durationMinutes));
+  const [notes, setNotes] = useState(activity.notes || "");
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/mind-body/${activity.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activityType, durationMinutes: parseInt(duration), notes: notes || null }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mind-body"] });
+      onOpenChange(false);
+      toast({ title: "Activity updated" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border-border">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Edit Mind-Body Activity</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input value={activityType} onChange={(e) => setActivityType(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Activity type" />
+          <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Minutes" />
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Notes" />
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
+            {mutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditExerciseDialog({ exercise, open, onOpenChange }: { exercise: Exercise; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [exerciseType, setExerciseType] = useState(exercise.exerciseType);
+  const [duration, setDuration] = useState(String(exercise.durationMinutes));
+  const [notes, setNotes] = useState(exercise.notes || "");
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/exercises/${exercise.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exerciseType, durationMinutes: parseInt(duration), notes: notes || null }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      onOpenChange(false);
+      toast({ title: "Exercise updated" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border-border">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Edit Exercise</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input value={exerciseType} onChange={(e) => setExerciseType(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Exercise type" />
+          <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Minutes" />
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-muted/50 border-border font-body" placeholder="Notes" />
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
+            {mutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditGoalsDialog({ user, setUser }: { user: any; setUser: (u: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const [goals, setGoals] = useState(user.goals || "");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) setGoals(user.goals || "");
+  }, [open, user.goals]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goals }),
+      });
+    },
+    onSuccess: (data: any) => {
+      setUser(data);
+      setOpen(false);
+      toast({ title: "Goals updated", description: "Keep striving!" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary font-body gap-1 h-7 px-2">
+          <Edit3 className="h-3 w-3" /> Goals
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-border">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Edit Your Goals</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <textarea
+            value={goals}
+            onChange={(e) => setGoals(e.target.value)}
+            rows={5}
+            className="w-full rounded-lg border border-border bg-muted/50 p-3 text-sm font-body text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="What are your healing goals?"
+          />
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
+            {mutation.isPending ? "Saving..." : "Save Goals"}
           </Button>
         </div>
       </DialogContent>
@@ -736,6 +1043,22 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
   );
 }
 
+function AppleRing({ radius, strokeWidth, percentage, color, bgColor }: {
+  radius: number; strokeWidth: number; percentage: number; color: string; bgColor: string;
+}) {
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.max(0, Math.min(100, percentage));
+  const dashOffset = circumference * (1 - pct / 100);
+
+  return (
+    <>
+      <circle cx="50" cy="50" r={radius} fill="none" stroke={bgColor} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <circle cx="50" cy="50" r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
+    </>
+  );
+}
+
 function TumourResponseExpanded({ userId }: { userId: number }) {
   const { scanResults, scanDates, tumourLabels, baselineScan, latestScan } = useTumourStats(userId);
 
@@ -743,153 +1066,177 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
     return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
   }
 
-  const tumourColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--chart-3))"];
-  const maxBaselineArea = Math.max(...baselineScan.map(s => s.sizeX * s.sizeY));
-
   const scanLabels = scanDates.map((date) => {
     const label = scanResults.find(s => s.scanDate === date)?.scanLabel || date;
     return label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Treatment" : label.includes("Surveillance") ? "Latest Scan" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
   });
 
   return (
-    <div className="space-y-4 py-2">
-      {tumourLabels.map((tl, tumourIdx) => {
-        const baseline = baselineScan.find((s) => s.tumourLabel === tl);
-        const latest = latestScan.find((s) => s.tumourLabel === tl);
-        if (!baseline || !latest) return null;
-        const baselineArea = baseline.sizeX * baseline.sizeY;
-        const latestArea = latest.sizeX * latest.sizeY;
-        const sizeReduction = Math.round(((baselineArea - latestArea) / baselineArea) * 100);
-        const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
+    <div className="space-y-6 py-2">
+      <div className="grid grid-cols-2 gap-4">
+        {tumourLabels.map((tl, tumourIdx) => {
+          const baseline = baselineScan.find((s) => s.tumourLabel === tl);
+          const latest = latestScan.find((s) => s.tumourLabel === tl);
+          if (!baseline || !latest) return null;
 
-        return (
-          <div key={tl} className={`${tumourIdx > 0 ? "mt-3 pt-3 border-t border-border" : ""}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tumourColors[tumourIdx] }} />
-                <p className="text-sm font-heading text-foreground">{tl}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <ArrowDown className="h-3.5 w-3.5 text-primary" />
-                <span className="text-base font-heading font-bold text-primary">{sizeReduction}% smaller</span>
-                {isMetabolicComplete && (
-                  <span className="text-[10px] font-body font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">No Activity</span>
-                )}
-              </div>
-            </div>
+          const baselineArea = baseline.sizeX * baseline.sizeY;
+          const latestArea = latest.sizeX * latest.sizeY;
+          const isResolved = latest.sizeX === 0 && latest.sizeY === 0;
+          const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
+          const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
+          const baselineSuv = baseline.suvMax || 0;
+          const latestSuv = latest.suvMax || 0;
+          const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
 
-            <div className="flex items-end justify-between gap-2 px-2">
-              {scanDates.map((date, scanIdx) => {
-                const scan = scanResults.find(s => s.scanDate === date && s.tumourLabel === tl);
-                if (!scan) return null;
-                const area = scan.sizeX * scan.sizeY;
-                const sizePct = (area / maxBaselineArea);
-                const circleSize = Math.max(16, Math.round(sizePct * 72));
-                const maxSuv = Math.max(...scanResults.filter(s => s.tumourLabel === tl).map(s => s.suvMax || 0));
-                const suvPct = maxSuv > 0 && scan.suvMax ? scan.suvMax / maxSuv : 0;
-                const hasActivity = scan.suvMax && scan.suvMax > 0;
+          const sizeRingPct = isResolved ? 100 : sizeReduction;
+          const suvRingPct = isResolved ? 100 : (isMetabolicComplete ? 100 : suvReduction);
 
-                return (
-                  <div key={date} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="relative flex items-center justify-center" style={{ height: 80 }}>
-                      <div
-                        className="rounded-full transition-all duration-1000 relative flex items-center justify-center"
-                        style={{
-                          width: circleSize,
-                          height: circleSize,
-                          backgroundColor: hasActivity
-                            ? `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(40 + suvPct * 30)}%, ${Math.round(50 + (1 - suvPct) * 20)}%, ${0.15 + suvPct * 0.25})`
-                            : "hsla(158,32%,42%,0.08)",
-                          border: `2px solid ${hasActivity
-                            ? `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(40 + suvPct * 30)}%, ${Math.round(45 + (1 - suvPct) * 15)}%, ${0.4 + suvPct * 0.3})`
-                            : "hsla(158,32%,42%,0.25)"}`,
-                        }}
-                      >
-                        {hasActivity && (
-                          <div
-                            className="absolute rounded-full animate-pulse"
-                            style={{
-                              width: circleSize * 0.4,
-                              height: circleSize * 0.4,
-                              backgroundColor: `hsla(${suvPct > 0.6 ? 0 : suvPct > 0.3 ? 34 : 158}, ${Math.round(50 + suvPct * 20)}%, ${Math.round(45 + (1 - suvPct) * 10)}%, ${0.3 + suvPct * 0.4})`,
-                            }}
-                          />
-                        )}
-                        {!hasActivity && (
-                          <Check className="h-3 w-3 text-primary/50" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] font-heading text-foreground">{scanLabels[scanIdx]}</p>
-                      <p className="text-[9px] text-muted-foreground font-body">{Math.round(area)} mm²</p>
-                      {scan.suvMax ? (
-                        <p className="text-[9px] text-muted-foreground font-body">SUV {scan.suvMax}</p>
+          return (
+            <div key={tl} className="flex flex-col items-center">
+              <div className="relative w-28 h-28 mb-2">
+                <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+                  <AppleRing radius={42} strokeWidth={7} percentage={sizeRingPct} color="hsl(142, 71%, 45%)" bgColor="hsl(142, 30%, 90%)" />
+                  <AppleRing radius={32} strokeWidth={7} percentage={suvRingPct} color="hsl(38, 92%, 50%)" bgColor="hsl(38, 40%, 90%)" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  {isResolved ? (
+                    <span className="text-[10px] font-heading font-bold text-primary">Resolved</span>
+                  ) : (
+                    <>
+                      <span className="text-lg font-heading font-bold text-foreground">{sizeReduction}%</span>
+                      {isMetabolicComplete ? (
+                        <span className="text-[8px] font-body text-primary font-medium">No Activity</span>
                       ) : (
-                        <p className="text-[9px] text-primary font-body font-medium">Clear</p>
+                        <span className="text-[8px] font-body text-muted-foreground">SUV↓{suvReduction}%</span>
                       )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {scanDates.length > 1 && (
-              <div className="flex items-center justify-center mt-2 px-8">
-                <div className="flex-1 h-px bg-gradient-to-r from-red-400/30 via-accent/30 to-primary/30" />
-                <ChevronRight className="h-3 w-3 text-primary/40 mx-1" />
-                <span className="text-[9px] text-primary/60 font-body">improving</span>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
+              <p className="text-xs font-heading text-foreground text-center leading-tight">{tl}</p>
+              <p className="text-[9px] text-muted-foreground font-body">
+                {isResolved ? "No longer visible" : `${latest.sizeX}×${latest.sizeY}mm`}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center gap-4 text-[10px] text-muted-foreground font-body">
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 45%)" }} /> Size reduction</span>
+        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> SUV reduction</span>
+      </div>
+
+      <div className="border-t border-border pt-4 space-y-3">
+        <p className="text-xs font-heading text-muted-foreground uppercase tracking-wider">Scan Comparison</p>
+        {tumourLabels.map((tl) => {
+          const scansForTumour = scanDates.map((date, idx) => {
+            const scan = scanResults.find(s => s.scanDate === date && s.tumourLabel === tl);
+            return scan ? { scan, label: scanLabels[idx] } : null;
+          }).filter(Boolean) as { scan: ScanResult; label: string }[];
+
+          return (
+            <div key={tl} className="space-y-1">
+              <p className="text-xs font-body font-medium text-foreground">{tl}</p>
+              <div className="flex gap-3">
+                {scansForTumour.map(({ scan, label }, i) => (
+                  <div key={i} className="text-[9px] font-body text-muted-foreground">
+                    <span className="font-medium text-foreground">{label}:</span> {scan.sizeX}×{scan.sizeY}mm{scan.suvMax ? `, SUV ${scan.suvMax}` : " — Clear"}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function TodayWellnessWidget({ userId }: { userId: number }) {
-  const today = todayStr();
-  const { data: todayMeals = [] } = useQuery<Meal[]>({
-    queryKey: ["/api/meals", { userId, date: today }],
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [editingMindBody, setEditingMindBody] = useState<MindBodyActivity | null>(null);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const { toast } = useToast();
+
+  const { data: dayMeals = [] } = useQuery<Meal[]>({
+    queryKey: ["/api/meals", { userId, date: selectedDate }],
     queryFn: async () => {
-      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${today}&dateTo=${today}`);
+      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${selectedDate}&dateTo=${selectedDate}`);
       return res.json();
     },
   });
-  const { data: todayMindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, date: today }],
+  const { data: dayMindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ["/api/mind-body", { userId, date: selectedDate }],
     queryFn: async () => {
-      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${today}&dateTo=${today}`);
+      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${selectedDate}&dateTo=${selectedDate}`);
       return res.json();
     },
   });
-  const { data: todayExercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, date: today }],
+  const { data: dayExercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, date: selectedDate }],
     queryFn: async () => {
-      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${today}&dateTo=${today}`);
+      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${selectedDate}&dateTo=${selectedDate}`);
       return res.json();
     },
   });
 
-  const totalMindBodyMins = todayMindBody.reduce((sum, a) => sum + a.durationMinutes, 0);
-  const totalExerciseMins = todayExercises.reduce((sum, e) => sum + e.durationMinutes, 0);
+  const deleteMealMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest(`/api/meals/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/meals"] });
+      toast({ title: "Meal deleted" });
+    },
+  });
+
+  const deleteMindBodyMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest(`/api/mind-body/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mind-body"] });
+      toast({ title: "Activity deleted" });
+    },
+  });
+
+  const deleteExerciseMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest(`/api/exercises/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/exercises"] });
+      toast({ title: "Exercise deleted" });
+    },
+  });
+
+  const totalMindBodyMins = dayMindBody.reduce((sum, a) => sum + a.durationMinutes, 0);
+  const totalExerciseMins = dayExercises.reduce((sum, e) => sum + e.durationMinutes, 0);
+
+  const isToday = selectedDate === todayStr();
+  const displayDate = new Date(selectedDate + "T00:00:00");
 
   return (
     <Card className="bg-white border-border rounded-2xl">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-            <Heart className="h-5 w-5 text-accent" /> Today's Wellness
+            <Heart className="h-5 w-5 text-accent" /> {isToday ? "Today's" : ""} Wellness
           </CardTitle>
-          <span className="text-xs text-muted-foreground font-body">{new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-auto h-8 text-xs bg-muted/50 border-border font-body" />
         </div>
+        {!isToday && (
+          <p className="text-xs text-muted-foreground font-body mt-1">
+            {displayDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        )}
+        {isToday && (
+          <p className="text-xs text-muted-foreground font-body mt-1">
+            {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-muted rounded-xl p-3 border border-border text-center">
             <Apple className="h-5 w-5 text-accent mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-foreground">{todayMeals.length}</p>
+            <p className="text-lg font-heading font-bold text-foreground">{dayMeals.length}</p>
             <p className="text-[10px] text-muted-foreground font-body">Meals logged</p>
           </div>
           <div className="bg-muted rounded-xl p-3 border border-border text-center">
@@ -904,42 +1251,66 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <LogMealDialog userId={userId} />
-          <LogActivityDialog userId={userId} type="mindBody" />
-          <LogActivityDialog userId={userId} type="exercise" />
+          <LogMealDialog userId={userId} defaultDate={selectedDate} />
+          <LogActivityDialog userId={userId} type="mindBody" defaultDate={selectedDate} />
+          <LogActivityDialog userId={userId} type="exercise" defaultDate={selectedDate} />
         </div>
-        {todayMeals.length > 0 && (
+        {dayMeals.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-body font-medium text-muted-foreground">Today's meals:</p>
-            {todayMeals.map((meal) => (
-              <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-foreground">
-                <Check className="h-3 w-3 text-primary" />
+            <p className="text-xs font-body font-medium text-muted-foreground">{isToday ? "Today's" : "Day's"} meals:</p>
+            {dayMeals.map((meal) => (
+              <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
+                <Check className="h-3 w-3 text-primary flex-shrink-0" />
                 <span className="capitalize text-muted-foreground">{meal.mealType}:</span>
-                <span>{meal.description}</span>
+                <span className="flex-1 truncate">{meal.description}</span>
+                <button onClick={() => setEditingMeal(meal)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
+                <button onClick={() => deleteMealMutation.mutate(meal.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                </button>
               </div>
             ))}
           </div>
         )}
-        {(todayMindBody.length > 0 || todayExercises.length > 0) && (
+        {(dayMindBody.length > 0 || dayExercises.length > 0) && (
           <div className="mt-3 space-y-2">
-            <p className="text-xs font-body font-medium text-muted-foreground">Today's activities:</p>
-            {todayMindBody.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 text-xs font-body text-foreground">
-                <Check className="h-3 w-3 text-accent" />
+            <p className="text-xs font-body font-medium text-muted-foreground">{isToday ? "Today's" : "Day's"} activities:</p>
+            {dayMindBody.map((a) => (
+              <div key={a.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
+                <Check className="h-3 w-3 text-accent flex-shrink-0" />
                 <span className="capitalize">{a.activityType}</span>
                 <span className="text-muted-foreground">— {a.durationMinutes} min</span>
+                <div className="flex-1" />
+                <button onClick={() => setEditingMindBody(a)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
+                <button onClick={() => deleteMindBodyMutation.mutate(a.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                </button>
               </div>
             ))}
-            {todayExercises.map((e) => (
-              <div key={e.id} className="flex items-center gap-2 text-xs font-body text-foreground">
-                <Check className="h-3 w-3 text-primary" />
+            {dayExercises.map((e) => (
+              <div key={e.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
+                <Check className="h-3 w-3 text-primary flex-shrink-0" />
                 <span className="capitalize">{e.exerciseType}</span>
                 <span className="text-muted-foreground">— {e.durationMinutes} min</span>
+                <div className="flex-1" />
+                <button onClick={() => setEditingExercise(e)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
+                <button onClick={() => deleteExerciseMutation.mutate(e.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
+                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                </button>
               </div>
             ))}
           </div>
         )}
       </CardContent>
+
+      {editingMeal && <EditMealDialog meal={editingMeal} open={!!editingMeal} onOpenChange={(v) => { if (!v) setEditingMeal(null); }} />}
+      {editingMindBody && <EditMindBodyDialog activity={editingMindBody} open={!!editingMindBody} onOpenChange={(v) => { if (!v) setEditingMindBody(null); }} />}
+      {editingExercise && <EditExerciseDialog exercise={editingExercise} open={!!editingExercise} onOpenChange={(v) => { if (!v) setEditingExercise(null); }} />}
     </Card>
   );
 }
@@ -987,36 +1358,150 @@ function TreatmentTimelineWidget() {
   );
 }
 
-function AppointmentsWidget() {
-  const appointments = [
-    { title: "Nutrition Consultation", person: "Integrative Dietitian", date: "March 10, 2026", time: "2:00 PM" },
-    { title: "PET/CT Scan", person: "Radiology Department", date: "May 15, 2026", time: "9:00 AM" },
-    { title: "Oncology Review", person: "Melanoma Oncology Team", date: "May 22, 2026", time: "10:30 AM" },
-  ];
+function AppointmentFormDialog({ userId, appointment, open, onOpenChange }: {
+  userId: number; appointment?: Appointment; open: boolean; onOpenChange: (v: boolean) => void;
+}) {
+  const [title, setTitle] = useState(appointment?.title || "");
+  const [description, setDescription] = useState(appointment?.description || "");
+  const [date, setDate] = useState(appointment?.date || "");
+  const [time, setTime] = useState(appointment?.time || "");
+  const [location, setLocation] = useState(appointment?.location || "");
+  const { toast } = useToast();
+  const isEdit = !!appointment;
+
+  useEffect(() => {
+    if (open) {
+      setTitle(appointment?.title || "");
+      setDescription(appointment?.description || "");
+      setDate(appointment?.date || "");
+      setTime(appointment?.time || "");
+      setLocation(appointment?.location || "");
+    }
+  }, [open, appointment]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const body = { userId, title, description: description || null, date, time, location: location || null };
+      if (isEdit) {
+        return apiRequest(`/api/appointments/${appointment.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+      return apiRequest("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      onOpenChange(false);
+      toast({ title: isEdit ? "Appointment updated" : "Appointment added" });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">{isEdit ? "Edit Appointment" : "Add Appointment"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input placeholder="Title (e.g. Oncology Review)" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Input placeholder="Time (e.g. 10:30 AM)" value={time} onChange={(e) => setTime(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Input placeholder="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} className="bg-muted/50 border-border font-body" />
+          <Button onClick={() => mutation.mutate()} disabled={!title || !date || !time || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
+            {mutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Appointment"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AppointmentsWidget({ userId }: { userId: number }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const { toast } = useToast();
+
+  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/appointments?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest(`/api/appointments/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      toast({ title: "Appointment deleted" });
+    },
+  });
+
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  const upcomingAppointments = sortedAppointments.filter(a => new Date(a.date) >= new Date(todayStr()));
 
   return (
     <Card className="bg-white border-border rounded-2xl">
       <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
+          </CardTitle>
+          <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1" onClick={() => setShowForm(true)}>
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {appointments.map((appt, i) => (
-            <div key={i} className={`flex items-center justify-between pb-3 ${i < appointments.length - 1 ? "border-b border-border" : ""}`}>
-              <div>
-                <p className="font-body font-medium text-sm text-foreground">{appt.title}</p>
-                <p className="text-xs text-muted-foreground font-body">{appt.person}</p>
+        {isLoading ? (
+          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 text-primary animate-spin" /></div>
+        ) : upcomingAppointments.length === 0 ? (
+          <p className="text-sm text-muted-foreground font-body text-center py-4">No upcoming appointments.</p>
+        ) : (
+          <div className="space-y-4">
+            {upcomingAppointments.map((appt, i) => (
+              <div key={appt.id} className={`flex items-center justify-between pb-3 group ${i < upcomingAppointments.length - 1 ? "border-b border-border" : ""}`}>
+                <div className="flex-1 min-w-0">
+                  <p className="font-body font-medium text-sm text-foreground">{appt.title}</p>
+                  {appt.description && <p className="text-xs text-muted-foreground font-body truncate">{appt.description}</p>}
+                  {appt.location && <p className="text-[10px] text-muted-foreground font-body">{appt.location}</p>}
+                </div>
+                <div className="text-right flex-shrink-0 ml-3">
+                  <p className="font-body font-medium text-sm text-accent">
+                    {new Date(appt.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-body">{appt.time}</p>
+                </div>
+                <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => setEditingAppointment(appt)} className="p-1 hover:bg-muted rounded">
+                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                  </button>
+                  <button onClick={() => deleteMutation.mutate(appt.id)} className="p-1 hover:bg-muted rounded">
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                  </button>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-body font-medium text-sm text-accent">{appt.date}</p>
-                <p className="text-xs text-muted-foreground font-body">{appt.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
+
+      <AppointmentFormDialog userId={userId} open={showForm} onOpenChange={setShowForm} />
+      {editingAppointment && (
+        <AppointmentFormDialog userId={userId} appointment={editingAppointment} open={!!editingAppointment} onOpenChange={(v) => { if (!v) setEditingAppointment(null); }} />
+      )}
     </Card>
   );
 }
@@ -1045,6 +1530,144 @@ function InspirationWidget() {
         <Sun className="h-8 w-8 text-accent mx-auto mb-3" />
         <p className="font-body text-foreground italic leading-relaxed">"{affirmation}"</p>
         <p className="text-[10px] text-muted-foreground font-body mt-3 uppercase tracking-widest">Today's Affirmation</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getTherapyIcon(type: string) {
+  const t = type.toLowerCase();
+  if (t.includes("acupuncture") || t.includes("needle")) return <Target className="h-6 w-6" />;
+  if (t.includes("hyperbaric") || t.includes("oxygen")) return <Waves className="h-6 w-6" />;
+  if (t.includes("oncology") || t.includes("integrat")) return <Stethoscope className="h-6 w-6" />;
+  if (t.includes("meditation") || t.includes("mindful")) return <Sparkles className="h-6 w-6" />;
+  if (t.includes("yoga")) return <Leaf className="h-6 w-6" />;
+  if (t.includes("breath")) return <Heart className="h-6 w-6" />;
+  if (t.includes("walk") || t.includes("swim") || t.includes("exercise")) return <Activity className="h-6 w-6" />;
+  if (t.includes("journal") || t.includes("gratitude")) return <Sun className="h-6 w-6" />;
+  if (t.includes("visual")) return <Sparkles className="h-6 w-6" />;
+  if (t.includes("strength")) return <Flame className="h-6 w-6" />;
+  if (t.includes("stretch") || t.includes("tai")) return <Leaf className="h-6 w-6" />;
+  return <Heart className="h-6 w-6" />;
+}
+
+const therapyGradients = [
+  "from-emerald-50 to-teal-50 border-emerald-200",
+  "from-amber-50 to-orange-50 border-amber-200",
+  "from-violet-50 to-purple-50 border-violet-200",
+  "from-sky-50 to-cyan-50 border-sky-200",
+  "from-rose-50 to-pink-50 border-rose-200",
+  "from-lime-50 to-green-50 border-lime-200",
+  "from-indigo-50 to-blue-50 border-indigo-200",
+  "from-fuchsia-50 to-pink-50 border-fuchsia-200",
+];
+
+const therapyTextColors = [
+  "text-emerald-700",
+  "text-amber-700",
+  "text-violet-700",
+  "text-sky-700",
+  "text-rose-700",
+  "text-lime-700",
+  "text-indigo-700",
+  "text-fuchsia-700",
+];
+
+function HealingTherapiesWidget({ userId }: { userId: number }) {
+  const { data: allMindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ["/api/mind-body", { userId, all: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/mind-body?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const { data: allExercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, all: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const { data: therapyTypes = [] } = useQuery<CustomActivityType[]>({
+    queryKey: ["/api/activity-types", { userId, category: "therapy" }],
+    queryFn: async () => {
+      const res = await fetch(`/api/activity-types?userId=${userId}&category=therapy`);
+      return res.json();
+    },
+  });
+
+  const therapyMap = new Map<string, { sessions: number; minutes: number; label: string }>();
+
+  allMindBody.forEach((a) => {
+    const key = a.activityType;
+    const existing = therapyMap.get(key) || { sessions: 0, minutes: 0, label: key };
+    existing.sessions++;
+    existing.minutes += a.durationMinutes;
+    therapyMap.set(key, existing);
+  });
+
+  allExercises.forEach((e) => {
+    const key = e.exerciseType;
+    const existing = therapyMap.get(key) || { sessions: 0, minutes: 0, label: key };
+    existing.sessions++;
+    existing.minutes += e.durationMinutes;
+    therapyMap.set(key, existing);
+  });
+
+  therapyTypes.forEach((tt) => {
+    if (!therapyMap.has(tt.value)) {
+      therapyMap.set(tt.value, { sessions: 0, minutes: 0, label: tt.label });
+    }
+  });
+
+  const therapies = Array.from(therapyMap.entries())
+    .map(([key, data]) => ({ key, ...data }))
+    .filter(t => t.sessions > 0)
+    .sort((a, b) => b.sessions - a.sessions);
+
+  if (therapies.length === 0) {
+    return (
+      <Card className="bg-white border-border rounded-2xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
+            <Stethoscope className="h-5 w-5 text-primary" /> Healing Therapies
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground font-body text-center py-4">Log activities to see your therapy progress here.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardHeader className="pb-3">
+        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
+          <Stethoscope className="h-5 w-5 text-primary" /> Healing Therapies
+        </CardTitle>
+        <CardDescription className="text-xs text-muted-foreground font-body">Your accumulated therapy journey</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {therapies.map((therapy, idx) => {
+            const gradientClass = therapyGradients[idx % therapyGradients.length];
+            const textColor = therapyTextColors[idx % therapyTextColors.length];
+            return (
+              <div key={therapy.key} className={`bg-gradient-to-br ${gradientClass} rounded-xl p-4 border text-center`}>
+                <div className={`mx-auto w-10 h-10 rounded-xl bg-white/60 flex items-center justify-center mb-2 ${textColor}`}>
+                  {getTherapyIcon(therapy.key)}
+                </div>
+                <p className={`text-2xl font-heading font-bold ${textColor}`}>{therapy.sessions}</p>
+                <p className="text-[10px] text-muted-foreground font-body mb-1">sessions</p>
+                <p className="text-xs font-body font-medium text-foreground capitalize">{therapy.label.replace(/-/g, " ")}</p>
+                <p className="text-[10px] text-muted-foreground font-body">{therapy.minutes} total mins</p>
+              </div>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -1170,9 +1793,12 @@ export default function SimpleDashboard() {
             />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl lg:text-3xl font-heading text-foreground">
-              Welcome back, {user?.displayName || "Friend"}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl lg:text-3xl font-heading text-foreground">
+                Welcome back, {user?.displayName || "Friend"}
+              </h1>
+              <EditGoalsDialog user={user} setUser={setUser} />
+            </div>
             <p className="text-sm text-muted-foreground font-body mt-1">
               {user.treatmentStatus === "Active Surveillance"
                 ? "Your body continues to heal beautifully"
@@ -1282,10 +1908,16 @@ export default function SimpleDashboard() {
         </div>
       )}
 
+      {isActive("healingTherapies") && (
+        <div className="mb-6">
+          <HealingTherapiesWidget userId={user.id} />
+        </div>
+      )}
+
       {(isActive("treatmentTimeline") || isActive("appointments") || isActive("aiAssistant")) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
-          {isActive("appointments") && <AppointmentsWidget />}
+          {isActive("appointments") && <AppointmentsWidget userId={user.id} />}
           {isActive("aiAssistant") && (
             <Card className="bg-white border-border rounded-2xl">
               <CardHeader className="pb-3">
