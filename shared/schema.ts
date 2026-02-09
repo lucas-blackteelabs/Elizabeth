@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   scanSummary: text("scan_summary"),
   nextScanDate: date("next_scan_date"),
   dietaryPreferences: text("dietary_preferences"),
+  phoneNumber: text("phone_number"),
   profilePhoto: text("profile_photo"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -45,6 +46,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   scanSummary: true,
   nextScanDate: true,
   dietaryPreferences: true,
+  phoneNumber: true,
   profilePhoto: true,
 });
 
@@ -264,3 +266,69 @@ export const insertCustomActivityTypeSchema = createInsertSchema(customActivityT
 
 export type CustomActivityType = typeof customActivityTypes.$inferSelect;
 export type InsertCustomActivityType = z.infer<typeof insertCustomActivityTypeSchema>;
+
+export const treatmentPrograms = pgTable("treatment_programs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  category: text("category").notNull().default("medical"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  totalSessions: integer("total_sessions"),
+  completedSessions: integer("completed_sessions").default(0),
+  frequency: text("frequency"),
+  provider: text("provider"),
+  location: text("location"),
+  notes: text("notes"),
+  sideEffects: text("side_effects"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTreatmentProgramSchema = createInsertSchema(treatmentPrograms).pick({
+  userId: true,
+  name: true,
+  type: true,
+  category: true,
+  startDate: true,
+  endDate: true,
+  totalSessions: true,
+  completedSessions: true,
+  frequency: true,
+  provider: true,
+  location: true,
+  notes: true,
+  sideEffects: true,
+  status: true,
+});
+
+export type TreatmentProgram = typeof treatmentPrograms.$inferSelect;
+export type InsertTreatmentProgram = z.infer<typeof insertTreatmentProgramSchema>;
+
+export const treatmentSessions = pgTable("treatment_sessions", {
+  id: serial("id").primaryKey(),
+  programId: integer("program_id").notNull(),
+  userId: integer("user_id").notNull(),
+  sessionNumber: integer("session_number").notNull(),
+  date: date("date"),
+  time: text("time"),
+  status: text("status").notNull().default("scheduled"),
+  notes: text("notes"),
+  sideEffects: text("side_effects"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTreatmentSessionSchema = createInsertSchema(treatmentSessions).pick({
+  programId: true,
+  userId: true,
+  sessionNumber: true,
+  date: true,
+  time: true,
+  status: true,
+  notes: true,
+  sideEffects: true,
+});
+
+export type TreatmentSession = typeof treatmentSessions.$inferSelect;
+export type InsertTreatmentSession = z.infer<typeof insertTreatmentSessionSchema>;
