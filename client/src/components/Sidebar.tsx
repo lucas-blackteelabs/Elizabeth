@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Bath, PersonStanding, Pill, Users, Leaf, Calendar, LogOut, UserRound, Wine } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, UserRound, Wine, BookOpen, Sparkles, Pill } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,16 +15,14 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
 
   const sidebarLinks = [
     { href: "/dashboard", label: "Dashboard", icon: <Home className="w-[18px] h-[18px]" /> },
-    { href: "/ai-assistant", label: "AI Assistant", icon: <Bot className="w-[18px] h-[18px]" /> },
     { href: "/medical-tracker", label: "Medical Tracker", icon: <FileText className="w-[18px] h-[18px]" /> },
+    { href: "/treatment-plus", label: "Treatment +", icon: <Sparkles className="w-[18px] h-[18px]" /> },
     { href: "/nutrition", label: "Nutrition", icon: <Apple className="w-[18px] h-[18px]" /> },
-    { href: "/mind-body", label: "Mind & Body", icon: <Bath className="w-[18px] h-[18px]" /> },
-    { href: "/movement", label: "Movement", icon: <PersonStanding className="w-[18px] h-[18px]" /> },
     { href: "/supplements", label: "Supplements", icon: <Pill className="w-[18px] h-[18px]" /> },
-    { href: "/community", label: "Resources", icon: <Users className="w-[18px] h-[18px]" /> },
-    { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="w-[18px] h-[18px]" /> },
+    { href: "/resources", label: "Resources", icon: <BookOpen className="w-[18px] h-[18px]" /> },
+    { href: "/calendar", label: "Timeline", icon: <Calendar className="w-[18px] h-[18px]" /> },
     { href: "/date-night", label: "Date Night", icon: <Wine className="w-[18px] h-[18px]" /> },
-    { href: "/calendar", label: "Calendar", icon: <Calendar className="w-[18px] h-[18px]" /> },
+    { href: "/ai-assistant", label: "AI Assistant", icon: <Bot className="w-[18px] h-[18px]" /> },
   ];
 
   const sidebarClasses = cn(

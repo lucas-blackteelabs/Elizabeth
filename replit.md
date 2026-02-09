@@ -4,6 +4,36 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Major Feature Overhaul — Treatment+, Resources, Timeline, Dashboard Redesign
+  - New "Treatment +" page: visual treatment program management with progress tracking
+    - Immunotherapy program with 4 cycle timeline, side effects tracking, celebration on completion
+    - Complementary therapy programs (hyperbaric, acupuncture, yoga, psychology, integrative oncology)
+    - AI-powered treatment suggestions based on patient profile
+    - Session management with calendar booking integration
+    - Category-specific icons/colours (medical=blue, complementary=green, mind-body=purple, integrative=amber)
+  - New "Resources" page: merged Mind & Body, Movement, Wellbeing into unified Radical Remission resource hub
+    - 4 tabs: Mind & Body, Movement, Nutrition, Wellbeing
+    - Each resource card linked to specific Radical Remission healing factor
+    - Personalised for Stage IV Melanoma active surveillance
+  - Calendar rebuilt as vertical "Timeline" view
+    - Events shown in chronological timeline with month grouping
+    - Integrates appointments AND treatment sessions
+    - Full CRUD for appointments with add/edit/delete dialogs
+    - ICS calendar download for each appointment (Add to Calendar)
+    - Past events muted, today highlighted, future events prominent
+  - Dashboard tumour visualization redesigned
+    - "Iced over" frost effect for resolved tumours (gone cold) — blue gradients, snowflake icon
+    - Celebration banner when scans show >30% reduction ("Amazing Progress!")
+    - Apple rings with baseline vs latest comparison
+    - Metabolically complete tumours labeled "No Activity Detected"
+  - Daily Brief widget on dashboard
+    - AI-generated personalised daily briefing (cached per session)
+    - Warm greeting, upcoming appointments, progress notes, wellness suggestion
+  - User profile: added phone number field
+  - Navigation: streamlined sidebar (removed Mind & Body, Movement, Community, Wellbeing; added Treatment+, Resources; renamed Calendar to Timeline)
+  - Treatment programs DB: treatment_programs + treatment_sessions tables with full CRUD APIs
+  - Seeded Liz's treatment data: 6 programs with immunotherapy session history
+  - New API endpoints: /api/treatment-programs, /api/treatment-sessions, /api/ai/daily-brief, /api/ai/treatment-suggestions, /api/appointments/:id/ics
 - **Feb 2026**: Full CRUD & Data Management Overhaul
   - Edit/delete past movement, meals, mind-body activities from dashboard wellness widget
   - Date picker on all log dialogs — log activities for any date (past or future)

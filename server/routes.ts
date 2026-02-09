@@ -70,6 +70,7 @@ async function seedLizAccount() {
       }
     }
     await seedDefaultAppointments(existingUser.id);
+    await seedTreatmentPrograms(existingUser.id);
     return;
   }
 
@@ -82,6 +83,7 @@ async function seedLizAccount() {
       await seedScanData(oldUser.id);
     }
     await seedDefaultAppointments(oldUser.id);
+    await seedTreatmentPrograms(oldUser.id);
     console.log("Migrated old Liz account (./.) to Liz/Cookie");
     return;
   }
@@ -111,6 +113,7 @@ async function seedLizAccount() {
 
   await seedScanData(user.id);
   await seedDefaultAppointments(user.id);
+  await seedTreatmentPrograms(user.id);
   console.log("Seeded Liz's account with medical profile and scan data");
 }
 
@@ -161,6 +164,128 @@ async function seedScanData(userId: number) {
       });
     }
   }
+}
+
+async function seedTreatmentPrograms(userId: number) {
+  const existing = await storage.listTreatmentPrograms(userId);
+  if (existing.length > 0) return;
+
+  const immunotherapy = await storage.createTreatmentProgram({
+    userId,
+    name: "Immunotherapy (Ipi/Nivo)",
+    type: "Ipilimumab + Nivolumab",
+    category: "medical",
+    startDate: "2025-04-28",
+    endDate: "2025-07-21",
+    totalSessions: 4,
+    completedSessions: 4,
+    frequency: "Every 3 weeks",
+    provider: "Melanoma Oncology Team",
+    location: "Cancer Centre",
+    notes: "Double-agent immunotherapy (ipilimumab + nivolumab). All 4 cycles completed. Treatment ceased after cycle 4 due to severe immune-related adverse events.",
+    sideEffects: "Cycle 4 caused Grade 4 hepatitis (ALT ~750) and severe colitis. Required high-dose steroids and ~5 months mycophenolate immunosuppression.",
+    status: "completed",
+  });
+
+  const sessions = [
+    { sessionNumber: 1, date: "2025-04-28", status: "completed", notes: "Cycle 1 - tolerated well", sideEffects: null },
+    { sessionNumber: 2, date: "2025-05-19", status: "completed", notes: "Cycle 2 - mild fatigue", sideEffects: "Mild fatigue" },
+    { sessionNumber: 3, date: "2025-06-09", status: "completed", notes: "Cycle 3 - good tolerance", sideEffects: "Mild fatigue, slight nausea" },
+    { sessionNumber: 4, date: "2025-07-01", status: "completed", notes: "Cycle 4 - severe adverse events developed post-infusion", sideEffects: "Grade 4 hepatitis (ALT ~750), severe colitis. Required hospitalisation, high-dose steroids, and 5 months mycophenolate." },
+  ];
+
+  for (const s of sessions) {
+    await storage.createTreatmentSession({
+      programId: immunotherapy.id,
+      userId,
+      sessionNumber: s.sessionNumber,
+      date: s.date,
+      time: "9:00 AM",
+      status: s.status,
+      notes: s.notes,
+      sideEffects: s.sideEffects,
+    });
+  }
+
+  await storage.createTreatmentProgram({
+    userId,
+    name: "Hyperbaric Oxygen Therapy",
+    type: "HBOT",
+    category: "complementary",
+    startDate: "2026-01-15",
+    endDate: "2026-04-15",
+    totalSessions: 20,
+    completedSessions: 8,
+    frequency: "Twice weekly",
+    provider: "Integrative Health Centre",
+    location: "Hyperbaric Centre, Sydney",
+    notes: "Supporting immune recovery and tissue healing post-immunotherapy.",
+    status: "active",
+  });
+
+  await storage.createTreatmentProgram({
+    userId,
+    name: "Acupuncture",
+    type: "Traditional Chinese Medicine",
+    category: "complementary",
+    startDate: "2025-12-01",
+    endDate: null,
+    totalSessions: null,
+    completedSessions: 10,
+    frequency: "Weekly",
+    provider: "Dr. Sarah Chen",
+    location: "Integrative Wellness Clinic",
+    notes: "Supporting immune system recovery, managing fatigue, and promoting overall wellbeing.",
+    status: "active",
+  });
+
+  await storage.createTreatmentProgram({
+    userId,
+    name: "Yoga for Cancer Recovery",
+    type: "Gentle Yoga",
+    category: "mind-body",
+    startDate: "2026-01-06",
+    endDate: null,
+    totalSessions: null,
+    completedSessions: 12,
+    frequency: "Twice weekly",
+    provider: "Cancer Support Centre",
+    location: "Community Wellness Hub",
+    notes: "Gentle restorative yoga specifically designed for cancer patients. Focus on breathing, gentle stretching, and meditation.",
+    status: "active",
+  });
+
+  await storage.createTreatmentProgram({
+    userId,
+    name: "Integrative Oncologist Reviews",
+    type: "Consultations",
+    category: "integrative",
+    startDate: "2025-11-01",
+    endDate: null,
+    totalSessions: null,
+    completedSessions: 3,
+    frequency: "Monthly",
+    provider: "Dr. James Mitchell",
+    location: "Integrative Oncology Clinic",
+    notes: "Monthly reviews covering supplement protocols, nutrition guidance, and holistic treatment planning alongside conventional care.",
+    status: "active",
+  });
+
+  await storage.createTreatmentProgram({
+    userId,
+    name: "Psychology Support",
+    type: "Psycho-oncology",
+    category: "mind-body",
+    startDate: "2025-09-01",
+    endDate: null,
+    totalSessions: null,
+    completedSessions: 8,
+    frequency: "Fortnightly",
+    provider: "Dr. Emma Walsh",
+    location: "Cancer Psychology Centre",
+    notes: "Psycho-oncology support for processing diagnosis, managing scanxiety, and building resilience.",
+    status: "active",
+  });
 }
 
 async function seedDefaultAppointments(userId: number) {
@@ -753,6 +878,224 @@ PATIENT CONTEXT:
     } catch (error) {
       console.error("Error deleting activity type:", error);
       return res.status(500).json({ error: "Failed to delete activity type" });
+    }
+  });
+
+  // Treatment Programs
+  app.get("/api/treatment-programs", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      const programs = await storage.listTreatmentPrograms(userId);
+      return res.json(programs);
+    } catch (error) {
+      console.error("Error fetching treatment programs:", error);
+      return res.status(500).json({ error: "Failed to fetch treatment programs" });
+    }
+  });
+
+  app.post("/api/treatment-programs", async (req, res) => {
+    try {
+      const program = await storage.createTreatmentProgram(req.body);
+      return res.json(program);
+    } catch (error) {
+      console.error("Error creating treatment program:", error);
+      return res.status(500).json({ error: "Failed to create treatment program" });
+    }
+  });
+
+  app.patch("/api/treatment-programs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const program = await storage.updateTreatmentProgram(id, req.body);
+      return res.json(program);
+    } catch (error) {
+      console.error("Error updating treatment program:", error);
+      return res.status(500).json({ error: "Failed to update treatment program" });
+    }
+  });
+
+  app.delete("/api/treatment-programs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteTreatmentProgram(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting treatment program:", error);
+      return res.status(500).json({ error: "Failed to delete treatment program" });
+    }
+  });
+
+  // Treatment Sessions
+  app.get("/api/treatment-sessions", async (req, res) => {
+    try {
+      const programId = req.query.programId ? parseInt(req.query.programId as string, 10) : null;
+      const userId = parseInt(req.query.userId as string, 10) || 1;
+      if (programId) {
+        const sessions = await storage.listTreatmentSessions(programId);
+        return res.json(sessions);
+      }
+      const sessions = await storage.listAllTreatmentSessions(userId);
+      return res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching treatment sessions:", error);
+      return res.status(500).json({ error: "Failed to fetch treatment sessions" });
+    }
+  });
+
+  app.post("/api/treatment-sessions", async (req, res) => {
+    try {
+      const session = await storage.createTreatmentSession(req.body);
+      return res.json(session);
+    } catch (error) {
+      console.error("Error creating treatment session:", error);
+      return res.status(500).json({ error: "Failed to create treatment session" });
+    }
+  });
+
+  app.patch("/api/treatment-sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const session = await storage.updateTreatmentSession(id, req.body);
+      return res.json(session);
+    } catch (error) {
+      console.error("Error updating treatment session:", error);
+      return res.status(500).json({ error: "Failed to update treatment session" });
+    }
+  });
+
+  app.delete("/api/treatment-sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      await storage.deleteTreatmentSession(id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting treatment session:", error);
+      return res.status(500).json({ error: "Failed to delete treatment session" });
+    }
+  });
+
+  // ICS Calendar Download
+  app.get("/api/appointments/:id/ics", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+      const appointments_list = await storage.listAppointments(1);
+      const appt = appointments_list.find(a => a.id === id);
+      if (!appt) return res.status(404).json({ error: "Appointment not found" });
+
+      const startDate = appt.date.replace(/-/g, '');
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Elizabeth//Cancer Support//EN',
+        'BEGIN:VEVENT',
+        `DTSTART;VALUE=DATE:${startDate}`,
+        `SUMMARY:${appt.title}`,
+        appt.description ? `DESCRIPTION:${appt.description.replace(/\n/g, '\\n')}` : '',
+        appt.location ? `LOCATION:${appt.location}` : '',
+        `UID:elizabeth-appt-${appt.id}@elizabeth.app`,
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].filter(Boolean).join('\r\n');
+
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${appt.title.replace(/\s+/g, '_')}.ics"`);
+      return res.send(ics);
+    } catch (error) {
+      console.error("Error generating ICS:", error);
+      return res.status(500).json({ error: "Failed to generate calendar file" });
+    }
+  });
+
+  // Daily Brief (AI-generated)
+  app.post("/api/ai/daily-brief", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const appointments_list = await storage.listAppointments(userId);
+      const today = new Date().toISOString().split("T")[0];
+      const upcoming = appointments_list
+        .filter(a => a.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 5);
+
+      const programs = await storage.listTreatmentPrograms(userId);
+      const activePrograms = programs.filter(p => p.status === "active");
+
+      const scanData = await storage.listScanResults(userId);
+
+      const userContext = `
+PATIENT: ${user.displayName}
+DIAGNOSIS: ${user.cancerType || "Not specified"}, ${user.cancerStage || "Not specified"}
+STATUS: ${user.treatmentStatus || "Not specified"}
+TREATMENT HISTORY: ${user.treatmentHistory || "None"}
+GOALS: ${user.goals || "Not specified"}
+NEXT SCAN: ${user.nextScanDate || "Not scheduled"}
+DIETARY PREFERENCES: ${user.dietaryPreferences || "Not specified"}
+SCAN SUMMARY: ${user.scanSummary || "No scan data"}
+ACTIVE PROGRAMS: ${activePrograms.map(p => `${p.name} (${p.completedSessions}/${p.totalSessions} sessions)`).join(", ") || "None"}
+UPCOMING APPOINTMENTS: ${upcoming.map(a => `${a.title} on ${a.date}`).join(", ") || "None upcoming"}
+TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Sydney' })}
+`;
+
+      const { getHealthAdvice } = await import("./openai");
+      const briefPrompt = `Generate a warm, personalised daily brief for this cancer patient. Include:
+1. A warm greeting using their name
+2. Any appointments or treatments coming up this week
+3. A motivating note about their progress (reference scan improvements if available)
+4. One specific wellness suggestion for today (could be nutrition, movement, mindfulness, or social connection)
+5. An uplifting closing thought based on Radical Remission principles
+
+Keep it concise (150-200 words), warm, and genuinely encouraging. Don't be generic — reference their specific situation. Use Australian English.`;
+
+      const brief = await getHealthAdvice(briefPrompt, userContext);
+      return res.json({ content: brief, generatedAt: new Date().toISOString() });
+    } catch (error) {
+      console.error("Error generating daily brief:", error);
+      return res.status(500).json({ error: "Failed to generate daily brief" });
+    }
+  });
+
+  // AI Treatment Suggestions
+  app.post("/api/ai/treatment-suggestions", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const programs = await storage.listTreatmentPrograms(userId);
+
+      const { getHealthAdvice } = await import("./openai");
+      const prompt = `Based on this patient's profile, suggest 4-6 complementary therapy programs they could consider adding to their healing journey. For each suggestion, provide:
+- name: therapy name
+- type: category (e.g., "physical", "mind-body", "nutrition", "integrative")
+- description: brief 1-2 sentence description of benefits specifically for their condition
+- frequency: suggested frequency (e.g., "weekly", "twice weekly")
+- evidence: brief note on evidence base for cancer patients
+
+Current programs: ${programs.map(p => p.name).join(", ") || "None"}
+
+Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"...", "description":"...", "frequency":"...", "evidence":"..."}]`;
+
+      const userContext = `Patient: ${user.cancerType}, ${user.cancerStage}. Status: ${user.treatmentStatus}. History: ${user.treatmentHistory}. Adverse events: ${user.adverseEventHistory}`;
+      const response = await getHealthAdvice(prompt, userContext);
+
+      try {
+        const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const suggestions = JSON.parse(cleaned);
+        return res.json({ suggestions });
+      } catch {
+        return res.json({ suggestions: [], raw: response });
+      }
+    } catch (error) {
+      console.error("Error generating treatment suggestions:", error);
+      return res.status(500).json({ error: "Failed to generate suggestions" });
     }
   });
 

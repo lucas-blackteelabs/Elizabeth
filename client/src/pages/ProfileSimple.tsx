@@ -15,6 +15,7 @@ import { Heart, Shield, Target, Clock, FileText, Camera, Loader2 } from "lucide-
 const formSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters long" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
+  phoneNumber: z.string().optional(),
   cancerType: z.string().optional(),
   cancerStage: z.string().optional(),
   bio: z.string().optional(),
@@ -56,6 +57,7 @@ export default function ProfileSimple() {
     defaultValues: {
       displayName: user?.displayName || "",
       email: user?.email || "",
+      phoneNumber: (user as any)?.phoneNumber || "",
       cancerType: user?.cancerType || "",
       cancerStage: user?.cancerStage || "",
       bio: user?.bio || "",
@@ -218,7 +220,7 @@ export default function ProfileSimple() {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="displayName"
@@ -241,6 +243,20 @@ export default function ProfileSimple() {
                           <FormLabel className="text-foreground font-body">Email</FormLabel>
                           <FormControl>
                             <Input placeholder="Your email" {...field} className={inputClasses} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground font-body">Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 0412 345 678" {...field} className={inputClasses} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

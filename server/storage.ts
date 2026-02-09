@@ -1,5 +1,6 @@
 import { 
   users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights, appointments, customActivityTypes,
+  treatmentPrograms, treatmentSessions,
   type User, type InsertUser, type ChatMessage,
   type ScanResult, type InsertScanResult,
   type Meal, type InsertMeal,
@@ -9,6 +10,8 @@ import {
   type DateNight, type InsertDateNight,
   type Appointment, type InsertAppointment,
   type CustomActivityType, type InsertCustomActivityType,
+  type TreatmentProgram, type InsertTreatmentProgram,
+  type TreatmentSession, type InsertTreatmentSession,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -59,6 +62,18 @@ export interface IStorage {
   createCustomActivityType(data: InsertCustomActivityType): Promise<CustomActivityType>;
   updateCustomActivityType(id: number, data: Partial<CustomActivityType>): Promise<CustomActivityType>;
   deleteCustomActivityType(id: number): Promise<void>;
+
+  listTreatmentPrograms(userId: number): Promise<TreatmentProgram[]>;
+  getTreatmentProgram(id: number): Promise<TreatmentProgram | undefined>;
+  createTreatmentProgram(data: InsertTreatmentProgram): Promise<TreatmentProgram>;
+  updateTreatmentProgram(id: number, data: Partial<TreatmentProgram>): Promise<TreatmentProgram>;
+  deleteTreatmentProgram(id: number): Promise<void>;
+
+  listTreatmentSessions(programId: number): Promise<TreatmentSession[]>;
+  listAllTreatmentSessions(userId: number): Promise<TreatmentSession[]>;
+  createTreatmentSession(data: InsertTreatmentSession): Promise<TreatmentSession>;
+  updateTreatmentSession(id: number, data: Partial<TreatmentSession>): Promise<TreatmentSession>;
+  deleteTreatmentSession(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -259,6 +274,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCustomActivityType(id: number): Promise<void> {
     await db.delete(customActivityTypes).where(eq(customActivityTypes.id, id));
+  }
+
+  async listTreatmentPrograms(userId: number): Promise<TreatmentProgram[]> {
+    return db.select().from(treatmentPrograms).where(eq(treatmentPrograms.userId, userId));
+  }
+
+  async getTreatmentProgram(id: number): Promise<TreatmentProgram | undefined> {
+    const [program] = await db.select().from(treatmentPrograms).where(eq(treatmentPrograms.id, id));
+    return program;
+  }
+
+  async createTreatmentProgram(data: InsertTreatmentProgram): Promise<TreatmentProgram> {
+    const [program] = await db.insert(treatmentPrograms).values(data).returning();
+    return program;
+  }
+
+  async updateTreatmentProgram(id: number, data: Partial<TreatmentProgram>): Promise<TreatmentProgram> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [program] = await db.update(treatmentPrograms).set(updateData).where(eq(treatmentPrograms.id, id)).returning();
+    return program;
+  }
+
+  async deleteTreatmentProgram(id: number): Promise<void> {
+    await db.delete(treatmentSessions).where(eq(treatmentSessions.programId, id));
+    await db.delete(treatmentPrograms).where(eq(treatmentPrograms.id, id));
+  }
+
+  async listTreatmentSessions(programId: number): Promise<TreatmentSession[]> {
+    return db.select().from(treatmentSessions).where(eq(treatmentSessions.programId, programId));
+  }
+
+  async listAllTreatmentSessions(userId: number): Promise<TreatmentSession[]> {
+    return db.select().from(treatmentSessions).where(eq(treatmentSessions.userId, userId));
+  }
+
+  async createTreatmentSession(data: InsertTreatmentSession): Promise<TreatmentSession> {
+    const [session] = await db.insert(treatmentSessions).values(data).returning();
+    return session;
+  }
+
+  async updateTreatmentSession(id: number, data: Partial<TreatmentSession>): Promise<TreatmentSession> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [session] = await db.update(treatmentSessions).set(updateData).where(eq(treatmentSessions.id, id)).returning();
+    return session;
+  }
+
+  async deleteTreatmentSession(id: number): Promise<void> {
+    await db.delete(treatmentSessions).where(eq(treatmentSessions.id, id));
   }
 }
 

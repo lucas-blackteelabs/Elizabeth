@@ -9,14 +9,12 @@ import SimpleDashboard from "@/pages/SimpleDashboard";
 import AIAssistant from "@/pages/AIAssistant";
 import MedicalTracker from "@/pages/MedicalTracker";
 import Nutrition from "@/pages/Nutrition";
-import MindBody from "@/pages/MindBody";
-import Movement from "@/pages/Movement";
 import Supplements from "@/pages/Supplements";
-import Community from "@/pages/Community";
-import SpiritualWellbeing from "@/pages/SpiritualWellbeing";
 import Calendar from "@/pages/Calendar";
 import ProfileSimple from "@/pages/ProfileSimple";
 import DateNight from "@/pages/DateNight";
+import Resources from "@/pages/Resources";
+import TreatmentPlus from "@/pages/TreatmentPlus";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
@@ -99,34 +97,36 @@ function AppRouter() {
           <ProtectedRoute component={Nutrition} />
         </Layout>
       </Route>
-      <Route path="/mind-body">
-        <Layout>
-          <ProtectedRoute component={MindBody} />
-        </Layout>
-      </Route>
-      <Route path="/movement">
-        <Layout>
-          <ProtectedRoute component={Movement} />
-        </Layout>
-      </Route>
       <Route path="/supplements">
         <Layout>
           <ProtectedRoute component={Supplements} />
         </Layout>
       </Route>
+      <Route path="/mind-body">
+        <Redirect to="/resources" />
+      </Route>
+      <Route path="/movement">
+        <Redirect to="/resources" />
+      </Route>
       <Route path="/community">
-        <Layout>
-          <ProtectedRoute component={Community} />
-        </Layout>
+        <Redirect to="/resources" />
       </Route>
       <Route path="/spiritual">
-        <Layout>
-          <ProtectedRoute component={SpiritualWellbeing} />
-        </Layout>
+        <Redirect to="/resources" />
       </Route>
       <Route path="/calendar">
         <Layout>
           <ProtectedRoute component={Calendar} />
+        </Layout>
+      </Route>
+      <Route path="/resources">
+        <Layout>
+          <ProtectedRoute component={Resources} />
+        </Layout>
+      </Route>
+      <Route path="/treatment-plus">
+        <Layout>
+          <ProtectedRoute component={TreatmentPlus} />
         </Layout>
       </Route>
       <Route path="/date-night">

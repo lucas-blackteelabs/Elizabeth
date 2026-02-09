@@ -34,6 +34,7 @@ const ALL_WIDGETS: WidgetDef[] = [
   { id: "scanCountdown", label: "Next Scan Countdown", description: "Visual countdown to your next scan", icon: <Scan className="h-4 w-4" />, defaultVisible: true },
   { id: "treatmentJourney", label: "Treatment Journey", description: "Days since diagnosis and key milestones", icon: <Shield className="h-4 w-4" />, defaultVisible: true },
   { id: "tumourResponse", label: "Tumour Response", description: "Visualise tumour size and activity changes", icon: <BarChart3 className="h-4 w-4" />, defaultVisible: true },
+  { id: "dailyBrief", label: "Daily Brief", description: "Personalised AI wellness message", icon: <Sparkles className="h-4 w-4" />, defaultVisible: true },
   { id: "todayWellness", label: "Today's Wellness", description: "Log meals, mindfulness, and exercise", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
   { id: "immuneRecovery", label: "Immune Recovery", description: "Track your immune system recovery", icon: <Zap className="h-4 w-4" />, defaultVisible: true },
   { id: "activityStreak", label: "Activity Streak", description: "Track meals, exercise & mindfulness streaks", icon: <Flame className="h-4 w-4" />, defaultVisible: true },
@@ -994,8 +995,23 @@ function useTumourStats(userId: number) {
   };
 }
 
+function MiniAppleRing({ radius, strokeWidth, percentage, color, bgColor }: {
+  radius: number; strokeWidth: number; percentage: number; color: string; bgColor: string;
+}) {
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.max(0, Math.min(100, percentage));
+  const dashOffset = circumference * (1 - pct / 100);
+  return (
+    <>
+      <circle cx="50" cy="50" r={radius} fill="none" stroke={bgColor} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <circle cx="50" cy="50" r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
+    </>
+  );
+}
+
 function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClick: () => void }) {
-  const { isLoading, avgSizeReduction, avgActivityReduction } = useTumourStats(userId);
+  const { isLoading, tumourLabels, baselineScan, latestScan } = useTumourStats(userId);
 
   if (isLoading) {
     return (
@@ -1013,31 +1029,57 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     );
   }
 
+  const tumourRings = tumourLabels.map((tl) => {
+    const baseline = baselineScan.find((s) => s.tumourLabel === tl);
+    const latest = latestScan.find((s) => s.tumourLabel === tl);
+    if (!baseline || !latest) return null;
+    const baselineArea = baseline.sizeX * baseline.sizeY;
+    const latestArea = latest.sizeX * latest.sizeY;
+    const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
+    const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
+    const baselineSuv = baseline.suvMax || 0;
+    const latestSuv = latest.suvMax || 0;
+    const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
+    const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
+    return { label: tl, isResolved, sizeReduction, suvReduction, isMetabolicComplete };
+  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; suvReduction: number; isMetabolicComplete: boolean }[];
+
   return (
     <button
       onClick={onClick}
       className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full"
     >
-      <div className="flex items-center gap-3 overflow-hidden">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary/15 transition-all duration-200 flex-shrink-0">
-          <TrendingUp className="h-5 w-5" />
-        </div>
+      <div className="flex items-start gap-3 overflow-hidden">
         <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-1">Tumour Response</p>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-1">
-              <ArrowDown className="h-3 w-3 text-primary flex-shrink-0" />
-              <span className="text-sm font-heading text-primary">{avgSizeReduction}%</span>
-              <span className="text-[10px] text-muted-foreground font-body truncate">size</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <ArrowDown className="h-3 w-3 text-accent flex-shrink-0" />
-              <span className="text-sm font-heading text-accent">{avgActivityReduction}%</span>
-              <span className="text-[10px] text-muted-foreground font-body truncate">activity</span>
-            </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Tumour Response</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {tumourRings.map((t) => {
+              const outerColor = t.isResolved ? "hsl(200, 80%, 60%)" : "hsl(142, 71%, 45%)";
+              const outerBg = t.isResolved ? "hsl(200, 40%, 90%)" : "hsl(142, 30%, 90%)";
+              const innerColor = t.isResolved ? "hsl(190, 70%, 50%)" : "hsl(38, 92%, 50%)";
+              const innerBg = t.isResolved ? "hsl(190, 30%, 90%)" : "hsl(38, 40%, 90%)";
+              const sizePct = t.isResolved ? 100 : t.sizeReduction;
+              const suvPct = t.isResolved ? 100 : (t.isMetabolicComplete ? 100 : t.suvReduction);
+              return (
+                <div key={t.label} className="flex flex-col items-center">
+                  <div className={`relative w-10 h-10 rounded-full ${t.isResolved ? "ring-1 ring-blue-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]" : ""}`}>
+                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 100 100">
+                      <MiniAppleRing radius={42} strokeWidth={9} percentage={sizePct} color={outerColor} bgColor={outerBg} />
+                      <MiniAppleRing radius={30} strokeWidth={9} percentage={suvPct} color={innerColor} bgColor={innerBg} />
+                    </svg>
+                    {t.isResolved && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[10px]">❄️</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[8px] text-muted-foreground font-body mt-0.5 max-w-[48px] truncate text-center">{t.label.split(" ")[0]}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0 mt-1" />
       </div>
     </button>
   );
@@ -1060,7 +1102,7 @@ function AppleRing({ radius, strokeWidth, percentage, color, bgColor }: {
 }
 
 function TumourResponseExpanded({ userId }: { userId: number }) {
-  const { scanResults, scanDates, tumourLabels, baselineScan, latestScan } = useTumourStats(userId);
+  const { scanResults, scanDates, tumourLabels, baselineScan, latestScan, avgSizeReduction, avgActivityReduction } = useTumourStats(userId);
 
   if (scanResults.length === 0) {
     return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
@@ -1071,17 +1113,30 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
     return label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Treatment" : label.includes("Surveillance") ? "Latest Scan" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
   });
 
+  const showCelebration = avgSizeReduction > 30 || avgActivityReduction > 30;
+
   return (
-    <div className="space-y-6 py-2">
-      <div className="grid grid-cols-2 gap-4">
-        {tumourLabels.map((tl, tumourIdx) => {
+    <div className="space-y-5 py-2">
+      {showCelebration && (
+        <div className="relative overflow-hidden bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border border-green-200 rounded-2xl p-4 text-center">
+          <div className="absolute top-1 left-3 text-lg animate-bounce" style={{ animationDelay: "0s" }}>✨</div>
+          <div className="absolute top-2 right-5 text-sm animate-bounce" style={{ animationDelay: "0.3s" }}>🎉</div>
+          <div className="absolute bottom-1 left-8 text-sm animate-bounce" style={{ animationDelay: "0.6s" }}>⭐</div>
+          <div className="absolute bottom-2 right-3 text-lg animate-bounce" style={{ animationDelay: "0.2s" }}>✨</div>
+          <p className="font-heading text-lg text-emerald-800 mb-1">Amazing Progress!</p>
+          <p className="text-xs font-body text-emerald-700">Your body is responding beautifully to treatment. Every scan tells a story of healing — and yours is remarkable.</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {tumourLabels.map((tl) => {
           const baseline = baselineScan.find((s) => s.tumourLabel === tl);
           const latest = latestScan.find((s) => s.tumourLabel === tl);
           if (!baseline || !latest) return null;
 
           const baselineArea = baseline.sizeX * baseline.sizeY;
           const latestArea = latest.sizeX * latest.sizeY;
-          const isResolved = latest.sizeX === 0 && latest.sizeY === 0;
+          const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
           const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
           const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
           const baselineSuv = baseline.suvMax || 0;
@@ -1091,65 +1146,158 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
           const sizeRingPct = isResolved ? 100 : sizeReduction;
           const suvRingPct = isResolved ? 100 : (isMetabolicComplete ? 100 : suvReduction);
 
+          const outerColor = isResolved ? "hsl(200, 80%, 60%)" : "hsl(142, 71%, 45%)";
+          const outerBg = isResolved ? "hsl(200, 40%, 90%)" : "hsl(142, 30%, 90%)";
+          const innerColor = isResolved ? "hsl(190, 70%, 50%)" : "hsl(38, 92%, 50%)";
+          const innerBg = isResolved ? "hsl(190, 30%, 90%)" : "hsl(38, 40%, 90%)";
+
           return (
-            <div key={tl} className="flex flex-col items-center">
-              <div className="relative w-28 h-28 mb-2">
-                <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
-                  <AppleRing radius={42} strokeWidth={7} percentage={sizeRingPct} color="hsl(142, 71%, 45%)" bgColor="hsl(142, 30%, 90%)" />
-                  <AppleRing radius={32} strokeWidth={7} percentage={suvRingPct} color="hsl(38, 92%, 50%)" bgColor="hsl(38, 40%, 90%)" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div
+              key={tl}
+              className={`rounded-2xl border p-4 transition-all ${
+                isResolved
+                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 shadow-[0_0_12px_rgba(56,189,248,0.15)]"
+                  : "bg-white border-border"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative w-24 h-24 flex-shrink-0">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                    <AppleRing radius={42} strokeWidth={8} percentage={sizeRingPct} color={outerColor} bgColor={outerBg} />
+                    <AppleRing radius={30} strokeWidth={8} percentage={suvRingPct} color={innerColor} bgColor={innerBg} />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    {isResolved ? (
+                      <>
+                        <span className="text-xl mb-0.5">❄️</span>
+                        <span className="text-[9px] font-heading font-bold text-blue-600">Gone Cold</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg font-heading font-bold text-foreground">{sizeReduction}%</span>
+                        {isMetabolicComplete ? (
+                          <span className="text-[8px] font-body text-amber-600 font-medium leading-tight text-center px-1">No Activity Detected</span>
+                        ) : (
+                          <span className="text-[8px] font-body text-muted-foreground">SUV↓{suvReduction}%</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-heading mb-1 ${isResolved ? "text-blue-800" : "text-foreground"}`}>{tl}</p>
                   {isResolved ? (
-                    <span className="text-[10px] font-heading font-bold text-primary">Resolved</span>
+                    <p className="text-xs font-body text-blue-600">No longer visible on imaging</p>
                   ) : (
-                    <>
-                      <span className="text-lg font-heading font-bold text-foreground">{sizeReduction}%</span>
-                      {isMetabolicComplete ? (
-                        <span className="text-[8px] font-body text-primary font-medium">No Activity</span>
-                      ) : (
-                        <span className="text-[8px] font-body text-muted-foreground">SUV↓{suvReduction}%</span>
-                      )}
-                    </>
+                    <p className="text-xs font-body text-muted-foreground">
+                      {latest.sizeX}×{latest.sizeY}mm
+                      {isMetabolicComplete ? " · No metabolic activity" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
+                    </p>
                   )}
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-[10px] font-body">
+                      <span className="text-muted-foreground">Baseline</span>
+                      <span className="text-foreground font-medium">{baseline.sizeX}×{baseline.sizeY}mm{baseline.suvMax ? ` · SUV ${baseline.suvMax}` : ""}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-body">
+                      <span className="text-muted-foreground">Latest</span>
+                      <span className={`font-medium ${isResolved ? "text-blue-600" : "text-foreground"}`}>
+                        {latest.sizeX === 0 && latest.sizeY === 0 ? "Resolved" : `${latest.sizeX}×${latest.sizeY}mm`}
+                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : " · Clear"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs font-heading text-foreground text-center leading-tight">{tl}</p>
-              <p className="text-[9px] text-muted-foreground font-body">
-                {isResolved ? "No longer visible" : `${latest.sizeX}×${latest.sizeY}mm`}
-              </p>
             </div>
           );
         })}
       </div>
 
-      <div className="flex justify-center gap-4 text-[10px] text-muted-foreground font-body">
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 45%)" }} /> Size reduction</span>
-        <span className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> SUV reduction</span>
-      </div>
-
-      <div className="border-t border-border pt-4 space-y-3">
-        <p className="text-xs font-heading text-muted-foreground uppercase tracking-wider">Scan Comparison</p>
-        {tumourLabels.map((tl) => {
-          const scansForTumour = scanDates.map((date, idx) => {
-            const scan = scanResults.find(s => s.scanDate === date && s.tumourLabel === tl);
-            return scan ? { scan, label: scanLabels[idx] } : null;
-          }).filter(Boolean) as { scan: ScanResult; label: string }[];
-
-          return (
-            <div key={tl} className="space-y-1">
-              <p className="text-xs font-body font-medium text-foreground">{tl}</p>
-              <div className="flex gap-3">
-                {scansForTumour.map(({ scan, label }, i) => (
-                  <div key={i} className="text-[9px] font-body text-muted-foreground">
-                    <span className="font-medium text-foreground">{label}:</span> {scan.sizeX}×{scan.sizeY}mm{scan.suvMax ? `, SUV ${scan.suvMax}` : " — Clear"}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex justify-center gap-6 text-[10px] text-muted-foreground font-body">
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 45%)" }} /> Size reduction</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> SUV reduction</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(200, 80%, 60%)" }} /> Resolved</span>
       </div>
     </div>
+  );
+}
+
+const DAILY_BRIEF_SESSION_KEY = "elizabeth-daily-brief-cache";
+
+function DailyBriefWidget({ userId }: { userId: number }) {
+  const [brief, setBrief] = useState<string | null>(() => {
+    try {
+      const cached = sessionStorage.getItem(DAILY_BRIEF_SESSION_KEY);
+      if (cached) return cached;
+    } catch {}
+    return null;
+  });
+  const [hasLoaded, setHasLoaded] = useState(!!brief);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest<{ content: string }>("/api/ai/daily-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+    },
+    onSuccess: (data) => {
+      const content = data.content || "Keep nurturing your healing journey today.";
+      setBrief(content);
+      setHasLoaded(true);
+      try { sessionStorage.setItem(DAILY_BRIEF_SESSION_KEY, content); } catch {}
+    },
+    onError: () => {
+      setBrief("Take a moment today to breathe, nourish, and move with intention. You are doing wonderfully.");
+      setHasLoaded(true);
+    },
+  });
+
+  useEffect(() => {
+    if (!hasLoaded && !mutation.isPending) {
+      mutation.mutate();
+    }
+  }, []);
+
+  const handleRefresh = () => {
+    try { sessionStorage.removeItem(DAILY_BRIEF_SESSION_KEY); } catch {}
+    mutation.mutate();
+  };
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-accent" /> Daily Brief
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={mutation.isPending}
+            className="text-xs text-muted-foreground hover:text-primary font-body gap-1 h-7 px-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Refresh
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {mutation.isPending && !brief ? (
+          <div className="space-y-2">
+            <div className="h-3 bg-muted rounded-full w-full animate-pulse" />
+            <div className="h-3 bg-muted rounded-full w-5/6 animate-pulse" />
+            <div className="h-3 bg-muted rounded-full w-4/6 animate-pulse" />
+            <div className="h-3 bg-muted rounded-full w-3/4 animate-pulse" />
+          </div>
+        ) : (
+          <p className="text-sm font-body text-foreground leading-relaxed whitespace-pre-line">{brief}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1900,7 +2048,11 @@ export default function SimpleDashboard() {
         </div>
       )}
 
-      
+      {isActive("dailyBrief") && (
+        <div className="mb-6">
+          <DailyBriefWidget userId={user.id} />
+        </div>
+      )}
 
       {isActive("todayWellness") && (
         <div className="mb-6">
