@@ -15,6 +15,7 @@ import ProfileSimple from "@/pages/ProfileSimple";
 import DateNight from "@/pages/DateNight";
 import Resources from "@/pages/Resources";
 import TreatmentPlus from "@/pages/TreatmentPlus";
+import Community from "@/pages/Community";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
@@ -109,7 +110,9 @@ function AppRouter() {
         <Redirect to="/resources" />
       </Route>
       <Route path="/community">
-        <Redirect to="/resources" />
+        <Layout>
+          <ProtectedRoute component={Community} />
+        </Layout>
       </Route>
       <Route path="/spiritual">
         <Redirect to="/resources" />

@@ -4,6 +4,25 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Medical Tracker Redesign + Community Page
+  - Medical Tracker completely redesigned with dashboard-style visuals
+    - AI-generated medical summary (warm, patient-friendly language)
+    - Documents section: CRUD for scans, blood tests, pathology reports, letters
+    - Tumour cards with proportional SVG visuals, progress bars, scan history
+    - Scan comparison table, treatment timeline, status cards
+    - Tab-based navigation (Overview, Documents, Timeline, Status)
+  - New Community page: Reddit-style discussion forum
+    - Thread creation with 7 categories (General, Treatment, Nutrition, Mind & Body, Support, Questions, Wins)
+    - Thread detail view with replies, likes, and category badges
+    - Category filter pills for browsing
+    - Reply system with author avatars, timestamps, and delete capability
+    - Seeded with 7 sample threads and 13 replies from various community members
+    - Live thread data sync (likes/replies update immediately)
+  - medical_documents table for storing scan reports, blood tests, pathology
+  - community_threads + community_replies tables with full CRUD
+  - New API endpoints: /api/community/threads, /api/community/replies, /api/medical-documents, /api/ai/medical-summary
+  - Community added to sidebar navigation
+  - 8 sample medical documents seeded (scans, blood tests, pathology, letters)
 - **Feb 2026**: Major Feature Overhaul — Treatment+, Resources, Timeline, Dashboard Redesign
   - New "Treatment +" page: visual treatment program management with progress tracking
     - Immunotherapy program with 4 cycle timeline, side effects tracking, celebration on completion
