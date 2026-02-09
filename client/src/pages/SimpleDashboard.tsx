@@ -6,7 +6,6 @@ import {
   ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves,
   BookHeart, ImagePlus, Trophy, SmilePlus, Utensils, Dumbbell, Brain
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +38,6 @@ const ALL_WIDGETS: WidgetDef[] = [
   { id: "tumourResponse", label: "Tumour Response", description: "Visualise tumour size and activity changes", icon: <BarChart3 className="h-4 w-4" />, defaultVisible: true },
   { id: "dailyBrief", label: "Daily Brief", description: "Personalised AI wellness message", icon: <Sparkles className="h-4 w-4" />, defaultVisible: true },
   { id: "todayWellness", label: "Today's Wellness", description: "Log meals, mindfulness, and exercise", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
-  { id: "immuneRecovery", label: "Immune Recovery", description: "Track your immune system recovery", icon: <Zap className="h-4 w-4" />, defaultVisible: true },
   { id: "activityStreak", label: "Activity Streak", description: "Track meals, exercise & mindfulness streaks", icon: <Flame className="h-4 w-4" />, defaultVisible: true },
   { id: "healingTherapies", label: "Healing Therapies", description: "Accumulated therapy sessions and minutes", icon: <Stethoscope className="h-4 w-4" />, defaultVisible: false },
   { id: "treatmentTimeline", label: "Treatment Timeline", description: "Your full treatment history", icon: <Clock className="h-4 w-4" />, defaultVisible: false },
@@ -1095,15 +1093,10 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
 
   if (isLoading) {
     return (
-      <button onClick={onClick} className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full">
+      <button onClick={onClick} className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full col-span-2 lg:col-span-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
-            <Loader2 className="h-5 w-5 text-primary animate-spin" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-0.5">Tumour Response</p>
-            <p className="text-sm font-body text-muted-foreground">Loading...</p>
-          </div>
+          <Loader2 className="h-5 w-5 text-primary animate-spin" />
+          <p className="text-sm font-body text-muted-foreground">Loading tumour response...</p>
         </div>
       </button>
     );
@@ -1117,63 +1110,47 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     const latestArea = latest.sizeX * latest.sizeY;
     const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
     const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
-    const proportionalSize = maxBaselineArea > 0 ? Math.sqrt(baselineArea / maxBaselineArea) : 0.5;
-    const currentProportion = isResolved ? 0 : (maxBaselineArea > 0 ? Math.sqrt(latestArea / maxBaselineArea) : 0);
-    return { label: tl, isResolved, sizeReduction, baselineArea, latestArea, proportionalSize, currentProportion };
-  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; baselineArea: number; latestArea: number; proportionalSize: number; currentProportion: number }[];
+    return { label: tl, isResolved, sizeReduction };
+  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number }[];
 
   return (
     <button
       onClick={onClick}
-      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full"
+      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full col-span-2 lg:col-span-4"
     >
-      <div className="flex items-start gap-3 overflow-hidden">
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Tumour Response</p>
-          <div className="flex items-end gap-3 flex-wrap">
-            {tumourData.map((t) => {
-              const baselineR = Math.max(12, t.proportionalSize * 22);
-              const currentR = t.isResolved ? 0 : Math.max(3, t.currentProportion * 22);
-              const svgSize = baselineR * 2 + 8;
-              const cx = svgSize / 2;
-              const cy = svgSize / 2;
-              return (
-                <div key={t.label} className="flex flex-col items-center">
-                  <div className="relative" style={{ width: svgSize, height: svgSize }}>
-                    {t.isResolved ? (
-                      <>
-                        <svg width={svgSize} height={svgSize}>
-                          <defs>
-                            <linearGradient id={`ice-compact-${t.label}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.4" />
-                              <stop offset="50%" stopColor="#93c5fd" stopOpacity="0.25" />
-                              <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.3" />
-                            </linearGradient>
-                          </defs>
-                          <circle cx={cx} cy={cy} r={baselineR} fill={`url(#ice-compact-${t.label})`} stroke="#93c5fd" strokeWidth={1} strokeDasharray="2 3" opacity={0.5} />
-                          <line x1={cx - baselineR + 2} y1={cx + 2} x2={cx + baselineR - 2} y2={cx - 2} stroke="#60a5fa" strokeWidth={1.5} strokeLinecap="round" opacity={0.6} />
-                          <line x1={cx - baselineR + 4} y1={cx - 1} x2={cx + baselineR - 4} y2={cx + 1} stroke="#93c5fd" strokeWidth={0.8} strokeLinecap="round" opacity={0.4} />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center text-[8px]">❄️</div>
-                      </>
-                    ) : (
-                      <svg width={svgSize} height={svgSize}>
-                        <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="3 3" />
-                        {currentR > 0 && (
-                          <circle cx={cx} cy={cy} r={currentR} fill="hsl(142, 71%, 45%)" opacity={0.25} />
-                        )}
-                      </svg>
-                    )}
-                  </div>
-                  <span className={`text-[8px] font-body mt-0.5 max-w-[48px] truncate text-center ${t.isResolved ? "text-blue-400 font-semibold" : "text-muted-foreground"}`}>
-                    {t.isResolved ? "Axed!" : `↓${t.sizeReduction}%`}
-                  </span>
-                </div>
-              );
-            })}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium">Tumour Response</p>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
+      </div>
+      <div className="flex items-center gap-2 overflow-x-auto">
+        {tumourData.map((t) => (
+          <div key={t.label} className={`flex items-center gap-2 rounded-xl px-3 py-2 border flex-1 min-w-0 ${
+            t.isResolved
+              ? "bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200/60"
+              : "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/60"
+          }`}>
+            {t.isResolved ? (
+              <div className="relative w-9 h-9 flex-shrink-0">
+                <svg width={36} height={36} viewBox="0 0 36 36">
+                  <circle cx={18} cy={18} r={14} fill="#dbeafe" stroke="#93c5fd" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.7} />
+                  <line x1={6} y1={20} x2={30} y2={16} stroke="#3b82f6" strokeWidth={2.5} strokeLinecap="round" opacity={0.7} />
+                  <line x1={8} y1={16} x2={28} y2={20} stroke="#60a5fa" strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-sm">🪓</span>
+              </div>
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <ArrowDown className="h-4 w-4 text-green-600" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-body text-muted-foreground truncate">{t.label}</p>
+              <p className={`text-sm font-heading font-bold ${t.isResolved ? "text-blue-600" : "text-green-700"}`}>
+                {t.isResolved ? "Axed! ❄️" : `↓${t.sizeReduction}%`}
+              </p>
+            </div>
           </div>
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0 mt-1" />
+        ))}
       </div>
     </button>
   );
@@ -1611,7 +1588,8 @@ function GutCheckWidget({ userId }: { userId: number }) {
 }
 
 function MotivationalWallWidget({ userId }: { userId: number }) {
-  const [open, setOpen] = useState(false);
+  const [wallOpen, setWallOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [newColor, setNewColor] = useState("amber");
   const { toast } = useToast();
@@ -1635,8 +1613,8 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/motivational-wall"] });
       setNewContent("");
-      setOpen(false);
-      toast({ title: "Added to your wall ✨" });
+      setAddOpen(false);
+      toast({ title: "Added to your wall" });
     },
   });
 
@@ -1658,44 +1636,69 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
   };
 
   return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
-            <ImagePlus className="h-5 w-5 text-accent" /> Evidence of a Life Worth Fighting For
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setOpen(true)}
-            className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
-            <Plus className="h-3 w-3 mr-1" /> Add
-          </Button>
+    <>
+      <button onClick={() => setWallOpen(true)}
+        className="group bg-gradient-to-br from-accent/10 via-white to-primary/5 border border-accent/20 rounded-2xl p-4 text-left transition-all hover:shadow-lg hover:-translate-y-0.5 w-full">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
+            <Heart className="h-5 w-5 text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-heading text-foreground">Evidence Worth Fighting For</p>
+            <p className="text-[10px] text-muted-foreground font-body mt-0.5">
+              {items.length > 0 ? `${items.length} reasons on your wall` : "Tap to start your wall"}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </div>
-      </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <button onClick={() => setOpen(true)} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-6 text-center transition-colors">
-            <Heart className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm font-body text-muted-foreground">Add reasons to keep fighting</p>
-            <p className="text-xs font-body text-muted-foreground/60 mt-1">Photos, quotes, people, dreams, moments...</p>
-          </button>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {items.map((item) => (
-              <div key={item.id} className={`group relative bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border rounded-xl p-3 min-h-[80px] flex items-center justify-center`}>
-                <p className="text-xs font-body text-foreground text-center leading-relaxed">{item.content}</p>
-                <button onClick={() => deleteMutation.mutate(item.id)}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <X className="h-3 w-3 text-muted-foreground" />
+      </button>
+
+      <Dialog open={wallOpen} onOpenChange={setWallOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading flex items-center gap-2">
+              <Heart className="h-5 w-5 text-accent" /> Evidence Worth Fighting For
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {items.length === 0 ? (
+              <button onClick={() => setAddOpen(true)} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-8 text-center transition-colors">
+                <Heart className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm font-body text-muted-foreground">Add reasons to keep fighting</p>
+                <p className="text-xs font-body text-muted-foreground/60 mt-1">Photos, quotes, people, dreams, moments...</p>
+              </button>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {items.map((item) => (
+                  <div key={item.id} className={`group relative bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border rounded-xl p-3 min-h-[80px] flex items-center justify-center`}>
+                    <p className="text-xs font-body text-foreground text-center leading-relaxed">{item.content}</p>
+                    <button onClick={() => deleteMutation.mutate(item.id)}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                ))}
+                <button onClick={() => setAddOpen(true)} className="border-2 border-dashed border-border rounded-xl p-3 min-h-[80px] flex items-center justify-center hover:bg-muted/30 transition-colors">
+                  <Plus className="h-5 w-5 text-muted-foreground/40" />
                 </button>
               </div>
-            ))}
-            <button onClick={() => setOpen(true)} className="border-2 border-dashed border-border rounded-xl p-3 min-h-[80px] flex items-center justify-center hover:bg-muted/30 transition-colors">
-              <Plus className="h-5 w-5 text-muted-foreground/40" />
-            </button>
-          </div>
-        )}
-      </CardContent>
+            )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+            <div className="border-t border-border pt-4">
+              <p className="text-xs font-body text-muted-foreground mb-3 text-center">A little banana-sized motivation</p>
+              <div className="rounded-xl overflow-hidden bg-muted/30 border border-border aspect-video flex items-center justify-center">
+                <div className="text-center p-4">
+                  <span className="text-3xl mb-2 block">🍌</span>
+                  <p className="text-sm font-heading text-foreground">Nano Banana Short</p>
+                  <p className="text-[10px] font-body text-muted-foreground mt-1">Coming soon — tiny videos, big feelings</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">Add to Your Wall</DialogTitle>
@@ -1724,12 +1727,12 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }
 
 function FunFactsWidget({ userId }: { userId: number }) {
-  const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * 10));
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: factsData } = useQuery<{ facts: string[] }>({
     queryKey: ["/api/fun-facts", { userId }],
@@ -1740,35 +1743,39 @@ function FunFactsWidget({ userId }: { userId: number }) {
   });
 
   const facts = factsData?.facts || [];
-
-  useEffect(() => {
-    if (facts.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % facts.length);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [facts.length]);
-
   if (facts.length === 0) return null;
 
   const fact = facts[currentIndex % facts.length];
+  const canPrev = currentIndex > 0;
+  const canNext = currentIndex < facts.length - 1;
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 via-white to-accent/5 border-primary/20 rounded-2xl overflow-hidden">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
             <Trophy className="h-5 w-5 text-accent" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-0.5">Did you know?</p>
-            <p className="text-sm font-body text-foreground font-medium leading-snug transition-all duration-500">{fact}</p>
+            <p className="text-sm font-body text-foreground font-medium leading-snug">{fact}</p>
           </div>
         </div>
-        <div className="flex justify-center gap-1 mt-3">
-          {facts.map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentIndex % facts.length ? "bg-accent w-4" : "bg-border"}`} />
-          ))}
+        <div className="flex items-center justify-between mt-3">
+          <button onClick={() => canPrev && setCurrentIndex(currentIndex - 1)}
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${canPrev ? "bg-muted hover:bg-primary/10 text-foreground" : "text-muted-foreground/30 cursor-default"}`}>
+            <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+          </button>
+          <div className="flex gap-1">
+            {facts.map((_, i) => (
+              <button key={i} onClick={() => setCurrentIndex(i)}
+                className={`h-1.5 rounded-full transition-all ${i === currentIndex % facts.length ? "bg-accent w-4" : "bg-border w-1.5 hover:bg-accent/30"}`} />
+            ))}
+          </div>
+          <button onClick={() => canNext && setCurrentIndex(currentIndex + 1)}
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${canNext ? "bg-muted hover:bg-primary/10 text-foreground" : "text-muted-foreground/30 cursor-default"}`}>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </CardContent>
     </Card>
@@ -1836,53 +1843,42 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
 
   return (
     <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-            <Heart className="h-5 w-5 text-accent" /> {isToday ? "Today's" : ""} Wellness
-          </CardTitle>
-          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-auto h-8 text-xs bg-muted/50 border-border font-body" />
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-heading text-foreground flex items-center gap-2">
+            <Heart className="h-4 w-4 text-accent" /> {isToday ? "Today" : displayDate.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+          </h2>
+          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-auto h-7 text-[10px] bg-muted/50 border-border font-body" />
         </div>
-        {!isToday && (
-          <p className="text-xs text-muted-foreground font-body mt-1">
-            {displayDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        )}
-        {isToday && (
-          <p className="text-xs text-muted-foreground font-body mt-1">
-            {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
-        )}
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-muted rounded-xl p-3 border border-border text-center">
-            <Apple className="h-5 w-5 text-accent mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-foreground">{dayMeals.length}</p>
-            <p className="text-[10px] text-muted-foreground font-body">Meals logged</p>
-          </div>
-          <div className="bg-muted rounded-xl p-3 border border-border text-center">
-            <Sparkles className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-foreground">{totalMindBodyMins}</p>
-            <p className="text-[10px] text-muted-foreground font-body">Min mindfulness</p>
-          </div>
-          <div className="bg-muted rounded-xl p-3 border border-border text-center">
-            <Activity className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-foreground">{totalExerciseMins}</p>
-            <p className="text-[10px] text-muted-foreground font-body">Min exercise</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
+
+        <div className="grid grid-cols-3 gap-2 mb-3">
           <LogMealDialog userId={userId} defaultDate={selectedDate} />
           <LogActivityDialog userId={userId} type="mindBody" defaultDate={selectedDate} />
           <LogActivityDialog userId={userId} type="exercise" defaultDate={selectedDate} />
         </div>
-        {dayMeals.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-body font-medium text-muted-foreground">{isToday ? "Today's" : "Day's"} meals:</p>
+
+        {(dayMeals.length > 0 || dayMindBody.length > 0 || dayExercises.length > 0) && (
+          <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="flex items-center gap-1.5 text-xs font-body">
+                <Utensils className="h-3 w-3 text-accent" />
+                <span className="font-semibold text-foreground">{dayMeals.length}</span>
+                <span className="text-muted-foreground">meals</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-body">
+                <Brain className="h-3 w-3 text-primary" />
+                <span className="font-semibold text-foreground">{totalMindBodyMins}</span>
+                <span className="text-muted-foreground">min mind</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-body">
+                <Dumbbell className="h-3 w-3 text-sky-500" />
+                <span className="font-semibold text-foreground">{totalExerciseMins}</span>
+                <span className="text-muted-foreground">min move</span>
+              </div>
+            </div>
             {dayMeals.map((meal) => (
               <div key={meal.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
-                <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                <Check className="h-3 w-3 text-accent flex-shrink-0" />
                 <span className="capitalize text-muted-foreground">{meal.mealType}:</span>
                 <span className="flex-1 truncate">{meal.description}</span>
                 <button onClick={() => setEditingMeal(meal)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded">
@@ -1893,14 +1889,9 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
                 </button>
               </div>
             ))}
-          </div>
-        )}
-        {(dayMindBody.length > 0 || dayExercises.length > 0) && (
-          <div className="mt-3 space-y-2">
-            <p className="text-xs font-body font-medium text-muted-foreground">{isToday ? "Today's" : "Day's"} activities:</p>
             {dayMindBody.map((a) => (
               <div key={a.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
-                <Check className="h-3 w-3 text-accent flex-shrink-0" />
+                <Check className="h-3 w-3 text-primary flex-shrink-0" />
                 <span className="capitalize">{a.activityType}</span>
                 <span className="text-muted-foreground">— {a.durationMinutes} min</span>
                 <div className="flex-1" />
@@ -1914,7 +1905,7 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
             ))}
             {dayExercises.map((e) => (
               <div key={e.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
-                <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                <Check className="h-3 w-3 text-sky-500 flex-shrink-0" />
                 <span className="capitalize">{e.exerciseType}</span>
                 <span className="text-muted-foreground">— {e.durationMinutes} min</span>
                 <div className="flex-1" />
@@ -2313,7 +2304,7 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
   );
 }
 
-function WeeklyTrendsChart({ userId }: { userId: number }) {
+function WeeklyActivityRings({ userId }: { userId: number }) {
   const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
   const today = todayStr();
 
@@ -2339,90 +2330,80 @@ function WeeklyTrendsChart({ userId }: { userId: number }) {
     },
   });
 
-  const chartData = useMemo(() => {
+  const days = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
       const dt = new Date(Date.now() - (6 - i) * 86400000);
       const dateStr = dt.toISOString().split("T")[0];
-      const dayMeals = meals.filter(m => m.date === dateStr).length;
-      const dayMindBody = mindBody.filter(a => a.date === dateStr).reduce((s, a) => s + a.durationMinutes, 0);
-      const dayExercise = exercises.filter(e => e.date === dateStr).reduce((s, e) => s + e.durationMinutes, 0);
-      return {
-        day: dt.toLocaleDateString("en-AU", { weekday: "short" }),
-        date: dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" }),
-        meals: dayMeals,
-        mindfulness: dayMindBody,
-        exercise: dayExercise,
-        total: dayMeals + dayMindBody + dayExercise,
-      };
+      const hasMeals = meals.some(m => m.date === dateStr);
+      const hasMind = mindBody.some(a => a.date === dateStr);
+      const hasExercise = exercises.some(e => e.date === dateStr);
+      const mealCount = meals.filter(m => m.date === dateStr).length;
+      const mindMins = mindBody.filter(a => a.date === dateStr).reduce((s, a) => s + a.durationMinutes, 0);
+      const exMins = exercises.filter(e => e.date === dateStr).reduce((s, e) => s + e.durationMinutes, 0);
+      const score = (hasMeals ? 1 : 0) + (hasMind ? 1 : 0) + (hasExercise ? 1 : 0);
+      const isToday = dateStr === today;
+      return { dt, dateStr, hasMeals, hasMind, hasExercise, mealCount, mindMins, exMins, score, isToday };
     });
-  }, [meals, mindBody, exercises]);
+  }, [meals, mindBody, exercises, today]);
 
-  const totalMeals = chartData.reduce((s, d) => s + d.meals, 0);
-  const totalMindfulness = chartData.reduce((s, d) => s + d.mindfulness, 0);
-  const totalExercise = chartData.reduce((s, d) => s + d.exercise, 0);
-  const activeDays = chartData.filter(d => d.total > 0).length;
+  const activeDays = days.filter(d => d.score > 0).length;
+  const totalMeals = days.reduce((s, d) => s + d.mealCount, 0);
+  const totalMind = days.reduce((s, d) => s + d.mindMins, 0);
+  const totalEx = days.reduce((s, d) => s + d.exMins, 0);
 
   return (
     <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" /> 7-Day Trends
-          </CardTitle>
-          <span className="text-xs font-body text-muted-foreground">{activeDays}/7 active days</span>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium">Your Week</p>
+          <p className="text-xs font-body text-primary font-semibold">{activeDays}/7 active</p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="h-44 w-full mb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(30, 25%, 92%)" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(25, 18%, 48%)", fontFamily: "'DM Sans', sans-serif" }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{
-                  background: "white", border: "1px solid hsl(30, 25%, 87%)", borderRadius: "12px",
-                  fontSize: "12px", fontFamily: "'DM Sans', sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
-                }}
-                labelStyle={{ fontWeight: 600, color: "hsl(25, 35%, 22%)" }}
-                formatter={(value: number, name: string) => {
-                  if (name === "meals") return [`${value} meals`, "Meals"];
-                  return [`${value} min`, name === "mindfulness" ? "Mindfulness" : "Exercise"];
-                }}
-                labelFormatter={(label: string, payload: any) => payload?.[0]?.payload?.date || label}
-              />
-              <Bar dataKey="meals" fill="hsl(34, 55%, 52%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="meals" />
-              <Bar dataKey="mindfulness" fill="hsl(158, 32%, 42%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="mindfulness" />
-              <Bar dataKey="exercise" fill="hsl(200, 70%, 50%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="exercise" />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="flex items-center justify-between gap-1 mb-4">
+          {days.map((d, i) => {
+            const size = 42;
+            const r = 16;
+            const circ = 2 * Math.PI * r;
+            const mealPct = d.hasMeals ? 100 : 0;
+            const mindPct = d.hasMind ? 100 : 0;
+            const exPct = d.hasExercise ? 100 : 0;
+            return (
+              <div key={i} className={`flex flex-col items-center gap-1 ${d.isToday ? "scale-110" : ""}`}>
+                <p className={`text-[9px] font-body ${d.isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                  {d.dt.toLocaleDateString("en-AU", { weekday: "narrow" })}
+                </p>
+                <div className="relative" style={{ width: size, height: size }}>
+                  <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
+                    <circle cx={size/2} cy={size/2} r={r-4.5} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
+                    <circle cx={size/2} cy={size/2} r={r-9} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
+                    {exPct > 0 && (
+                      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="hsl(200, 70%, 50%)" strokeWidth={3} strokeLinecap="round"
+                        strokeDasharray={circ} strokeDashoffset={circ * (1 - exPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
+                    )}
+                    {mindPct > 0 && (
+                      <circle cx={size/2} cy={size/2} r={r-4.5} fill="none" stroke="hsl(158, 32%, 42%)" strokeWidth={3} strokeLinecap="round"
+                        strokeDasharray={circ * (r-4.5)/r} strokeDashoffset={circ * (r-4.5)/r * (1 - mindPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
+                    )}
+                    {mealPct > 0 && (
+                      <circle cx={size/2} cy={size/2} r={r-9} fill="none" stroke="hsl(34, 55%, 52%)" strokeWidth={3} strokeLinecap="round"
+                        strokeDasharray={circ * (r-9)/r} strokeDashoffset={circ * (r-9)/r * (1 - mealPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
+                    )}
+                  </svg>
+                  {d.score === 0 && !d.isToday && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-accent/8 rounded-xl p-3 text-center border border-accent/15">
-            <Utensils className="h-4 w-4 text-accent mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-accent">{totalMeals}</p>
-            <p className="text-[10px] text-muted-foreground font-body">meals this week</p>
-          </div>
-          <div className="bg-primary/8 rounded-xl p-3 text-center border border-primary/15">
-            <Brain className="h-4 w-4 text-primary mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-primary">{totalMindfulness}</p>
-            <p className="text-[10px] text-muted-foreground font-body">min mindfulness</p>
-          </div>
-          <div className="bg-sky-50 rounded-xl p-3 text-center border border-sky-200">
-            <Dumbbell className="h-4 w-4 text-sky-500 mx-auto mb-1" />
-            <p className="text-lg font-heading font-bold text-sky-600">{totalExercise}</p>
-            <p className="text-[10px] text-muted-foreground font-body">min exercise</p>
-          </div>
+        <div className="flex items-center justify-center gap-4 text-[10px] font-body text-muted-foreground">
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(34, 55%, 52%)"}} /> {totalMeals} meals</span>
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(158, 32%, 42%)"}} /> {totalMind}m mind</span>
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(200, 70%, 50%)"}} /> {totalEx}m move</span>
         </div>
-
-        {activeDays >= 5 && (
-          <div className="mt-3 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/15 rounded-xl p-3 text-center">
-            <p className="text-xs font-body text-foreground">
-              <span className="font-heading text-primary font-bold">{activeDays} days active!</span> Your consistency is building real momentum for healing.
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -2546,62 +2527,63 @@ export default function SimpleDashboard() {
 
   return (
     <div className="p-5 lg:p-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4">
+      {/* Header with goal */}
+      <div className="mb-4">
+        <div className="flex items-center gap-3">
           <div className="relative group">
             {user.profilePhoto ? (
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
+              <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
                 <img src={user.profilePhoto} alt={user.displayName} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
-                <span className="text-xl lg:text-2xl font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
+                <span className="text-lg font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
               </div>
             )}
             <button onClick={() => photoInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors">
-              {uploadingPhoto ? <Loader2 className="h-3 w-3 text-primary animate-spin" /> : <Camera className="h-3 w-3 text-primary" />}
+              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors">
+              {uploadingPhoto ? <Loader2 className="h-2.5 w-2.5 text-primary animate-spin" /> : <Camera className="h-2.5 w-2.5 text-primary" />}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
           </div>
-          <div className="flex-1">
-            <h1 className="text-xl lg:text-2xl font-heading text-foreground">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg lg:text-xl font-heading text-foreground">
               Hey {user?.displayName || "Friend"}
             </h1>
-            <p className="text-sm text-muted-foreground font-body">
+            <p className="text-xs text-muted-foreground font-body">
               {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <EditGoalsDialog user={user} setUser={setUser} />
             <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
           </div>
         </div>
+        {user.goals && (
+          <div className="mt-3 bg-gradient-to-r from-primary/8 to-accent/8 border border-primary/15 rounded-xl px-4 py-2.5 flex items-start gap-2">
+            <Target className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+            <p className="text-xs font-body text-foreground leading-relaxed">{user.goals}</p>
+          </div>
+        )}
       </div>
 
-      {/* Quick Log Buttons — the hero area */}
-      <Card className="bg-gradient-to-br from-white via-white to-primary/5 border-border rounded-2xl mb-6 overflow-hidden">
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-heading text-foreground flex items-center gap-2">
-              <Plus className="h-4 w-4 text-primary" /> Log Today's Activities
-            </h2>
-            <ActivityHeatmap userId={user.id} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <LogMealDialog userId={user.id} defaultDate={todayStr()} />
-            <LogActivityDialog userId={user.id} type="mindBody" defaultDate={todayStr()} />
-            <LogActivityDialog userId={user.id} type="exercise" defaultDate={todayStr()} />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Today's Vibe — daily brief */}
+      {isActive("dailyBrief") && (
+        <div className="mb-4">
+          <DailyBriefWidget userId={user.id} />
+        </div>
+      )}
 
-      {/* Today's Activity Summary */}
+      {/* Combined: Log + Today's Wellness */}
       <TodayWellnessWidget userId={user.id} />
 
-      {/* Compact Stat Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-6">
+      {/* Weekly Activity Rings */}
+      <div className="my-4">
+        <WeeklyActivityRings userId={user.id} />
+      </div>
+
+      {/* Compact Stat Tiles — no immune recovery */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
         {isActive("scanCountdown") && (
           <CompactStatCard
             icon={<Scan className="h-5 w-5" />}
@@ -2621,13 +2603,14 @@ export default function SimpleDashboard() {
             onClick={() => setExpandedWidget("treatmentJourney")}
           />
         )}
-        {isActive("immuneRecovery") && (
-          <ImmuneRecoveryCompactTimer onClick={() => setExpandedWidget("immuneRecovery")} />
-        )}
-        {isActive("tumourResponse") && (
-          <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
-        )}
       </div>
+
+      {/* Tumour Response — horizontal, full width */}
+      {isActive("tumourResponse") && (
+        <div className="mb-4">
+          <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
+        </div>
+      )}
 
       {/* Expanded stat dialogs */}
       <ExpandableWidget title="Next Scan Countdown" icon={<Scan className="h-5 w-5 text-primary" />}
@@ -2638,98 +2621,37 @@ export default function SimpleDashboard() {
         open={expandedWidget === "treatmentJourney"} onOpenChange={(open) => setExpandedWidget(open ? "treatmentJourney" : null)}>
         <TreatmentJourneyExpanded user={user} />
       </ExpandableWidget>
-      <ExpandableWidget title="Immune Recovery" icon={<Zap className="h-5 w-5 text-primary" />}
-        open={expandedWidget === "immuneRecovery"} onOpenChange={(open) => setExpandedWidget(open ? "immuneRecovery" : null)}>
-        <ImmuneRecoveryExpanded />
-      </ExpandableWidget>
       <ExpandableWidget title="Tumour Response" icon={<TrendingUp className="h-5 w-5 text-primary" />}
         open={expandedWidget === "tumourResponse"} onOpenChange={(open) => setExpandedWidget(open ? "tumourResponse" : null)}>
         <TumourResponseExpanded userId={user.id} />
       </ExpandableWidget>
 
-      {/* 7-Day Trends Chart */}
-      <div className="mb-6">
-        <WeeklyTrendsChart userId={user.id} />
-      </div>
-
-      {/* Daily Brief */}
-      {isActive("dailyBrief") && (
-        <div className="mb-6">
-          <DailyBriefWidget userId={user.id} />
-        </div>
-      )}
-
-      {/* Two-column: Gut Check + Fun Facts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {isActive("gutCheck") && <GutCheckWidget userId={user.id} />}
+      {/* Evidence Worth Fighting For tile + Did You Know */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {isActive("motivationalWall") && <MotivationalWallWidget userId={user.id} />}
         {isActive("funFacts") && <FunFactsWidget userId={user.id} />}
       </div>
 
-      {/* Motivational Wall + Inspiration */}
-      {(isActive("motivationalWall") || isActive("inspiration")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {isActive("motivationalWall") && <MotivationalWallWidget userId={user.id} />}
-          {isActive("inspiration") && <InspirationWidget />}
-        </div>
-      )}
+      {/* Gut Check + Inspiration */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {isActive("gutCheck") && <GutCheckWidget userId={user.id} />}
+        {isActive("inspiration") && <InspirationWidget />}
+      </div>
 
       {/* Healing Therapies */}
       {isActive("healingTherapies") && (
-        <div className="mb-6">
+        <div className="mb-4">
           <HealingTherapiesWidget userId={user.id} />
         </div>
       )}
 
-      {/* Treatment Timeline + Appointments + AI Assistant */}
-      {(isActive("treatmentTimeline") || isActive("appointments") || isActive("aiAssistant")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Treatment Timeline + Appointments */}
+      {(isActive("treatmentTimeline") || isActive("appointments")) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
           {isActive("appointments") && <AppointmentsWidget userId={user.id} />}
-          {isActive("aiAssistant") && (
-            <Card className="bg-white border-border rounded-2xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-primary" /> Health Assistant
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground font-body mb-4">
-                  Personalised guidance for nutrition, immune support, and emotional wellbeing.
-                </p>
-                <Link href="/ai-assistant">
-                  <Button className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium rounded-xl">
-                    Start Conversation
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
-
-      {/* Quick Links */}
-      <div className="mb-6">
-        <h2 className="text-base font-heading text-foreground mb-4">Healing Tools</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {[
-            { href: "/nutrition", label: "Nutrition", icon: <Apple className="h-5 w-5" /> },
-            { href: "/resources", label: "Resources", icon: <Leaf className="h-5 w-5" /> },
-            { href: "/treatment-plus", label: "Treatment+", icon: <Shield className="h-5 w-5" /> },
-            { href: "/date-night", label: "Date Night", icon: <Wine className="h-5 w-5" /> },
-            { href: "/community", label: "Community", icon: <MessageCircle className="h-5 w-5" /> },
-            { href: "/ai-assistant", label: "AI Chat", icon: <Sparkles className="h-5 w-5" /> },
-          ].map((link) => (
-            <Link key={link.href} href={link.href}>
-              <div className="group bg-white border border-border rounded-2xl p-3 text-center cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
-                <div className="mx-auto w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-all">
-                  <span className="text-primary">{link.icon}</span>
-                </div>
-                <h3 className="font-body font-medium text-[11px] text-foreground group-hover:text-primary transition-colors">{link.label}</h3>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
