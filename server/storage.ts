@@ -1,6 +1,6 @@
 import { 
   users, chatMessages, scanResults, meals, mindBodyActivities, exercises, medicalRecords, dateNights, appointments, customActivityTypes,
-  treatmentPrograms, treatmentSessions,
+  treatmentPrograms, treatmentSessions, journalEntries, tumourNicknames, motivationalWallItems,
   type User, type InsertUser, type ChatMessage,
   type ScanResult, type InsertScanResult,
   type Meal, type InsertMeal,
@@ -12,6 +12,9 @@ import {
   type CustomActivityType, type InsertCustomActivityType,
   type TreatmentProgram, type InsertTreatmentProgram,
   type TreatmentSession, type InsertTreatmentSession,
+  type JournalEntry, type InsertJournalEntry,
+  type TumourNickname, type InsertTumourNickname,
+  type MotivationalWallItem, type InsertMotivationalWallItem,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -74,6 +77,19 @@ export interface IStorage {
   createTreatmentSession(data: InsertTreatmentSession): Promise<TreatmentSession>;
   updateTreatmentSession(id: number, data: Partial<TreatmentSession>): Promise<TreatmentSession>;
   deleteTreatmentSession(id: number): Promise<void>;
+
+  listJournalEntries(userId: number, dateFrom?: string, dateTo?: string): Promise<JournalEntry[]>;
+  createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry>;
+  updateJournalEntry(id: number, data: Partial<JournalEntry>): Promise<JournalEntry>;
+  deleteJournalEntry(id: number): Promise<void>;
+
+  listTumourNicknames(userId: number): Promise<TumourNickname[]>;
+  upsertTumourNickname(data: InsertTumourNickname): Promise<TumourNickname>;
+
+  listMotivationalWallItems(userId: number): Promise<MotivationalWallItem[]>;
+  createMotivationalWallItem(data: InsertMotivationalWallItem): Promise<MotivationalWallItem>;
+  updateMotivationalWallItem(id: number, data: Partial<MotivationalWallItem>): Promise<MotivationalWallItem>;
+  deleteMotivationalWallItem(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -322,6 +338,63 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTreatmentSession(id: number): Promise<void> {
     await db.delete(treatmentSessions).where(eq(treatmentSessions.id, id));
+  }
+
+  async listJournalEntries(userId: number, dateFrom?: string, dateTo?: string): Promise<JournalEntry[]> {
+    const conditions = [eq(journalEntries.userId, userId)];
+    if (dateFrom) conditions.push(gte(journalEntries.date, dateFrom));
+    if (dateTo) conditions.push(lte(journalEntries.date, dateTo));
+    return db.select().from(journalEntries).where(and(...conditions));
+  }
+
+  async createJournalEntry(data: InsertJournalEntry): Promise<JournalEntry> {
+    const [entry] = await db.insert(journalEntries).values(data).returning();
+    return entry;
+  }
+
+  async updateJournalEntry(id: number, data: Partial<JournalEntry>): Promise<JournalEntry> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [entry] = await db.update(journalEntries).set(updateData).where(eq(journalEntries.id, id)).returning();
+    return entry;
+  }
+
+  async deleteJournalEntry(id: number): Promise<void> {
+    await db.delete(journalEntries).where(eq(journalEntries.id, id));
+  }
+
+  async listTumourNicknames(userId: number): Promise<TumourNickname[]> {
+    return db.select().from(tumourNicknames).where(eq(tumourNicknames.userId, userId));
+  }
+
+  async upsertTumourNickname(data: InsertTumourNickname): Promise<TumourNickname> {
+    const existing = await db.select().from(tumourNicknames)
+      .where(and(eq(tumourNicknames.userId, data.userId), eq(tumourNicknames.tumourLabel, data.tumourLabel)));
+    if (existing.length > 0) {
+      const [updated] = await db.update(tumourNicknames).set({ nickname: data.nickname })
+        .where(eq(tumourNicknames.id, existing[0].id)).returning();
+      return updated;
+    }
+    const [created] = await db.insert(tumourNicknames).values(data).returning();
+    return created;
+  }
+
+  async listMotivationalWallItems(userId: number): Promise<MotivationalWallItem[]> {
+    return db.select().from(motivationalWallItems).where(eq(motivationalWallItems.userId, userId));
+  }
+
+  async createMotivationalWallItem(data: InsertMotivationalWallItem): Promise<MotivationalWallItem> {
+    const [item] = await db.insert(motivationalWallItems).values(data).returning();
+    return item;
+  }
+
+  async updateMotivationalWallItem(id: number, data: Partial<MotivationalWallItem>): Promise<MotivationalWallItem> {
+    const { id: _, createdAt: __, ...updateData } = data as any;
+    const [item] = await db.update(motivationalWallItems).set(updateData).where(eq(motivationalWallItems.id, id)).returning();
+    return item;
+  }
+
+  async deleteMotivationalWallItem(id: number): Promise<void> {
+    await db.delete(motivationalWallItems).where(eq(motivationalWallItems.id, id));
   }
 }
 

@@ -332,3 +332,67 @@ export const insertTreatmentSessionSchema = createInsertSchema(treatmentSessions
 
 export type TreatmentSession = typeof treatmentSessions.$inferSelect;
 export type InsertTreatmentSession = z.infer<typeof insertTreatmentSessionSchema>;
+
+export const journalEntries = pgTable("journal_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: date("date").notNull(),
+  mood: integer("mood"),
+  energy: integer("energy"),
+  content: text("content").notNull(),
+  aiAnalysis: text("ai_analysis"),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).pick({
+  userId: true,
+  date: true,
+  mood: true,
+  energy: true,
+  content: true,
+  aiAnalysis: true,
+  tags: true,
+});
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+
+export const tumourNicknames = pgTable("tumour_nicknames", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  tumourLabel: text("tumour_label").notNull(),
+  nickname: text("nickname").notNull(),
+});
+
+export const insertTumourNicknameSchema = createInsertSchema(tumourNicknames).pick({
+  userId: true,
+  tumourLabel: true,
+  nickname: true,
+});
+
+export type TumourNickname = typeof tumourNicknames.$inferSelect;
+export type InsertTumourNickname = z.infer<typeof insertTumourNicknameSchema>;
+
+export const motivationalWallItems = pgTable("motivational_wall_items", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull().default("text"),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  color: text("color"),
+  pinned: boolean("pinned").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMotivationalWallItemSchema = createInsertSchema(motivationalWallItems).pick({
+  userId: true,
+  type: true,
+  content: true,
+  imageUrl: true,
+  color: true,
+  pinned: true,
+});
+
+export type MotivationalWallItem = typeof motivationalWallItems.$inferSelect;
+export type InsertMotivationalWallItem = z.infer<typeof insertMotivationalWallItemSchema>;

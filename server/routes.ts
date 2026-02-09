@@ -207,21 +207,39 @@ async function seedTreatmentPrograms(userId: number) {
     });
   }
 
-  await storage.createTreatmentProgram({
+  const hbot = await storage.createTreatmentProgram({
     userId,
     name: "Hyperbaric Oxygen Therapy",
     type: "HBOT",
     category: "complementary",
-    startDate: "2026-01-15",
-    endDate: "2026-04-15",
-    totalSessions: 20,
-    completedSessions: 8,
-    frequency: "Twice weekly",
+    startDate: "2025-05-15",
+    endDate: null,
+    totalSessions: null,
+    completedSessions: 100,
+    frequency: "5 days per week",
     provider: "Integrative Health Centre",
     location: "Hyperbaric Centre, Sydney",
-    notes: "Supporting immune recovery and tissue healing post-immunotherapy.",
+    notes: "100 sessions completed since diagnosis. Supporting immune recovery, tissue healing, and oxygen saturation. Ongoing maintenance.",
     status: "active",
   });
+
+  const hbotStartDate = new Date("2025-05-15");
+  for (let i = 1; i <= 100; i++) {
+    const sessionDate = new Date(hbotStartDate);
+    const weeksOffset = Math.floor((i - 1) / 5);
+    const dayInWeek = (i - 1) % 5;
+    sessionDate.setDate(hbotStartDate.getDate() + weeksOffset * 7 + dayInWeek);
+    await storage.createTreatmentSession({
+      programId: hbot.id,
+      userId,
+      sessionNumber: i,
+      date: sessionDate.toISOString().split("T")[0],
+      time: "7:00 AM",
+      status: "completed",
+      notes: i === 1 ? "First session" : i === 50 ? "Halfway milestone!" : i === 100 ? "100 sessions - incredible commitment!" : null,
+      sideEffects: null,
+    });
+  }
 
   await storage.createTreatmentProgram({
     userId,
@@ -1045,14 +1063,14 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: '
 `;
 
       const { getHealthAdvice } = await import("./openai");
-      const briefPrompt = `Generate a warm, personalised daily brief for this cancer patient. Include:
-1. A warm greeting using their name
-2. Any appointments or treatments coming up this week
-3. A motivating note about their progress (reference scan improvements if available)
-4. One specific wellness suggestion for today (could be nutrition, movement, mindfulness, or social connection)
-5. An uplifting closing thought based on Radical Remission principles
+      const briefPrompt = `Generate a SHORT, punchy motivational one-liner for this cancer patient. Think queen energy, warrior spirit, fun and empowering. Like:
+- "You've got this, queen! 👑"
+- "Small steps make mighty warriors"
+- "100 hyperbaric sessions?! Your cells are throwing a party 🎉"
+- "Your body is a healing machine and today it's winning"
+- "Plot twist: you're the hero of this story"
 
-Keep it concise (150-200 words), warm, and genuinely encouraging. Don't be generic — reference their specific situation. Use Australian English.`;
+Make it personal to their situation if possible (reference their treatment, progress, milestones). Keep it to 1-2 sentences MAX. Fun, empowering, warm. Use Australian English. No paragraph, just the quote/line.`;
 
       const brief = await getHealthAdvice(briefPrompt, userContext);
       return res.json({ content: brief, generatedAt: new Date().toISOString() });
@@ -1096,6 +1114,197 @@ Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"..."
     } catch (error) {
       console.error("Error generating treatment suggestions:", error);
       return res.status(500).json({ error: "Failed to generate suggestions" });
+    }
+  });
+
+  // Journal Entries (Gut Check)
+  app.get("/api/journal", async (req, res) => {
+    const userId = parseInt(req.query.userId as string) || 1;
+    const dateFrom = req.query.dateFrom as string | undefined;
+    const dateTo = req.query.dateTo as string | undefined;
+    const entries = await storage.listJournalEntries(userId, dateFrom, dateTo);
+    return res.json(entries);
+  });
+
+  app.post("/api/journal", async (req, res) => {
+    try {
+      const entry = await storage.createJournalEntry(req.body);
+      return res.json(entry);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create journal entry" });
+    }
+  });
+
+  app.patch("/api/journal/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const entry = await storage.updateJournalEntry(id, req.body);
+      return res.json(entry);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update journal entry" });
+    }
+  });
+
+  app.delete("/api/journal/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteJournalEntry(id);
+    return res.json({ success: true });
+  });
+
+  // AI Journal Analysis
+  app.post("/api/ai/journal-analysis", async (req, res) => {
+    try {
+      const userId = req.body.userId || 1;
+      const entries = await storage.listJournalEntries(userId);
+      if (entries.length < 2) {
+        return res.json({ analysis: "Keep journaling! After a few more entries, I'll spot patterns and share insights." });
+      }
+      const { getHealthAdvice } = await import("./openai");
+      const entriesText = entries
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-14)
+        .map(e => `${e.date} | Mood: ${e.mood || '?'}/5 | Energy: ${e.energy || '?'}/5 | "${e.content}"`)
+        .join("\n");
+      const prompt = `Analyse these recent gut-check journal entries from a cancer patient. Look for:
+1. Mood/energy patterns (improving, declining, fluctuating?)
+2. Common themes or triggers
+3. One specific, actionable recommendation
+
+Entries:
+${entriesText}
+
+Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns you notice. Use Australian English.`;
+      const analysis = await getHealthAdvice(prompt, "");
+      return res.json({ analysis });
+    } catch (error) {
+      console.error("Error analysing journal:", error);
+      return res.status(500).json({ error: "Failed to analyse journal" });
+    }
+  });
+
+  // Tumour Nicknames
+  app.get("/api/tumour-nicknames", async (req, res) => {
+    const userId = parseInt(req.query.userId as string) || 1;
+    const nicknames = await storage.listTumourNicknames(userId);
+    return res.json(nicknames);
+  });
+
+  app.post("/api/tumour-nicknames", async (req, res) => {
+    try {
+      const nickname = await storage.upsertTumourNickname(req.body);
+      return res.json(nickname);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to save nickname" });
+    }
+  });
+
+  // Motivational Wall
+  app.get("/api/motivational-wall", async (req, res) => {
+    const userId = parseInt(req.query.userId as string) || 1;
+    const items = await storage.listMotivationalWallItems(userId);
+    return res.json(items);
+  });
+
+  app.post("/api/motivational-wall", async (req, res) => {
+    try {
+      const item = await storage.createMotivationalWallItem(req.body);
+      return res.json(item);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to add wall item" });
+    }
+  });
+
+  app.patch("/api/motivational-wall/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const item = await storage.updateMotivationalWallItem(id, req.body);
+      return res.json(item);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update wall item" });
+    }
+  });
+
+  app.delete("/api/motivational-wall/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteMotivationalWallItem(id);
+    return res.json({ success: true });
+  });
+
+  // Bulk session import (for backdating)
+  app.post("/api/treatment-sessions/bulk", async (req, res) => {
+    try {
+      const { programId, userId, sessions } = req.body;
+      if (!Array.isArray(sessions)) return res.status(400).json({ error: "sessions must be an array" });
+      const created = [];
+      for (const s of sessions) {
+        const session = await storage.createTreatmentSession({
+          programId,
+          userId,
+          sessionNumber: s.sessionNumber,
+          date: s.date,
+          time: s.time || null,
+          status: s.status || "completed",
+          notes: s.notes || null,
+          sideEffects: s.sideEffects || null,
+        });
+        created.push(session);
+      }
+      if (req.body.updateCompletedCount) {
+        const program = await storage.getTreatmentProgram(programId);
+        if (program) {
+          const allSessions = await storage.listTreatmentSessions(programId);
+          const completedCount = allSessions.filter(s => s.status === "completed").length;
+          await storage.updateTreatmentProgram(programId, { completedSessions: completedCount });
+        }
+      }
+      return res.json({ created: created.length, sessions: created });
+    } catch (error) {
+      console.error("Error bulk creating sessions:", error);
+      return res.status(500).json({ error: "Failed to bulk create sessions" });
+    }
+  });
+
+  // Fun Facts / Rotating Stats
+  app.get("/api/fun-facts", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const meals = await storage.listMeals(userId);
+      const exercises = await storage.listExercises(userId);
+      const mindBody = await storage.listMindBodyActivities(userId);
+      const programs = await storage.listTreatmentPrograms(userId);
+      const allSessions = await storage.listAllTreatmentSessions(userId);
+
+      const totalMeals = meals.length;
+      const greenItems = meals.filter(m => m.description.toLowerCase().match(/green|salad|spinach|kale|broccoli|juice|smoothie/)).length;
+      const totalExerciseMin = exercises.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+      const totalMindBodyMin = mindBody.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
+      const hbotSessions = allSessions.filter(s => {
+        const prog = programs.find(p => p.id === s.programId);
+        return prog && prog.name.toLowerCase().includes("hyperbaric");
+      }).length;
+      const totalWellnessActivities = meals.length + exercises.length + mindBody.length;
+      const sugarFreeMeals = meals.filter(m => !m.description.toLowerCase().match(/sugar|cake|chocolate|candy|cookie|ice cream/)).length;
+      const meditationSessions = mindBody.filter(a => a.activityType.toLowerCase().match(/meditation|meditat|mindful/)).length;
+      const yogaSessions = exercises.filter(e => e.exerciseType.toLowerCase().includes("yoga")).length + mindBody.filter(a => a.activityType.toLowerCase().includes("yoga")).length;
+
+      const facts = [
+        totalMeals > 0 ? `${totalMeals} nourishing meals logged — your body thanks you! 🥗` : null,
+        greenItems > 0 ? `${greenItems} green meals this year — hello, plant power! 🌿` : null,
+        hbotSessions > 0 ? `${hbotSessions} hyperbaric sessions — ${Math.round(hbotSessions * 1.5)} hours of pure oxygen therapy! 💨` : null,
+        totalExerciseMin > 0 ? `${totalExerciseMin} minutes of movement — that's ${Math.round(totalExerciseMin / 60)} hours of healing in motion! 🏃‍♀️` : null,
+        totalMindBodyMin > 0 ? `${totalMindBodyMin} minutes of mindfulness — your inner peace game is strong! 🧘` : null,
+        sugarFreeMeals > 5 ? `~${Math.round(sugarFreeMeals * 0.15)}kg of sugar you didn't consume! Your cells are cheering 🎉` : null,
+        totalWellnessActivities > 0 ? `${totalWellnessActivities} wellness activities logged — that's dedication! ⭐` : null,
+        meditationSessions > 0 ? `${meditationSessions} meditation sessions — zen master in the making! 🧘‍♀️` : null,
+        yogaSessions > 0 ? `${yogaSessions} yoga sessions — flexibility queen! 🧘` : null,
+        hbotSessions >= 100 ? `100 hyperbaric sessions! That's over 150 hours in the chamber. Legend! 🏆` : null,
+        `${new Date().getFullYear() - 2025 > 0 ? Math.round((Date.now() - new Date("2025-04-28").getTime()) / 86400000) : Math.round((Date.now() - new Date("2025-04-28").getTime()) / 86400000)} days of fighting — and counting! 💪`,
+      ].filter(Boolean);
+
+      return res.json({ facts });
+    } catch (error) {
+      console.error("Error generating fun facts:", error);
+      return res.status(500).json({ error: "Failed to generate fun facts" });
     }
   });
 

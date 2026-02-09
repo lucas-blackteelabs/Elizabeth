@@ -3,7 +3,8 @@ import { useUser } from "@/contexts/UserContext";
 import {
   MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
   Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
-  ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves
+  ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves,
+  BookHeart, ImagePlus, Trophy, SmilePlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType } from "@shared/schema";
+import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType, TumourNickname, JournalEntry, MotivationalWallItem } from "@shared/schema";
+import { Textarea } from "@/components/ui/textarea";
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
@@ -43,6 +45,9 @@ const ALL_WIDGETS: WidgetDef[] = [
   { id: "aiAssistant", label: "AI Health Assistant", description: "Quick access to personalised guidance", icon: <MessageCircle className="h-4 w-4" />, defaultVisible: false },
   { id: "appointments", label: "Upcoming Appointments", description: "Your scheduled appointments", icon: <Calendar className="h-4 w-4" />, defaultVisible: false },
   { id: "inspiration", label: "Daily Inspiration", description: "A daily healing affirmation", icon: <Sun className="h-4 w-4" />, defaultVisible: false },
+  { id: "gutCheck", label: "Daily Gut Check", description: "Quick daily journal with AI insights", icon: <BookHeart className="h-4 w-4" />, defaultVisible: true },
+  { id: "motivationalWall", label: "Evidence Wall", description: "Evidence of a Life Worth Fighting For", icon: <ImagePlus className="h-4 w-4" />, defaultVisible: true },
+  { id: "funFacts", label: "Fun Stats", description: "Fun rotating wellness achievements", icon: <Trophy className="h-4 w-4" />, defaultVisible: true },
 ];
 
 function getDefaultWidgets(): string[] {
@@ -952,7 +957,7 @@ function useTumourStats(userId: number) {
     },
   });
 
-  if (isLoading || scanResults.length === 0) return { isLoading, scanResults, avgSizeReduction: 0, avgActivityReduction: 0, scanDates: [], tumourLabels: [], baselineScan: [], latestScan: [] };
+  if (isLoading || scanResults.length === 0) return { isLoading, scanResults, avgSizeReduction: 0, avgActivityReduction: 0, scanDates: [], tumourLabels: [], baselineScan: [], latestScan: [], maxBaselineArea: 0 };
 
   const scanDates = Array.from(new Set(scanResults.map((s) => s.scanDate))).sort();
   const tumourLabels = Array.from(new Set(scanResults.map((s) => s.tumourLabel))).sort();
@@ -963,10 +968,15 @@ function useTumourStats(userId: number) {
   let totalActivityReduction = 0;
   let countSize = 0;
   let countActivity = 0;
+  let maxBaselineArea = 0;
 
   tumourLabels.forEach((tl) => {
     const baseline = baselineScan.find((s) => s.tumourLabel === tl);
     const latest = latestScan.find((s) => s.tumourLabel === tl);
+    if (baseline) {
+      const bArea = baseline.sizeX * baseline.sizeY;
+      if (bArea > maxBaselineArea) maxBaselineArea = bArea;
+    }
     if (baseline && latest) {
       const baselineArea = baseline.sizeX * baseline.sizeY;
       const latestArea = latest.sizeX * latest.sizeY;
@@ -992,26 +1002,95 @@ function useTumourStats(userId: number) {
     tumourLabels,
     baselineScan,
     latestScan,
+    maxBaselineArea,
   };
 }
 
-function MiniAppleRing({ radius, strokeWidth, percentage, color, bgColor }: {
-  radius: number; strokeWidth: number; percentage: number; color: string; bgColor: string;
-}) {
-  const circumference = 2 * Math.PI * radius;
-  const pct = Math.max(0, Math.min(100, percentage));
-  const dashOffset = circumference * (1 - pct / 100);
+function useTumourNicknames(userId: number) {
+  const { data: nicknames = [] } = useQuery<TumourNickname[]>({
+    queryKey: ["/api/tumour-nicknames", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/tumour-nicknames?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: { userId: number; tumourLabel: string; nickname: string }) => {
+      return apiRequest("/api/tumour-nicknames", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tumour-nicknames"] });
+    },
+  });
+
+  const getNickname = (tumourLabel: string) => {
+    const found = nicknames.find((n) => n.tumourLabel === tumourLabel);
+    return found?.nickname || null;
+  };
+
+  return { nicknames, getNickname, saveMutation };
+}
+
+function NicknameEditor({ userId, tumourLabel, currentNickname, displayLabel }: { userId: number; tumourLabel: string; currentNickname: string | null; displayLabel: string }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(currentNickname || "");
+  const { saveMutation } = useTumourNicknames(userId);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) setValue(currentNickname || "");
+  }, [open, currentNickname]);
+
+  const handleSave = () => {
+    if (!value.trim()) return;
+    saveMutation.mutate({ userId, tumourLabel, nickname: value.trim() }, {
+      onSuccess: () => {
+        toast({ title: "Nickname saved" });
+        setOpen(false);
+      },
+    });
+  };
+
   return (
-    <>
-      <circle cx="50" cy="50" r={radius} fill="none" stroke={bgColor} strokeWidth={strokeWidth} strokeLinecap="round" />
-      <circle cx="50" cy="50" r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
-        strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
-    </>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="flex items-center gap-1 group/nick text-left">
+          <span className="truncate">{displayLabel}</span>
+          <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover/nick:text-primary transition-colors flex-shrink-0" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-border">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Rename Tumour</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs font-body text-muted-foreground">{tumourLabel}</p>
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Give it a nickname..."
+            className="bg-muted/50 border-border font-body"
+            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)} className="font-body">Cancel</Button>
+            <Button size="sm" onClick={handleSave} disabled={!value.trim() || saveMutation.isPending} className="bg-primary text-white font-body">
+              {saveMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClick: () => void }) {
-  const { isLoading, tumourLabels, baselineScan, latestScan } = useTumourStats(userId);
+  const { isLoading, tumourLabels, baselineScan, latestScan, maxBaselineArea } = useTumourStats(userId);
 
   if (isLoading) {
     return (
@@ -1029,7 +1108,7 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     );
   }
 
-  const tumourRings = tumourLabels.map((tl) => {
+  const tumourData = tumourLabels.map((tl) => {
     const baseline = baselineScan.find((s) => s.tumourLabel === tl);
     const latest = latestScan.find((s) => s.tumourLabel === tl);
     if (!baseline || !latest) return null;
@@ -1037,12 +1116,10 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     const latestArea = latest.sizeX * latest.sizeY;
     const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
     const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
-    const baselineSuv = baseline.suvMax || 0;
-    const latestSuv = latest.suvMax || 0;
-    const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
-    const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
-    return { label: tl, isResolved, sizeReduction, suvReduction, isMetabolicComplete };
-  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; suvReduction: number; isMetabolicComplete: boolean }[];
+    const proportionalSize = maxBaselineArea > 0 ? Math.sqrt(baselineArea / maxBaselineArea) : 0.5;
+    const currentProportion = isResolved ? 0 : (maxBaselineArea > 0 ? Math.sqrt(latestArea / maxBaselineArea) : 0);
+    return { label: tl, isResolved, sizeReduction, baselineArea, latestArea, proportionalSize, currentProportion };
+  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; baselineArea: number; latestArea: number; proportionalSize: number; currentProportion: number }[];
 
   return (
     <button
@@ -1052,28 +1129,31 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
       <div className="flex items-start gap-3 overflow-hidden">
         <div className="flex-1 min-w-0 overflow-hidden">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Tumour Response</p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {tumourRings.map((t) => {
-              const outerColor = t.isResolved ? "hsl(200, 80%, 60%)" : "hsl(142, 71%, 45%)";
-              const outerBg = t.isResolved ? "hsl(200, 40%, 90%)" : "hsl(142, 30%, 90%)";
-              const innerColor = t.isResolved ? "hsl(190, 70%, 50%)" : "hsl(38, 92%, 50%)";
-              const innerBg = t.isResolved ? "hsl(190, 30%, 90%)" : "hsl(38, 40%, 90%)";
-              const sizePct = t.isResolved ? 100 : t.sizeReduction;
-              const suvPct = t.isResolved ? 100 : (t.isMetabolicComplete ? 100 : t.suvReduction);
+          <div className="flex items-end gap-3 flex-wrap">
+            {tumourData.map((t) => {
+              const baselineR = Math.max(12, t.proportionalSize * 22);
+              const currentR = t.isResolved ? 0 : Math.max(3, t.currentProportion * 22);
+              const svgSize = baselineR * 2 + 8;
+              const cx = svgSize / 2;
+              const cy = svgSize / 2;
               return (
                 <div key={t.label} className="flex flex-col items-center">
-                  <div className={`relative w-10 h-10 rounded-full ${t.isResolved ? "ring-1 ring-blue-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]" : ""}`}>
-                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 100 100">
-                      <MiniAppleRing radius={42} strokeWidth={9} percentage={sizePct} color={outerColor} bgColor={outerBg} />
-                      <MiniAppleRing radius={30} strokeWidth={9} percentage={suvPct} color={innerColor} bgColor={innerBg} />
+                  <div className="relative" style={{ width: svgSize, height: svgSize }}>
+                    <svg width={svgSize} height={svgSize} className={t.isResolved ? "opacity-25" : ""}>
+                      <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="3 3" />
+                      {!t.isResolved && currentR > 0 && (
+                        <circle cx={cx} cy={cy} r={currentR} fill="hsl(142, 71%, 45%)" opacity={0.25} />
+                      )}
                     </svg>
                     {t.isResolved && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[10px]">❄️</span>
+                        <Check className="h-2.5 w-2.5 text-emerald-300" />
                       </div>
                     )}
                   </div>
-                  <span className="text-[8px] text-muted-foreground font-body mt-0.5 max-w-[48px] truncate text-center">{t.label.split(" ")[0]}</span>
+                  <span className="text-[8px] text-muted-foreground font-body mt-0.5 max-w-[48px] truncate text-center">
+                    {t.isResolved ? "Gone" : `↓${t.sizeReduction}%`}
+                  </span>
                 </div>
               );
             })}
@@ -1085,33 +1165,26 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
   );
 }
 
-function AppleRing({ radius, strokeWidth, percentage, color, bgColor }: {
-  radius: number; strokeWidth: number; percentage: number; color: string; bgColor: string;
-}) {
+function ActivityRing({ cx, cy, radius, remainingPct }: { cx: number; cy: number; radius: number; remainingPct: number }) {
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.max(0, Math.min(100, percentage));
+  const pct = Math.max(0, Math.min(100, remainingPct));
   const dashOffset = circumference * (1 - pct / 100);
-
   return (
     <>
-      <circle cx="50" cy="50" r={radius} fill="none" stroke={bgColor} strokeWidth={strokeWidth} strokeLinecap="round" />
-      <circle cx="50" cy="50" r={radius} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
-        strokeDasharray={circumference} strokeDashoffset={dashOffset} className="transition-all duration-1000" />
+      <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(38, 40%, 90%)" strokeWidth={3} />
+      <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(38, 92%, 50%)" strokeWidth={3} strokeLinecap="round"
+        strokeDasharray={circumference} strokeDashoffset={dashOffset} transform={`rotate(-90 ${cx} ${cy})`} className="transition-all duration-1000" />
     </>
   );
 }
 
 function TumourResponseExpanded({ userId }: { userId: number }) {
-  const { scanResults, scanDates, tumourLabels, baselineScan, latestScan, avgSizeReduction, avgActivityReduction } = useTumourStats(userId);
+  const { scanResults, tumourLabels, baselineScan, latestScan, avgSizeReduction, avgActivityReduction, maxBaselineArea } = useTumourStats(userId);
+  const { getNickname } = useTumourNicknames(userId);
 
   if (scanResults.length === 0) {
     return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
   }
-
-  const scanLabels = scanDates.map((date) => {
-    const label = scanResults.find(s => s.scanDate === date)?.scanLabel || date;
-    return label.includes("Baseline") ? "Baseline" : label.includes("Post") ? "Post-Treatment" : label.includes("Surveillance") ? "Latest Scan" : new Date(date).toLocaleDateString("en-AU", { month: "short", year: "2-digit" });
-  });
 
   const showCelebration = avgSizeReduction > 30 || avgActivityReduction > 30;
 
@@ -1128,7 +1201,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {tumourLabels.map((tl) => {
           const baseline = baselineScan.find((s) => s.tumourLabel === tl);
           const latest = latestScan.find((s) => s.tumourLabel === tl);
@@ -1142,57 +1215,73 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
           const baselineSuv = baseline.suvMax || 0;
           const latestSuv = latest.suvMax || 0;
           const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
+          const suvRemaining = 100 - suvReduction;
 
-          const sizeRingPct = isResolved ? 100 : sizeReduction;
-          const suvRingPct = isResolved ? 100 : (isMetabolicComplete ? 100 : suvReduction);
+          const proportionalSize = maxBaselineArea > 0 ? Math.sqrt(baselineArea / maxBaselineArea) : 0.5;
+          const baselineR = Math.max(20, proportionalSize * 52);
+          const currentR = isResolved ? 0 : (baselineArea > 0 ? Math.max(5, Math.sqrt(latestArea / maxBaselineArea) * 52) : 0);
+          const activityRingR = baselineR + 8;
+          const svgSize = (activityRingR + 6) * 2;
+          const cx = svgSize / 2;
+          const cy = svgSize / 2;
 
-          const outerColor = isResolved ? "hsl(200, 80%, 60%)" : "hsl(142, 71%, 45%)";
-          const outerBg = isResolved ? "hsl(200, 40%, 90%)" : "hsl(142, 30%, 90%)";
-          const innerColor = isResolved ? "hsl(190, 70%, 50%)" : "hsl(38, 92%, 50%)";
-          const innerBg = isResolved ? "hsl(190, 30%, 90%)" : "hsl(38, 40%, 90%)";
+          const nickname = getNickname(tl);
+          const displayName = nickname || tl;
 
           return (
             <div
               key={tl}
-              className={`rounded-2xl border p-4 transition-all ${
-                isResolved
-                  ? "bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200 shadow-[0_0_12px_rgba(56,189,248,0.15)]"
-                  : "bg-white border-border"
+              className={`rounded-2xl border p-5 transition-all ${
+                isResolved ? "bg-white/60 border-border/50" : "bg-white border-border"
               }`}
             >
-              <div className="flex items-center gap-4">
-                <div className="relative w-24 h-24 flex-shrink-0">
-                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                    <AppleRing radius={42} strokeWidth={8} percentage={sizeRingPct} color={outerColor} bgColor={outerBg} />
-                    <AppleRing radius={30} strokeWidth={8} percentage={suvRingPct} color={innerColor} bgColor={innerBg} />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    {isResolved ? (
-                      <>
-                        <span className="text-xl mb-0.5">❄️</span>
-                        <span className="text-[9px] font-heading font-bold text-blue-600">Gone Cold</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-lg font-heading font-bold text-foreground">{sizeReduction}%</span>
-                        {isMetabolicComplete ? (
-                          <span className="text-[8px] font-body text-amber-600 font-medium leading-tight text-center px-1">No Activity Detected</span>
-                        ) : (
-                          <span className="text-[8px] font-body text-muted-foreground">SUV↓{suvReduction}%</span>
-                        )}
-                      </>
-                    )}
-                  </div>
+              <div className="flex items-center gap-5">
+                <div className="relative flex-shrink-0 flex items-center justify-center" style={{ width: svgSize, height: svgSize }}>
+                  {isResolved ? (
+                    <>
+                      <svg width={svgSize} height={svgSize} className="opacity-20">
+                        <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#d1d5db" strokeWidth={2} strokeDasharray="4 4" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles className="h-5 w-5 text-emerald-300" />
+                      </div>
+                    </>
+                  ) : (
+                    <svg width={svgSize} height={svgSize}>
+                      <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#e5e7eb" strokeWidth={2} strokeDasharray="4 4" />
+                      {currentR > 0 && (
+                        <circle cx={cx} cy={cy} r={currentR} fill="hsl(142, 71%, 85%)" stroke="hsl(142, 71%, 45%)" strokeWidth={1.5} className="transition-all duration-1000" />
+                      )}
+                      <ActivityRing cx={cx} cy={cy} radius={activityRingR} remainingPct={isMetabolicComplete ? 0 : suvRemaining} />
+                    </svg>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-heading mb-1 ${isResolved ? "text-blue-800" : "text-foreground"}`}>{tl}</p>
+                  <div className={`text-sm font-heading mb-1 ${isResolved ? "text-muted-foreground/60" : "text-foreground"}`}>
+                    <NicknameEditor userId={userId} tumourLabel={tl} currentNickname={nickname} displayLabel={displayName} />
+                  </div>
                   {isResolved ? (
-                    <p className="text-xs font-body text-blue-600">No longer visible on imaging</p>
+                    <div>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-body font-medium">
+                        <Check className="h-3 w-3" /> Gone
+                      </span>
+                      <p className="text-xs font-body text-muted-foreground/50 mt-1">No longer visible on imaging</p>
+                    </div>
                   ) : (
-                    <p className="text-xs font-body text-muted-foreground">
-                      {latest.sizeX}×{latest.sizeY}mm
-                      {isMetabolicComplete ? " · No metabolic activity" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
-                    </p>
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-body font-semibold">
+                          <ArrowDown className="h-3 w-3" />{sizeReduction}% size
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-body font-semibold">
+                          <ArrowDown className="h-3 w-3" />{isMetabolicComplete ? "100" : suvReduction}% activity
+                        </span>
+                      </div>
+                      <p className="text-xs font-body text-muted-foreground">
+                        {latest.sizeX}×{latest.sizeY}mm
+                        {isMetabolicComplete ? " · No metabolic activity" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
+                      </p>
+                    </>
                   )}
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center justify-between text-[10px] font-body">
@@ -1201,8 +1290,8 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-body">
                       <span className="text-muted-foreground">Latest</span>
-                      <span className={`font-medium ${isResolved ? "text-blue-600" : "text-foreground"}`}>
-                        {latest.sizeX === 0 && latest.sizeY === 0 ? "Resolved" : `${latest.sizeX}×${latest.sizeY}mm`}
+                      <span className={`font-medium ${isResolved ? "text-emerald-500" : "text-foreground"}`}>
+                        {latest.sizeX === 0 && latest.sizeY === 0 ? "Gone" : `${latest.sizeX}×${latest.sizeY}mm`}
                         {latest.suvMax ? ` · SUV ${latest.suvMax}` : " · Clear"}
                       </span>
                     </div>
@@ -1215,9 +1304,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
       </div>
 
       <div className="flex justify-center gap-6 text-[10px] text-muted-foreground font-body">
-        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 45%)" }} /> Size reduction</span>
-        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> SUV reduction</span>
-        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(200, 80%, 60%)" }} /> Resolved</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full border border-gray-300" style={{ borderStyle: "dashed" }} /> Baseline size</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 85%)", border: "1px solid hsl(142, 71%, 45%)" }} /> Current size</span>
+        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> Activity remaining</span>
       </div>
     </div>
   );
@@ -1235,6 +1324,17 @@ function DailyBriefWidget({ userId }: { userId: number }) {
   });
   const [hasLoaded, setHasLoaded] = useState(!!brief);
 
+  const { data: allAppointments = [] } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/appointments?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const today = todayStr();
+  const todaysAppointments = allAppointments.filter(a => a.date === today);
+
   const mutation = useMutation({
     mutationFn: async () => {
       return apiRequest<{ content: string }>("/api/ai/daily-brief", {
@@ -1244,13 +1344,13 @@ function DailyBriefWidget({ userId }: { userId: number }) {
       });
     },
     onSuccess: (data) => {
-      const content = data.content || "Keep nurturing your healing journey today.";
+      const content = data.content || "You've got this, queen! 👑";
       setBrief(content);
       setHasLoaded(true);
       try { sessionStorage.setItem(DAILY_BRIEF_SESSION_KEY, content); } catch {}
     },
     onError: () => {
-      setBrief("Take a moment today to breathe, nourish, and move with intention. You are doing wonderfully.");
+      setBrief("Plot twist: you're the hero of this story 💫");
       setHasLoaded(true);
     },
   });
@@ -1267,35 +1367,370 @@ function DailyBriefWidget({ userId }: { userId: number }) {
   };
 
   return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-accent" /> Daily Brief
-          </CardTitle>
+    <Card className="bg-gradient-to-br from-amber-50/80 via-white to-primary/5 border-amber-200/50 rounded-2xl overflow-hidden">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-accent" />
+            </div>
+            <span className="text-xs font-body text-muted-foreground uppercase tracking-wider">Today's Vibe</span>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleRefresh}
             disabled={mutation.isPending}
-            className="text-xs text-muted-foreground hover:text-primary font-body gap-1 h-7 px-2"
+            className="text-xs text-muted-foreground hover:text-accent font-body h-7 px-2"
           >
             {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Refresh
+          </Button>
+        </div>
+        {mutation.isPending && !brief ? (
+          <div className="h-5 bg-muted rounded-full w-3/4 animate-pulse" />
+        ) : (
+          <p className="text-lg font-heading text-foreground leading-snug">{brief}</p>
+        )}
+
+        {todaysAppointments.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-amber-200/30">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-2">Today's Schedule</p>
+            <div className="space-y-2">
+              {todaysAppointments.map((appt) => (
+                <div key={appt.id} className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2">
+                  <div className="w-1.5 h-8 rounded-full bg-primary/60 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-body font-medium text-foreground truncate">{appt.title}</p>
+                    <p className="text-xs text-muted-foreground font-body">{appt.time}{appt.location ? ` · ${appt.location}` : ""}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function GutCheckWidget({ userId }: { userId: number }) {
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState("");
+  const [mood, setMood] = useState(3);
+  const [energy, setEnergy] = useState(3);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const { toast } = useToast();
+
+  const { data: entries = [] } = useQuery<JournalEntry[]>({
+    queryKey: ["/api/journal", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/journal?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const todayEntry = entries.find(e => e.date === todayStr());
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/journal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, date: todayStr(), mood, energy, content }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
+      setOpen(false);
+      setContent("");
+      setMood(3);
+      setEnergy(3);
+      toast({ title: "Gut check saved ✨" });
+    },
+  });
+
+  const analysisMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest<{ analysis: string }>("/api/ai/journal-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+    },
+  });
+
+  const moodEmojis = ["😔", "😐", "🙂", "😊", "🤩"];
+  const energyEmojis = ["🔋", "🪫", "⚡", "💪", "🚀"];
+
+  const recentEntries = entries
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
+            <BookHeart className="h-5 w-5 text-primary" /> Daily Gut Check
+          </CardTitle>
+          <div className="flex gap-1">
+            {entries.length >= 2 && (
+              <Button variant="ghost" size="sm" onClick={() => { setShowAnalysis(!showAnalysis); if (!showAnalysis && !analysisMutation.data) analysisMutation.mutate(); }}
+                className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
+                {analysisMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                Insights
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => setOpen(true)}
+              className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
+              <Plus className="h-3 w-3 mr-1" /> Log
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {todayEntry ? (
+          <div className="bg-primary/5 rounded-xl p-3 mb-3">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-lg">{moodEmojis[(todayEntry.mood || 3) - 1]}</span>
+              <span className="text-lg">{energyEmojis[(todayEntry.energy || 3) - 1]}</span>
+              <span className="text-[10px] text-muted-foreground font-body">Today</span>
+            </div>
+            <p className="text-sm font-body text-foreground line-clamp-2">{todayEntry.content}</p>
+          </div>
+        ) : (
+          <button onClick={() => setOpen(true)} className="w-full bg-muted/50 hover:bg-muted rounded-xl p-4 text-center transition-colors mb-3">
+            <SmilePlus className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
+            <p className="text-xs font-body text-muted-foreground">How are you feeling today?</p>
+          </button>
+        )}
+
+        {showAnalysis && analysisMutation.data && (
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 mb-3">
+            <p className="text-xs font-body text-foreground leading-relaxed">{(analysisMutation.data as any).analysis}</p>
+          </div>
+        )}
+
+        {recentEntries.length > 0 && (
+          <div className="flex gap-1.5">
+            {recentEntries.slice(0, 7).map((e) => (
+              <div key={e.id} className="flex flex-col items-center gap-0.5" title={`${e.date}: ${e.content}`}>
+                <span className="text-sm">{moodEmojis[(e.mood || 3) - 1]}</span>
+                <span className="text-[8px] text-muted-foreground font-body">
+                  {new Date(e.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Daily Gut Check</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-body text-muted-foreground mb-2 block">How's your mood?</label>
+              <div className="flex gap-2">
+                {moodEmojis.map((emoji, i) => (
+                  <button key={i} onClick={() => setMood(i + 1)}
+                    className={`text-2xl p-2 rounded-xl transition-all ${mood === i + 1 ? "bg-primary/15 scale-110 ring-2 ring-primary/30" : "hover:bg-muted"}`}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-body text-muted-foreground mb-2 block">Energy level?</label>
+              <div className="flex gap-2">
+                {energyEmojis.map((emoji, i) => (
+                  <button key={i} onClick={() => setEnergy(i + 1)}
+                    className={`text-2xl p-2 rounded-xl transition-all ${energy === i + 1 ? "bg-accent/15 scale-110 ring-2 ring-accent/30" : "hover:bg-muted"}`}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-body text-muted-foreground mb-2 block">What's on your mind?</label>
+              <Textarea value={content} onChange={(e) => setContent(e.target.value)}
+                placeholder="Just a few words... how are you really feeling?"
+                className="resize-none font-body text-sm min-h-[80px]" />
+            </div>
+            <Button onClick={() => createMutation.mutate()} disabled={!content.trim() || createMutation.isPending}
+              className="w-full bg-primary text-white hover:bg-primary/90 font-body rounded-xl">
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Gut Check
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function MotivationalWallWidget({ userId }: { userId: number }) {
+  const [open, setOpen] = useState(false);
+  const [newContent, setNewContent] = useState("");
+  const [newColor, setNewColor] = useState("amber");
+  const { toast } = useToast();
+
+  const { data: items = [] } = useQuery<MotivationalWallItem[]>({
+    queryKey: ["/api/motivational-wall", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/motivational-wall?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/motivational-wall", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, type: "text", content: newContent, color: newColor }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/motivational-wall"] });
+      setNewContent("");
+      setOpen(false);
+      toast({ title: "Added to your wall ✨" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/motivational-wall/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/motivational-wall"] });
+    },
+  });
+
+  const colorMap: Record<string, string> = {
+    amber: "from-amber-50 to-orange-50 border-amber-200/50",
+    green: "from-green-50 to-emerald-50 border-green-200/50",
+    blue: "from-blue-50 to-cyan-50 border-blue-200/50",
+    pink: "from-pink-50 to-rose-50 border-pink-200/50",
+    purple: "from-purple-50 to-violet-50 border-purple-200/50",
+  };
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
+            <ImagePlus className="h-5 w-5 text-accent" /> Evidence of a Life Worth Fighting For
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => setOpen(true)}
+            className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
+            <Plus className="h-3 w-3 mr-1" /> Add
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {mutation.isPending && !brief ? (
-          <div className="space-y-2">
-            <div className="h-3 bg-muted rounded-full w-full animate-pulse" />
-            <div className="h-3 bg-muted rounded-full w-5/6 animate-pulse" />
-            <div className="h-3 bg-muted rounded-full w-4/6 animate-pulse" />
-            <div className="h-3 bg-muted rounded-full w-3/4 animate-pulse" />
-          </div>
+        {items.length === 0 ? (
+          <button onClick={() => setOpen(true)} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-6 text-center transition-colors">
+            <Heart className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-body text-muted-foreground">Add reasons to keep fighting</p>
+            <p className="text-xs font-body text-muted-foreground/60 mt-1">Photos, quotes, people, dreams, moments...</p>
+          </button>
         ) : (
-          <p className="text-sm font-body text-foreground leading-relaxed whitespace-pre-line">{brief}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {items.map((item) => (
+              <div key={item.id} className={`group relative bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border rounded-xl p-3 min-h-[80px] flex items-center justify-center`}>
+                <p className="text-xs font-body text-foreground text-center leading-relaxed">{item.content}</p>
+                <button onClick={() => deleteMutation.mutate(item.id)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            ))}
+            <button onClick={() => setOpen(true)} className="border-2 border-dashed border-border rounded-xl p-3 min-h-[80px] flex items-center justify-center hover:bg-muted/30 transition-colors">
+              <Plus className="h-5 w-5 text-muted-foreground/40" />
+            </button>
+          </div>
         )}
+      </CardContent>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Add to Your Wall</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-body text-muted-foreground mb-2 block">What's worth fighting for?</label>
+              <Textarea value={newContent} onChange={(e) => setNewContent(e.target.value)}
+                placeholder="A person, a dream, a moment, a quote..."
+                className="resize-none font-body text-sm min-h-[80px]" />
+            </div>
+            <div>
+              <label className="text-sm font-body text-muted-foreground mb-2 block">Colour</label>
+              <div className="flex gap-2">
+                {Object.keys(colorMap).map((c) => (
+                  <button key={c} onClick={() => setNewColor(c)}
+                    className={`w-8 h-8 rounded-full bg-gradient-to-br ${colorMap[c]} border-2 transition-all ${newColor === c ? "ring-2 ring-primary scale-110" : ""}`} />
+                ))}
+              </div>
+            </div>
+            <Button onClick={() => createMutation.mutate()} disabled={!newContent.trim() || createMutation.isPending}
+              className="w-full bg-primary text-white hover:bg-primary/90 font-body rounded-xl">
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Add to Wall
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function FunFactsWidget({ userId }: { userId: number }) {
+  const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * 10));
+
+  const { data: factsData } = useQuery<{ facts: string[] }>({
+    queryKey: ["/api/fun-facts", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/fun-facts?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const facts = factsData?.facts || [];
+
+  useEffect(() => {
+    if (facts.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % facts.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [facts.length]);
+
+  if (facts.length === 0) return null;
+
+  const fact = facts[currentIndex % facts.length];
+
+  return (
+    <Card className="bg-gradient-to-br from-primary/5 via-white to-accent/5 border-primary/20 rounded-2xl overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
+            <Trophy className="h-5 w-5 text-accent" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-0.5">Did you know?</p>
+            <p className="text-sm font-body text-foreground font-medium leading-snug transition-all duration-500">{fact}</p>
+          </div>
+        </div>
+        <div className="flex justify-center gap-1 mt-3">
+          {facts.map((_, i) => (
+            <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentIndex % facts.length ? "bg-accent w-4" : "bg-border"}`} />
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -2057,6 +2492,24 @@ export default function SimpleDashboard() {
       {isActive("todayWellness") && (
         <div className="mb-6">
           <TodayWellnessWidget userId={user.id} />
+        </div>
+      )}
+
+      {isActive("funFacts") && (
+        <div className="mb-6">
+          <FunFactsWidget userId={user.id} />
+        </div>
+      )}
+
+      {isActive("gutCheck") && (
+        <div className="mb-6">
+          <GutCheckWidget userId={user.id} />
+        </div>
+      )}
+
+      {isActive("motivationalWall") && (
+        <div className="mb-6">
+          <MotivationalWallWidget userId={user.id} />
         </div>
       )}
 

@@ -155,6 +155,10 @@ function ProgramDetailDialog({
 }) {
   const { toast } = useToast();
   const cat = getCategoryConfig(program.category);
+  const [showBackdate, setShowBackdate] = useState(false);
+  const [backdateCount, setBackdateCount] = useState("10");
+  const [backdateStartDate, setBackdateStartDate] = useState("");
+  const [backdateFrequency, setBackdateFrequency] = useState("daily");
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<TreatmentSession[]>({
     queryKey: ["/api/treatment-sessions", { programId: program.id }],
@@ -178,6 +182,53 @@ function ProgramDetailDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/treatment-sessions", { programId: program.id }] });
       queryClient.invalidateQueries({ queryKey: ["/api/treatment-programs"] });
       toast({ title: "Session completed", description: "Great progress on your healing journey!" });
+    },
+  });
+
+  const bulkImportMutation = useMutation({
+    mutationFn: async () => {
+      const count = parseInt(backdateCount);
+      if (isNaN(count) || count < 1 || !backdateStartDate) throw new Error("Invalid input");
+      const sessionsToCreate = [];
+      const startNum = sessions.length + 1;
+      const start = new Date(backdateStartDate);
+      for (let i = 0; i < count; i++) {
+        const d = new Date(start);
+        if (backdateFrequency === "daily") d.setDate(start.getDate() + i);
+        else if (backdateFrequency === "weekdays") {
+          let weekdayCount = 0;
+          let offset = 0;
+          while (weekdayCount < i) {
+            offset++;
+            const check = new Date(start);
+            check.setDate(start.getDate() + offset);
+            if (check.getDay() !== 0 && check.getDay() !== 6) weekdayCount++;
+          }
+          d.setDate(start.getDate() + offset);
+        } else if (backdateFrequency === "weekly") d.setDate(start.getDate() + i * 7);
+        else if (backdateFrequency === "fortnightly") d.setDate(start.getDate() + i * 14);
+        sessionsToCreate.push({
+          sessionNumber: startNum + i,
+          date: d.toISOString().split("T")[0],
+          status: "completed",
+        });
+      }
+      return apiRequest("/api/treatment-sessions/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          programId: program.id,
+          userId,
+          sessions: sessionsToCreate,
+          updateCompletedCount: true,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/treatment-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/treatment-programs"] });
+      setShowBackdate(false);
+      toast({ title: "Sessions imported!", description: `${backdateCount} past sessions added successfully.` });
     },
   });
 
@@ -233,7 +284,50 @@ function ProgramDetailDialog({
           )}
 
           <div>
-            <h4 className="font-heading text-foreground text-base mb-3">Session Timeline</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-heading text-foreground text-base">Session Timeline</h4>
+              <Button variant="outline" size="sm" onClick={() => setShowBackdate(!showBackdate)}
+                className="h-7 text-[10px] font-body border-border text-muted-foreground hover:bg-accent/10 hover:text-accent">
+                <Clock className="h-3 w-3 mr-1" /> Backdate Sessions
+              </Button>
+            </div>
+
+            {showBackdate && (
+              <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 mb-3 space-y-3">
+                <p className="text-xs font-body text-muted-foreground">Add past sessions you've already completed</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground">Start date</label>
+                    <Input type="date" value={backdateStartDate} onChange={(e) => setBackdateStartDate(e.target.value)}
+                      className="h-8 text-xs font-body" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground">Number of sessions</label>
+                    <Input type="number" value={backdateCount} onChange={(e) => setBackdateCount(e.target.value)}
+                      min="1" max="200" className="h-8 text-xs font-body" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-body text-muted-foreground">Frequency</label>
+                  <Select value={backdateFrequency} onValueChange={setBackdateFrequency}>
+                    <SelectTrigger className="h-8 text-xs font-body">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekdays">Weekdays only</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={() => bulkImportMutation.mutate()} disabled={!backdateStartDate || bulkImportMutation.isPending}
+                  className="w-full h-8 text-xs font-body bg-accent text-white hover:bg-accent/90 rounded-lg">
+                  {bulkImportMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Import {backdateCount} Past Sessions
+                </Button>
+              </div>
+            )}
             {sessionsLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
