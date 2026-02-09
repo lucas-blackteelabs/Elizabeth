@@ -1,15 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Apple, Sparkles, Calendar, Wine, Bot } from "lucide-react";
+import { Home, Apple, Sparkles, Calendar, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/medical-tracker", label: "Medical", icon: FileText },
   { href: "/nutrition", label: "Nutrition", icon: Apple },
   { href: "/ai-assistant", label: "AI", icon: Bot, isCenter: true },
   { href: "/treatment-plus", label: "Treatment+", icon: Sparkles },
   { href: "/calendar", label: "Timeline", icon: Calendar },
-  { href: "/date-night", label: "Date Night", icon: Wine },
 ];
 
 export default function MobileBottomNav() {

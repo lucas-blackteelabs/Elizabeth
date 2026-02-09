@@ -1139,49 +1139,32 @@ function DailyBriefWidget({ userId }: { userId: number }) {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-amber-50/80 via-white to-primary/5 border-amber-200/50 rounded-2xl overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-accent" />
-            </div>
-            <span className="text-xs font-body text-muted-foreground uppercase tracking-wider">Today's Vibe</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={mutation.isPending}
-            className="text-xs text-muted-foreground hover:text-accent font-body h-7 px-2"
-          >
-            {mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-          </Button>
-        </div>
+    <div className="flex items-start gap-3 px-1">
+      <button
+        onClick={handleRefresh}
+        disabled={mutation.isPending}
+        className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0 hover:bg-accent/25 transition-colors mt-0.5"
+      >
+        {mutation.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-accent" />}
+      </button>
+      <div className="flex-1 min-w-0">
         {mutation.isPending && !brief ? (
-          <div className="h-5 bg-muted rounded-full w-3/4 animate-pulse" />
+          <div className="h-5 bg-muted rounded-full w-3/4 animate-pulse mt-1.5" />
         ) : (
-          <p className="text-lg font-heading text-foreground leading-snug">{brief}</p>
+          <p className="text-base font-heading text-foreground leading-snug">{brief}</p>
         )}
-
         {todaysAppointments.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-amber-200/30">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-2">Today's Schedule</p>
-            <div className="space-y-2">
-              {todaysAppointments.map((appt) => (
-                <div key={appt.id} className="flex items-center gap-2.5 bg-white/70 rounded-xl px-3 py-2">
-                  <div className="w-1.5 h-8 rounded-full bg-primary/60 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-body font-medium text-foreground truncate">{appt.title}</p>
-                    <p className="text-xs text-muted-foreground font-body">{appt.time}{appt.location ? ` · ${appt.location}` : ""}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {todaysAppointments.map((appt) => (
+              <span key={appt.id} className="inline-flex items-center gap-1.5 text-xs font-body text-muted-foreground bg-white/70 rounded-full px-2.5 py-1 border border-border/50">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary/60 flex-shrink-0" />
+                {appt.title}{appt.time ? ` · ${appt.time}` : ""}
+              </span>
+            ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -1547,9 +1530,9 @@ export default function SimpleDashboard() {
   };
 
   return (
-    <div className="p-5 lg:p-8 max-w-5xl mx-auto">
+    <div className="px-4 py-4 lg:p-8 max-w-5xl mx-auto pb-24">
       {/* Header */}
-      <div className="mb-5">
+      <div className="mb-4">
         <div className="flex items-center gap-3">
           <div className="relative">
             {user.profilePhoto ? (
@@ -1581,7 +1564,7 @@ export default function SimpleDashboard() {
 
       {/* Today's Vibe */}
       {isActive("dailyBrief") && (
-        <div className="mb-5">
+        <div className="mb-4">
           <DailyBriefWidget userId={user.id} />
         </div>
       )}
@@ -1590,7 +1573,7 @@ export default function SimpleDashboard() {
       <TodayWellnessWidget userId={user.id} />
 
       {/* Key Stats */}
-      <div className="grid grid-cols-2 gap-3 my-5">
+      <div className="grid grid-cols-2 gap-3 mt-4 mb-4">
         {isActive("scanCountdown") && (
           <CompactStatCard
             icon={<Scan className="h-5 w-5" />}
@@ -1614,14 +1597,14 @@ export default function SimpleDashboard() {
 
       {/* Tumour Response */}
       {isActive("tumourResponse") && (
-        <div className="mb-5">
+        <div className="mb-4">
           <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
         </div>
       )}
 
       {/* Worth Fighting For */}
       {isActive("motivationalWall") && (
-        <div className="mb-5">
+        <div className="mb-4">
           <MotivationalWallWidget userId={user.id} />
         </div>
       )}

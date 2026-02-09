@@ -1063,14 +1063,23 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: '
 `;
 
       const { getHealthAdvice } = await import("./openai");
-      const briefPrompt = `Generate a SHORT, punchy motivational one-liner for this cancer patient. Think queen energy, warrior spirit, fun and empowering. Like:
-- "You've got this, queen! 👑"
-- "Small steps make mighty warriors"
-- "100 hyperbaric sessions?! Your cells are throwing a party 🎉"
-- "Your body is a healing machine and today it's winning"
-- "Plot twist: you're the hero of this story"
+      const briefPrompt = `Generate ONE single sentence for this cancer patient to start their day. It should feel like a text from a witty best friend who also happens to be deeply caring.
 
-Make it personal to their situation if possible (reference their treatment, progress, milestones). Keep it to 1-2 sentences MAX. Fun, empowering, warm. Use Australian English. No paragraph, just the quote/line.`;
+TONE MIX — randomly pick one vibe each time:
+- Funny/cheeky: "Your tumours are shrinking faster than my patience for Mondays"
+- Warm hug: "You're doing something incredible just by showing up today"
+- Badass: "4 tumours walked in, 2 got axed — you're basically John Wick"
+- Silly: "If your immune system had a LinkedIn, it'd say 'crushing it'"
+- Gentle: "Hey, it's okay to just breathe today"
+- Proud: "56 hyperbaric sessions deep — your cells are literally throwing a party"
+
+RULES:
+- ONE sentence only. Never more.
+- Make it personal — reference their actual treatment data, scan results, milestones, or upcoming events when relevant
+- Australian English
+- Use max 1 emoji, sometimes none
+- No quotes around it, no attribution, no "remember that..." preamble
+- Vary the style — don't always be motivational, sometimes just be funny or real`;
 
       const brief = await getHealthAdvice(briefPrompt, userContext);
       return res.json({ content: brief, generatedAt: new Date().toISOString() });
