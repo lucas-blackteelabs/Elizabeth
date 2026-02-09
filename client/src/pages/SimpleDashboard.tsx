@@ -1117,13 +1117,13 @@ function DailyBriefWidget({ userId }: { userId: number }) {
       });
     },
     onSuccess: (data) => {
-      const content = data.content || "You've got this, queen! 👑";
+      const content = data.content || "Let's go, legend 👑";
       setBrief(content);
       setHasLoaded(true);
       try { sessionStorage.setItem(DAILY_BRIEF_SESSION_KEY, content); } catch {}
     },
     onError: () => {
-      setBrief("Plot twist: you're the hero of this story 💫");
+      setBrief("You're doing amazing things 💫");
       setHasLoaded(true);
     },
   });

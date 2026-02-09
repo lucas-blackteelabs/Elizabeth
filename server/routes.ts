@@ -1078,25 +1078,26 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: '
 `;
 
       const { getHealthAdvice } = await import("./openai");
-      const briefPrompt = `Generate ONE single sentence for this cancer patient to start their day. It should feel like a text from a witty best friend who also happens to be deeply caring.
+      const briefPrompt = `Write a SHORT morning one-liner (under 12 words) for this cancer patient. Like a punchy text message from a best mate.
 
-TONE MIX — randomly pick one vibe each time:
-- Funny/cheeky: "Your tumours are shrinking faster than my patience for Mondays"
-- Warm hug: "You're doing something incredible just by showing up today"
-- Badass: "4 tumours walked in, 2 got axed — you're basically John Wick"
-- Silly: "If your immune system had a LinkedIn, it'd say 'crushing it'"
-- Gentle: "Hey, it's okay to just breathe today"
-- Proud: "56 hyperbaric sessions deep — your cells are literally throwing a party"
+Examples of the RIGHT length:
+- "Your tumours are basically running scared at this point"
+- "56 sessions deep — absolute weapon 💪"
+- "Hey, you're allowed to just vibe today"
+- "2 down, 2 to go — John Wick energy"
+- "Your immune system called, it says you're welcome"
 
-RULES:
-- ONE sentence only. Never more.
-- Make it personal — reference their actual treatment data, scan results, milestones, or upcoming events when relevant
-- Australian English
-- Use max 1 emoji, sometimes none
-- No quotes around it, no attribution, no "remember that..." preamble
-- Vary the style — don't always be motivational, sometimes just be funny or real`;
+HARD RULES:
+- MAX 12 words. Shorter is better. Never a paragraph.
+- One sentence only. No second sentence. No explanation.
+- Sometimes funny, sometimes warm, sometimes badass
+- Reference their real data when it fits naturally
+- Max 1 emoji or none. Australian English.
+- Output ONLY the line, nothing else`;
 
-      const brief = await getHealthAdvice(briefPrompt, userContext);
+      let brief = await getHealthAdvice(briefPrompt, userContext);
+      brief = brief.replace(/^["']|["']$/g, "").split(/\.\s|\n/)[0].trim();
+      if (brief.length > 120) brief = brief.substring(0, 117) + "...";
       return res.json({ content: brief, generatedAt: new Date().toISOString() });
     } catch (error) {
       console.error("Error generating daily brief:", error);
