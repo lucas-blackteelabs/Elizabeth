@@ -4,6 +4,17 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
+- **Feb 2026**: Dashboard Redesign — Activity-First with Trends
+  - Dashboard redesigned as daily activity hub
+    - Prominent quick-log buttons (meals, exercise, mindfulness) at the top
+    - 7-day activity heatmap showing daily activity coverage
+    - Today's Wellness summary with logged items, edit/delete support
+    - 7-Day Trends bar chart (recharts) showing meals, mindfulness mins, exercise mins
+    - Weekly summary cards with totals and positive messaging
+    - Compact stat tiles (scan countdown, treatment journey, immune recovery, tumour response)
+    - Quick links to all healing tools at bottom
+  - Widget picker still available for customizing secondary widgets
+  - Recharts integration for data visualization
 - **Feb 2026**: Medical Tracker Redesign + Community Page
   - Medical Tracker completely redesigned with dashboard-style visuals
     - AI-generated medical summary (warm, patient-friendly language)

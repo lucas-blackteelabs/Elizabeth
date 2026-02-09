@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useUser } from "@/contexts/UserContext";
 import {
   MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
   Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
   ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves,
-  BookHeart, ImagePlus, Trophy, SmilePlus
+  BookHeart, ImagePlus, Trophy, SmilePlus, Utensils, Dumbbell, Brain
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -2274,6 +2275,184 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
   );
 }
 
+function WeeklyTrendsChart({ userId }: { userId: number }) {
+  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
+  const today = todayStr();
+
+  const { data: meals = [] } = useQuery<Meal[]>({
+    queryKey: ["/api/meals", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+  const { data: mindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ["/api/mind-body", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+  const { data: exercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+
+  const chartData = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const dt = new Date(Date.now() - (6 - i) * 86400000);
+      const dateStr = dt.toISOString().split("T")[0];
+      const dayMeals = meals.filter(m => m.date === dateStr).length;
+      const dayMindBody = mindBody.filter(a => a.date === dateStr).reduce((s, a) => s + a.durationMinutes, 0);
+      const dayExercise = exercises.filter(e => e.date === dateStr).reduce((s, e) => s + e.durationMinutes, 0);
+      return {
+        day: dt.toLocaleDateString("en-AU", { weekday: "short" }),
+        date: dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" }),
+        meals: dayMeals,
+        mindfulness: dayMindBody,
+        exercise: dayExercise,
+        total: dayMeals + dayMindBody + dayExercise,
+      };
+    });
+  }, [meals, mindBody, exercises]);
+
+  const totalMeals = chartData.reduce((s, d) => s + d.meals, 0);
+  const totalMindfulness = chartData.reduce((s, d) => s + d.mindfulness, 0);
+  const totalExercise = chartData.reduce((s, d) => s + d.exercise, 0);
+  const activeDays = chartData.filter(d => d.total > 0).length;
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" /> 7-Day Trends
+          </CardTitle>
+          <span className="text-xs font-body text-muted-foreground">{activeDays}/7 active days</span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="h-44 w-full mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(30, 25%, 92%)" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(25, 18%, 48%)", fontFamily: "'DM Sans', sans-serif" }} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip
+                contentStyle={{
+                  background: "white", border: "1px solid hsl(30, 25%, 87%)", borderRadius: "12px",
+                  fontSize: "12px", fontFamily: "'DM Sans', sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
+                }}
+                labelStyle={{ fontWeight: 600, color: "hsl(25, 35%, 22%)" }}
+                formatter={(value: number, name: string) => {
+                  if (name === "meals") return [`${value} meals`, "Meals"];
+                  return [`${value} min`, name === "mindfulness" ? "Mindfulness" : "Exercise"];
+                }}
+                labelFormatter={(label: string, payload: any) => payload?.[0]?.payload?.date || label}
+              />
+              <Bar dataKey="meals" fill="hsl(34, 55%, 52%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="meals" />
+              <Bar dataKey="mindfulness" fill="hsl(158, 32%, 42%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="mindfulness" />
+              <Bar dataKey="exercise" fill="hsl(200, 70%, 50%)" radius={[4, 4, 0, 0]} maxBarSize={18} name="exercise" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-accent/8 rounded-xl p-3 text-center border border-accent/15">
+            <Utensils className="h-4 w-4 text-accent mx-auto mb-1" />
+            <p className="text-lg font-heading font-bold text-accent">{totalMeals}</p>
+            <p className="text-[10px] text-muted-foreground font-body">meals this week</p>
+          </div>
+          <div className="bg-primary/8 rounded-xl p-3 text-center border border-primary/15">
+            <Brain className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-lg font-heading font-bold text-primary">{totalMindfulness}</p>
+            <p className="text-[10px] text-muted-foreground font-body">min mindfulness</p>
+          </div>
+          <div className="bg-sky-50 rounded-xl p-3 text-center border border-sky-200">
+            <Dumbbell className="h-4 w-4 text-sky-500 mx-auto mb-1" />
+            <p className="text-lg font-heading font-bold text-sky-600">{totalExercise}</p>
+            <p className="text-[10px] text-muted-foreground font-body">min exercise</p>
+          </div>
+        </div>
+
+        {activeDays >= 5 && (
+          <div className="mt-3 bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/15 rounded-xl p-3 text-center">
+            <p className="text-xs font-body text-foreground">
+              <span className="font-heading text-primary font-bold">{activeDays} days active!</span> Your consistency is building real momentum for healing.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActivityHeatmap({ userId }: { userId: number }) {
+  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
+  const today = todayStr();
+
+  const { data: meals = [] } = useQuery<Meal[]>({
+    queryKey: ["/api/meals", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+  const { data: mindBody = [] } = useQuery<MindBodyActivity[]>({
+    queryKey: ["/api/mind-body", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+  const { data: exercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, trend: true }],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
+      return res.json();
+    },
+  });
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const dt = new Date(Date.now() - (6 - i) * 86400000);
+    const dateStr = dt.toISOString().split("T")[0];
+    const hasMeal = meals.some(m => m.date === dateStr);
+    const hasMind = mindBody.some(a => a.date === dateStr);
+    const hasExercise = exercises.some(e => e.date === dateStr);
+    const score = (hasMeal ? 1 : 0) + (hasMind ? 1 : 0) + (hasExercise ? 1 : 0);
+    const isToday = dateStr === today;
+    return { dt, dateStr, hasMeal, hasMind, hasExercise, score, isToday };
+  });
+
+  const getIntensity = (score: number) => {
+    if (score === 0) return "bg-muted border-border";
+    if (score === 1) return "bg-primary/15 border-primary/25";
+    if (score === 2) return "bg-primary/30 border-primary/40";
+    return "bg-primary/50 border-primary/60";
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {days.map((d, i) => (
+        <div key={i} className="flex flex-col items-center gap-1 flex-1">
+          <p className="text-[9px] text-muted-foreground font-body">{d.dt.toLocaleDateString("en-AU", { weekday: "narrow" })}</p>
+          <div className={`w-full aspect-square rounded-lg border transition-all ${getIntensity(d.score)} ${d.isToday ? "ring-2 ring-accent/40 ring-offset-1" : ""}`}
+            title={`${d.dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${d.score} activities`}>
+          </div>
+          <div className="flex gap-0.5">
+            {d.hasMeal && <div className="w-1 h-1 rounded-full bg-accent" />}
+            {d.hasMind && <div className="w-1 h-1 rounded-full bg-primary" />}
+            {d.hasExercise && <div className="w-1 h-1 rounded-full bg-sky-500" />}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SimpleDashboard() {
   const { user, setUser } = useUser();
   const { toast } = useToast();
@@ -2302,20 +2481,8 @@ export default function SimpleDashboard() {
 
   const scanDate = user.nextScanDate ? new Date(user.nextScanDate) : null;
   const daysUntilScan = scanDate ? Math.ceil((scanDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-  const diagnosisDate = user.diagnosis_date ? new Date(user.diagnosis_date) : new Date("2025-04-01");
   const treatmentStartDate = new Date("2025-04-22");
   const daysSinceTreatmentStart = Math.floor((new Date().getTime() - treatmentStartDate.getTime()) / (1000 * 60 * 60 * 24));
-  const immunoSuppressionEndDate = new Date("2025-12-01");
-  const daysImmuneRecovery = Math.floor((new Date().getTime() - immunoSuppressionEndDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  const quickLinks = [
-    { href: "/nutrition", label: "Nutrition", icon: <Apple className="h-5 w-5" />, desc: "Liver & immune support" },
-    { href: "/mind-body", label: "Mind & Body", icon: <Sparkles className="h-5 w-5" />, desc: "Meditation & healing" },
-    { href: "/movement", label: "Movement", icon: <Activity className="h-5 w-5" />, desc: "Gentle exercise" },
-    { href: "/spiritual", label: "Wellbeing", icon: <Leaf className="h-5 w-5" />, desc: "Inner peace & purpose" },
-    { href: "/date-night", label: "Date Night", icon: <Wine className="h-5 w-5" />, desc: "Sydney dining & fun" },
-    { href: "/ai-assistant", label: "AI Assistant", icon: <MessageCircle className="h-5 w-5" />, desc: "Personalised guidance" },
-  ];
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -2331,194 +2498,151 @@ export default function SimpleDashboard() {
       if (!res.ok) throw new Error("Upload failed");
       const updated = await res.json();
       setUser(updated);
-      toast({ title: "Photo updated!", description: "Looking beautiful." });
+      toast({ title: "Photo updated!" });
     } catch {
-      toast({ title: "Upload failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Upload failed", variant: "destructive" });
     } finally {
       setUploadingPhoto(false);
     }
   };
 
   return (
-    <div className="p-5 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-5 lg:p-8 max-w-5xl mx-auto">
+      {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4">
           <div className="relative group">
             {user.profilePhoto ? (
-              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
-                <img
-                  src={user.profilePhoto}
-                  alt={user.displayName}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
+                <img src={user.profilePhoto} alt={user.displayName} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
-                <span className="text-2xl lg:text-3xl font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
+              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
+                <span className="text-xl lg:text-2xl font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
               </div>
             )}
-            <button
-              onClick={() => photoInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors"
-            >
-              {uploadingPhoto ? (
-                <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-              ) : (
-                <Camera className="h-3.5 w-3.5 text-primary" />
-              )}
+            <button onClick={() => photoInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border-2 border-primary/20 flex items-center justify-center shadow-sm hover:bg-primary/5 transition-colors">
+              {uploadingPhoto ? <Loader2 className="h-3 w-3 text-primary animate-spin" /> : <Camera className="h-3 w-3 text-primary" />}
             </button>
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-            />
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl lg:text-3xl font-heading text-foreground">
-                Welcome back, {user?.displayName || "Friend"}
-              </h1>
-              <EditGoalsDialog user={user} setUser={setUser} />
-            </div>
-            <p className="text-sm text-muted-foreground font-body mt-1">
-              {user.treatmentStatus === "Active Surveillance"
-                ? "Your body continues to heal beautifully"
-                : "Continue nurturing your path to wellness"}
+            <h1 className="text-xl lg:text-2xl font-heading text-foreground">
+              Hey {user?.displayName || "Friend"}
+            </h1>
+            <p className="text-sm text-muted-foreground font-body">
+              {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
-          <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
+          <div className="flex items-center gap-2">
+            <EditGoalsDialog user={user} setUser={setUser} />
+            <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
+          </div>
         </div>
       </div>
 
-      {(isActive("scanCountdown") || isActive("treatmentJourney") || isActive("immuneRecovery") || isActive("activityStreak") || isActive("tumourResponse")) && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {isActive("scanCountdown") && (
-            <CompactStatCard
-              icon={<Scan className="h-5 w-5" />}
-              label="Next Scan"
-              value={daysUntilScan ?? "—"}
-              subtitle={scanDate ? scanDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : undefined}
-              onClick={() => setExpandedWidget("scanCountdown")}
-            />
-          )}
-          {isActive("treatmentJourney") && (
-            <CompactStatCard
-              icon={<Shield className="h-5 w-5" />}
-              label="Treatment Journey"
-              value={`${daysSinceTreatmentStart}d`}
-              subtitle={user.treatmentStatus || "Active Surveillance"}
-              accentColor="amber"
-              onClick={() => setExpandedWidget("treatmentJourney")}
-            />
-          )}
-          {isActive("immuneRecovery") && (
-            <ImmuneRecoveryCompactTimer onClick={() => setExpandedWidget("immuneRecovery")} />
-          )}
-          {isActive("activityStreak") && (
-            <CompactStatCard
-              icon={<Flame className="h-5 w-5" />}
-              label="Activity Streak"
-              value="View"
-              subtitle="Meals, exercise & mindfulness"
-              accentColor="amber"
-              onClick={() => setExpandedWidget("activityStreak")}
-            />
-          )}
-          {isActive("tumourResponse") && (
-            <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
-          )}
-        </div>
-      )}
+      {/* Quick Log Buttons — the hero area */}
+      <Card className="bg-gradient-to-br from-white via-white to-primary/5 border-border rounded-2xl mb-6 overflow-hidden">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-heading text-foreground flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" /> Log Today's Activities
+            </h2>
+            <ActivityHeatmap userId={user.id} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <LogMealDialog userId={user.id} defaultDate={todayStr()} />
+            <LogActivityDialog userId={user.id} type="mindBody" defaultDate={todayStr()} />
+            <LogActivityDialog userId={user.id} type="exercise" defaultDate={todayStr()} />
+          </div>
+        </CardContent>
+      </Card>
 
-      <ExpandableWidget
-        title="Next Scan Countdown"
-        icon={<Scan className="h-5 w-5 text-primary" />}
-        open={expandedWidget === "scanCountdown"}
-        onOpenChange={(open) => setExpandedWidget(open ? "scanCountdown" : null)}
-      >
+      {/* Today's Activity Summary */}
+      <TodayWellnessWidget userId={user.id} />
+
+      {/* Compact Stat Tiles */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-6">
+        {isActive("scanCountdown") && (
+          <CompactStatCard
+            icon={<Scan className="h-5 w-5" />}
+            label="Next Scan"
+            value={daysUntilScan ?? "—"}
+            subtitle={scanDate ? scanDate.toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : undefined}
+            onClick={() => setExpandedWidget("scanCountdown")}
+          />
+        )}
+        {isActive("treatmentJourney") && (
+          <CompactStatCard
+            icon={<Shield className="h-5 w-5" />}
+            label="Treatment Journey"
+            value={`${daysSinceTreatmentStart}d`}
+            subtitle={user.treatmentStatus || "Active Surveillance"}
+            accentColor="amber"
+            onClick={() => setExpandedWidget("treatmentJourney")}
+          />
+        )}
+        {isActive("immuneRecovery") && (
+          <ImmuneRecoveryCompactTimer onClick={() => setExpandedWidget("immuneRecovery")} />
+        )}
+        {isActive("tumourResponse") && (
+          <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
+        )}
+      </div>
+
+      {/* Expanded stat dialogs */}
+      <ExpandableWidget title="Next Scan Countdown" icon={<Scan className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "scanCountdown"} onOpenChange={(open) => setExpandedWidget(open ? "scanCountdown" : null)}>
         <ScanCountdownExpanded nextScanDate={user.nextScanDate} />
       </ExpandableWidget>
-
-      <ExpandableWidget
-        title="Your Treatment Journey"
-        icon={<Shield className="h-5 w-5 text-primary" />}
-        open={expandedWidget === "treatmentJourney"}
-        onOpenChange={(open) => setExpandedWidget(open ? "treatmentJourney" : null)}
-      >
+      <ExpandableWidget title="Your Treatment Journey" icon={<Shield className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "treatmentJourney"} onOpenChange={(open) => setExpandedWidget(open ? "treatmentJourney" : null)}>
         <TreatmentJourneyExpanded user={user} />
       </ExpandableWidget>
-
-      <ExpandableWidget
-        title="Immune Recovery"
-        icon={<Zap className="h-5 w-5 text-primary" />}
-        open={expandedWidget === "immuneRecovery"}
-        onOpenChange={(open) => setExpandedWidget(open ? "immuneRecovery" : null)}
-      >
+      <ExpandableWidget title="Immune Recovery" icon={<Zap className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "immuneRecovery"} onOpenChange={(open) => setExpandedWidget(open ? "immuneRecovery" : null)}>
         <ImmuneRecoveryExpanded />
       </ExpandableWidget>
-
-      <ExpandableWidget
-        title="Activity Streak"
-        icon={<Flame className="h-5 w-5 text-accent" />}
-        open={expandedWidget === "activityStreak"}
-        onOpenChange={(open) => setExpandedWidget(open ? "activityStreak" : null)}
-      >
-        <ActivityStreakExpanded userId={user.id} />
-      </ExpandableWidget>
-
-      <ExpandableWidget
-        title="Tumour Response"
-        icon={<TrendingUp className="h-5 w-5 text-primary" />}
-        open={expandedWidget === "tumourResponse"}
-        onOpenChange={(open) => setExpandedWidget(open ? "tumourResponse" : null)}
-      >
+      <ExpandableWidget title="Tumour Response" icon={<TrendingUp className="h-5 w-5 text-primary" />}
+        open={expandedWidget === "tumourResponse"} onOpenChange={(open) => setExpandedWidget(open ? "tumourResponse" : null)}>
         <TumourResponseExpanded userId={user.id} />
       </ExpandableWidget>
 
-      {isActive("inspiration") && (
-        <div className="mb-6">
-          <InspirationWidget />
-        </div>
-      )}
+      {/* 7-Day Trends Chart */}
+      <div className="mb-6">
+        <WeeklyTrendsChart userId={user.id} />
+      </div>
 
+      {/* Daily Brief */}
       {isActive("dailyBrief") && (
         <div className="mb-6">
           <DailyBriefWidget userId={user.id} />
         </div>
       )}
 
-      {isActive("todayWellness") && (
-        <div className="mb-6">
-          <TodayWellnessWidget userId={user.id} />
+      {/* Two-column: Gut Check + Fun Facts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {isActive("gutCheck") && <GutCheckWidget userId={user.id} />}
+        {isActive("funFacts") && <FunFactsWidget userId={user.id} />}
+      </div>
+
+      {/* Motivational Wall + Inspiration */}
+      {(isActive("motivationalWall") || isActive("inspiration")) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {isActive("motivationalWall") && <MotivationalWallWidget userId={user.id} />}
+          {isActive("inspiration") && <InspirationWidget />}
         </div>
       )}
 
-      {isActive("funFacts") && (
-        <div className="mb-6">
-          <FunFactsWidget userId={user.id} />
-        </div>
-      )}
-
-      {isActive("gutCheck") && (
-        <div className="mb-6">
-          <GutCheckWidget userId={user.id} />
-        </div>
-      )}
-
-      {isActive("motivationalWall") && (
-        <div className="mb-6">
-          <MotivationalWallWidget userId={user.id} />
-        </div>
-      )}
-
+      {/* Healing Therapies */}
       {isActive("healingTherapies") && (
         <div className="mb-6">
           <HealingTherapiesWidget userId={user.id} />
         </div>
       )}
 
+      {/* Treatment Timeline + Appointments + AI Assistant */}
       {(isActive("treatmentTimeline") || isActive("appointments") || isActive("aiAssistant")) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
@@ -2532,17 +2656,8 @@ export default function SimpleDashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground font-body mb-4">
-                  Personalised guidance for nutrition, immune support, scan preparation, and emotional wellbeing.
+                  Personalised guidance for nutrition, immune support, and emotional wellbeing.
                 </p>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {["Immune Support", "Scan Anxiety", "Liver Recovery", "Supplements"].map((topic) => (
-                    <Link key={topic} href="/ai-assistant">
-                      <Button variant="outline" size="sm" className="w-full text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body rounded-lg">
-                        {topic}
-                      </Button>
-                    </Link>
-                  ))}
-                </div>
                 <Link href="/ai-assistant">
                   <Button className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium rounded-xl">
                     Start Conversation
@@ -2554,17 +2669,24 @@ export default function SimpleDashboard() {
         </div>
       )}
 
+      {/* Quick Links */}
       <div className="mb-6">
-        <h2 className="text-base font-heading text-foreground mb-4">Explore Your Healing Tools</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {quickLinks.map((link) => (
+        <h2 className="text-base font-heading text-foreground mb-4">Healing Tools</h2>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {[
+            { href: "/nutrition", label: "Nutrition", icon: <Apple className="h-5 w-5" /> },
+            { href: "/resources", label: "Resources", icon: <Leaf className="h-5 w-5" /> },
+            { href: "/treatment-plus", label: "Treatment+", icon: <Shield className="h-5 w-5" /> },
+            { href: "/date-night", label: "Date Night", icon: <Wine className="h-5 w-5" /> },
+            { href: "/community", label: "Community", icon: <MessageCircle className="h-5 w-5" /> },
+            { href: "/ai-assistant", label: "AI Chat", icon: <Sparkles className="h-5 w-5" /> },
+          ].map((link) => (
             <Link key={link.href} href={link.href}>
-              <div className="group bg-white border border-border rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0">
-                <div className="mx-auto w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5 group-hover:bg-primary/15 transition-all duration-200">
+              <div className="group bg-white border border-border rounded-2xl p-3 text-center cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+                <div className="mx-auto w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center mb-2 group-hover:bg-primary/15 transition-all">
                   <span className="text-primary">{link.icon}</span>
                 </div>
-                <h3 className="font-body font-semibold text-xs text-foreground group-hover:text-primary transition-colors">{link.label}</h3>
-                <p className="text-[10px] text-muted-foreground font-body mt-0.5 line-clamp-1">{link.desc}</p>
+                <h3 className="font-body font-medium text-[11px] text-foreground group-hover:text-primary transition-colors">{link.label}</h3>
               </div>
             </Link>
           ))}
