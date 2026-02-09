@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useUser } from "@/contexts/UserContext";
 import {
   TrendingUp, Heart, Sparkles, Shield, Target, Scan, Plus, Check, Loader2, Settings2, X,
-  ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity
+  ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity,
+  ImagePlus, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1173,6 +1174,9 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
   const [addOpen, setAddOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [newColor, setNewColor] = useState("amber");
+  const [uploading, setUploading] = useState(false);
+  const [previewItem, setPreviewItem] = useState<MotivationalWallItem | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: items = [] } = useQuery<MotivationalWallItem[]>({
@@ -1205,8 +1209,31 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/motivational-wall"] });
+      setPreviewItem(null);
     },
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", String(userId));
+      formData.append("content", "");
+      formData.append("color", "amber");
+      const res = await fetch("/api/motivational-wall/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      queryClient.invalidateQueries({ queryKey: ["/api/motivational-wall"] });
+      toast({ title: "Added to your wall" });
+    } catch {
+      toast({ title: "Upload failed — try a smaller file", variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const colorMap: Record<string, string> = {
     amber: "from-amber-50 to-orange-50 border-amber-200/50",
@@ -1215,6 +1242,8 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
     pink: "from-pink-50 to-rose-50 border-pink-200/50",
     purple: "from-purple-50 to-violet-50 border-purple-200/50",
   };
+
+  const mediaItems = items.filter(i => i.type === "image" || i.type === "video");
 
   return (
     <>
@@ -1225,57 +1254,120 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
             <Heart className="h-5 w-5 text-accent" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-heading text-foreground">Evidence Worth Fighting For</p>
+            <p className="text-sm font-heading text-foreground">Worth Fighting For</p>
             <p className="text-[10px] text-muted-foreground font-body mt-0.5">
               {items.length > 0 ? `${items.length} reasons on your wall` : "Tap to start your wall"}
             </p>
           </div>
+          {mediaItems.length > 0 && (
+            <div className="flex -space-x-2">
+              {mediaItems.slice(0, 3).map((item) => (
+                <div key={item.id} className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm">
+                  {item.type === "video" ? (
+                    <video src={item.imageUrl!} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={item.imageUrl!} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </div>
       </button>
+
+      <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
 
       <Dialog open={wallOpen} onOpenChange={setWallOpen}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading flex items-center gap-2">
-              <Heart className="h-5 w-5 text-accent" /> Evidence Worth Fighting For
+              <Heart className="h-5 w-5 text-accent" /> Worth Fighting For
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                className="flex-1 rounded-xl font-body text-xs h-9 border-dashed">
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <ImagePlus className="h-3.5 w-3.5 mr-1.5" />}
+                {uploading ? "Uploading..." : "Add Photo or Video"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}
+                className="rounded-xl font-body text-xs h-9 border-dashed">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Text
+              </Button>
+            </div>
+
             {items.length === 0 ? (
-              <button onClick={() => setAddOpen(true)} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-8 text-center transition-colors">
-                <Heart className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm font-body text-muted-foreground">Add reasons to keep fighting</p>
-                <p className="text-xs font-body text-muted-foreground/60 mt-1">Photos, quotes, people, dreams, moments...</p>
+              <button onClick={() => fileInputRef.current?.click()} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-8 text-center transition-colors">
+                <ImagePlus className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm font-body text-muted-foreground">Add photos, videos & reasons to keep fighting</p>
+                <p className="text-xs font-body text-muted-foreground/60 mt-1">People, moments, dreams, places...</p>
               </button>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {items.map((item) => (
-                  <div key={item.id} className={`group relative bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border rounded-xl p-3 min-h-[80px] flex items-center justify-center`}>
-                    <p className="text-xs font-body text-foreground text-center leading-relaxed">{item.content}</p>
-                    <button onClick={() => deleteMutation.mutate(item.id)}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  </div>
+                  <button key={item.id} onClick={() => setPreviewItem(item)}
+                    className={`group relative rounded-xl overflow-hidden min-h-[100px] transition-all hover:shadow-md ${
+                      item.type === "text" ? `bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border p-3 flex items-center justify-center` : ""
+                    }`}>
+                    {item.type === "image" && item.imageUrl && (
+                      <img src={item.imageUrl} alt={item.content || ""} className="w-full h-full object-cover absolute inset-0" />
+                    )}
+                    {item.type === "video" && item.imageUrl && (
+                      <>
+                        <video src={item.imageUrl} className="w-full h-full object-cover absolute inset-0" muted preload="metadata" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                            <Play className="h-3.5 w-3.5 text-foreground ml-0.5" />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {item.type === "text" && (
+                      <p className="text-xs font-body text-foreground text-center leading-relaxed relative z-10">{item.content}</p>
+                    )}
+                    {(item.type === "image" || item.type === "video") && item.content && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6">
+                        <p className="text-[10px] font-body text-white leading-snug">{item.content}</p>
+                      </div>
+                    )}
+                  </button>
                 ))}
-                <button onClick={() => setAddOpen(true)} className="border-2 border-dashed border-border rounded-xl p-3 min-h-[80px] flex items-center justify-center hover:bg-muted/30 transition-colors">
-                  <Plus className="h-5 w-5 text-muted-foreground/40" />
-                </button>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-            <div className="border-t border-border pt-4">
-              <p className="text-xs font-body text-muted-foreground mb-3 text-center">A little banana-sized motivation</p>
-              <div className="rounded-xl overflow-hidden bg-muted/30 border border-border aspect-video flex items-center justify-center">
-                <div className="text-center p-4">
-                  <span className="text-3xl mb-2 block">🍌</span>
-                  <p className="text-sm font-heading text-foreground">Nano Banana Short</p>
-                  <p className="text-[10px] font-body text-muted-foreground mt-1">Coming soon — tiny videos, big feelings</p>
+      <Dialog open={!!previewItem} onOpenChange={(open) => { if (!open) setPreviewItem(null); }}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl">
+          {previewItem && (
+            <div>
+              {previewItem.type === "image" && previewItem.imageUrl && (
+                <img src={previewItem.imageUrl} alt={previewItem.content || ""} className="w-full max-h-[60vh] object-contain bg-black" />
+              )}
+              {previewItem.type === "video" && previewItem.imageUrl && (
+                <video src={previewItem.imageUrl} controls autoPlay className="w-full max-h-[60vh] bg-black" />
+              )}
+              {previewItem.type === "text" && (
+                <div className={`bg-gradient-to-br ${colorMap[previewItem.color || "amber"] || colorMap.amber} p-8 min-h-[200px] flex items-center justify-center`}>
+                  <p className="text-lg font-body text-foreground text-center leading-relaxed">{previewItem.content}</p>
                 </div>
+              )}
+              <div className="p-4 flex items-center justify-between">
+                {previewItem.content && (previewItem.type === "image" || previewItem.type === "video") ? (
+                  <p className="text-sm font-body text-foreground flex-1">{previewItem.content}</p>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(previewItem.id)}
+                  className="text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl text-xs font-body ml-2">
+                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                </Button>
               </div>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 

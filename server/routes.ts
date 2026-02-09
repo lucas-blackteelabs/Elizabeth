@@ -31,6 +31,21 @@ const upload = multer({
   },
 });
 
+const wallUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `wall-${Date.now()}-${Math.random().toString(36).slice(2, 6)}${ext}`);
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|webp|gif|mp4|mov|webm|heic|heif)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  },
+});
+
 async function seedLizAccount() {
   const lizProfile = {
     cancerType: "Stage IV Melanoma",
@@ -1220,6 +1235,29 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
       return res.json(item);
     } catch (error) {
       return res.status(500).json({ error: "Failed to add wall item" });
+    }
+  });
+
+  app.post("/api/motivational-wall/upload", wallUpload.single("file"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const isVideo = /\.(mp4|mov|webm)$/i.test(req.file.originalname);
+      const type = isVideo ? "video" : "image";
+      const userId = parseInt(req.body.userId) || 1;
+      const content = req.body.content || "";
+      const color = req.body.color || "amber";
+      const item = await storage.createMotivationalWallItem({
+        userId,
+        type,
+        content,
+        imageUrl: fileUrl,
+        color,
+      });
+      return res.json(item);
+    } catch (error) {
+      console.error("Error uploading wall media:", error);
+      return res.status(500).json({ error: "Failed to upload media" });
     }
   });
 
