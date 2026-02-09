@@ -1087,7 +1087,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
 
 const DAILY_BRIEF_SESSION_KEY = "elizabeth-daily-brief-cache";
 
-function DailyBriefWidget({ userId }: { userId: number }) {
+function useDailyBrief(userId: number) {
   const [brief, setBrief] = useState<string | null>(() => {
     try {
       const cached = sessionStorage.getItem(DAILY_BRIEF_SESSION_KEY);
@@ -1096,17 +1096,6 @@ function DailyBriefWidget({ userId }: { userId: number }) {
     return null;
   });
   const [hasLoaded, setHasLoaded] = useState(!!brief);
-
-  const { data: allAppointments = [] } = useQuery<Appointment[]>({
-    queryKey: ["/api/appointments", { userId }],
-    queryFn: async () => {
-      const res = await fetch(`/api/appointments?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const today = todayStr();
-  const todaysAppointments = allAppointments.filter(a => a.date === today);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -1134,39 +1123,12 @@ function DailyBriefWidget({ userId }: { userId: number }) {
     }
   }, []);
 
-  const handleRefresh = () => {
+  const refresh = () => {
     try { sessionStorage.removeItem(DAILY_BRIEF_SESSION_KEY); } catch {}
     mutation.mutate();
   };
 
-  return (
-    <div className="flex items-start gap-3 px-1">
-      <button
-        onClick={handleRefresh}
-        disabled={mutation.isPending}
-        className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center flex-shrink-0 hover:bg-accent/25 transition-colors mt-0.5"
-      >
-        {mutation.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-accent" />}
-      </button>
-      <div className="flex-1 min-w-0">
-        {mutation.isPending && !brief ? (
-          <div className="h-5 bg-muted rounded-full w-3/4 animate-pulse mt-1.5" />
-        ) : (
-          <p className="text-base font-heading text-foreground leading-snug">{brief}</p>
-        )}
-        {todaysAppointments.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {todaysAppointments.map((appt) => (
-              <span key={appt.id} className="inline-flex items-center gap-1.5 text-xs font-body text-muted-foreground bg-white/70 rounded-full px-2.5 py-1 border border-border/50">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary/60 flex-shrink-0" />
-                {appt.title}{appt.time ? ` · ${appt.time}` : ""}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return { brief, isLoading: mutation.isPending && !brief, refresh, isPending: mutation.isPending };
 }
 
 function MotivationalWallWidget({ userId }: { userId: number }) {
@@ -1573,6 +1535,7 @@ export default function SimpleDashboard() {
   const { toast } = useToast();
   const [activeWidgets, setActiveWidgets] = useState<string[]>(loadWidgets());
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const dailyBrief = useDailyBrief(user?.id ?? 0);
 
   const handleWidgetChange = (ids: string[]) => {
     setActiveWidgets(ids);
@@ -1654,11 +1617,16 @@ export default function SimpleDashboard() {
         </div>
       </div>
 
-      {/* Today's Vibe */}
+      {/* Today's Vibe — tight inline */}
       {isActive("dailyBrief") && (
-        <div className="mb-4">
-          <DailyBriefWidget userId={user.id} />
-        </div>
+        <button onClick={dailyBrief.refresh} disabled={dailyBrief.isPending} className="w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/8 hover:bg-accent/15 transition-colors text-left">
+          {dailyBrief.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin flex-shrink-0" /> : <Sparkles className="h-3.5 w-3.5 text-accent flex-shrink-0" />}
+          {dailyBrief.isLoading ? (
+            <div className="h-4 bg-accent/10 rounded-full w-2/3 animate-pulse" />
+          ) : (
+            <span className="text-sm font-body text-foreground/80 truncate">{dailyBrief.brief}</span>
+          )}
+        </button>
       )}
 
       {/* Quick Log + Today's Wellness (always visible) */}
