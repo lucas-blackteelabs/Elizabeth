@@ -83,7 +83,7 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
         "relative group transition-all duration-500",
         isMobileNavEmbedded
           ? "w-14 h-14 -mt-7 rounded-full flex items-center justify-center"
-          : "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
+          : "fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
         isOpen
           ? "scale-90"
           : "hover:scale-110 animate-magic-float"

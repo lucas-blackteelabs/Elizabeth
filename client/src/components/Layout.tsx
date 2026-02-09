@@ -34,7 +34,7 @@ export default function Layout({ children }: LayoutProps) {
         isMobile={isMobile} 
       />
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
+      <main className="flex-1 overflow-y-auto pb-20">
         {isMobile && (
           <div className="flex items-center justify-between bg-white/80 backdrop-blur-lg p-4 border-b border-border sticky top-0 z-20">
             <Button 
@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
 
-      {isMobile && <MobileBottomNav />}
+      <MobileBottomNav />
 
       <Disclaimer />
     </div>
