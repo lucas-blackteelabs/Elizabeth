@@ -1,21 +1,18 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useUser } from "@/contexts/UserContext";
 import {
-  MessageCircle, TrendingUp, Heart, Sparkles, Activity, Apple, Leaf, Shield, Target, Clock,
-  Scan, Plus, Check, Loader2, Settings2, X, GripVertical, Flame, Sun, BarChart3, Calendar,
-  ArrowDown, Zap, ChevronRight, Wine, Camera, Pencil, Trash2, Edit3, Stethoscope, Waves,
-  BookHeart, ImagePlus, Trophy, SmilePlus, Utensils, Dumbbell, Brain
+  TrendingUp, Heart, Sparkles, Shield, Target, Scan, Plus, Check, Loader2, Settings2, X,
+  ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType, TumourNickname, JournalEntry, MotivationalWallItem } from "@shared/schema";
+import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType, TumourNickname, MotivationalWallItem } from "@shared/schema";
 import { Textarea } from "@/components/ui/textarea";
 
 function todayStr() {
@@ -32,25 +29,16 @@ interface WidgetDef {
   defaultVisible: boolean;
 }
 
-const ALL_WIDGETS: WidgetDef[] = [
-  { id: "scanCountdown", label: "Next Scan Countdown", description: "Visual countdown to your next scan", icon: <Scan className="h-4 w-4" />, defaultVisible: true },
-  { id: "treatmentJourney", label: "Treatment Journey", description: "Days since diagnosis and key milestones", icon: <Shield className="h-4 w-4" />, defaultVisible: true },
-  { id: "tumourResponse", label: "Tumour Response", description: "Visualise tumour size and activity changes", icon: <BarChart3 className="h-4 w-4" />, defaultVisible: true },
-  { id: "dailyBrief", label: "Daily Brief", description: "Personalised AI wellness message", icon: <Sparkles className="h-4 w-4" />, defaultVisible: true },
-  { id: "todayWellness", label: "Today's Wellness", description: "Log meals, mindfulness, and exercise", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
-  { id: "activityStreak", label: "Activity Streak", description: "Track meals, exercise & mindfulness streaks", icon: <Flame className="h-4 w-4" />, defaultVisible: true },
-  { id: "healingTherapies", label: "Healing Therapies", description: "Accumulated therapy sessions and minutes", icon: <Stethoscope className="h-4 w-4" />, defaultVisible: false },
-  { id: "treatmentTimeline", label: "Treatment Timeline", description: "Your full treatment history", icon: <Clock className="h-4 w-4" />, defaultVisible: false },
-  { id: "aiAssistant", label: "AI Health Assistant", description: "Quick access to personalised guidance", icon: <MessageCircle className="h-4 w-4" />, defaultVisible: false },
-  { id: "appointments", label: "Upcoming Appointments", description: "Your scheduled appointments", icon: <Calendar className="h-4 w-4" />, defaultVisible: false },
-  { id: "inspiration", label: "Daily Inspiration", description: "A daily healing affirmation", icon: <Sun className="h-4 w-4" />, defaultVisible: false },
-  { id: "gutCheck", label: "Daily Gut Check", description: "Quick daily journal with AI insights", icon: <BookHeart className="h-4 w-4" />, defaultVisible: true },
-  { id: "motivationalWall", label: "Evidence Wall", description: "Evidence of a Life Worth Fighting For", icon: <ImagePlus className="h-4 w-4" />, defaultVisible: true },
-  { id: "funFacts", label: "Fun Stats", description: "Fun rotating wellness achievements", icon: <Trophy className="h-4 w-4" />, defaultVisible: true },
+const AVAILABLE_WIDGETS: WidgetDef[] = [
+  { id: "scanCountdown", label: "Scan Countdown", description: "Days until your next scan", icon: <Scan className="h-4 w-4" />, defaultVisible: true },
+  { id: "treatmentJourney", label: "Treatment Journey", description: "Days since diagnosis", icon: <Shield className="h-4 w-4" />, defaultVisible: true },
+  { id: "tumourResponse", label: "Tumour Response", description: "Track tumour changes", icon: <TrendingUp className="h-4 w-4" />, defaultVisible: true },
+  { id: "dailyBrief", label: "Today's Vibe", description: "AI wellness message", icon: <Sparkles className="h-4 w-4" />, defaultVisible: true },
+  { id: "motivationalWall", label: "Worth Fighting For", description: "Your reasons to keep going", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
 ];
 
 function getDefaultWidgets(): string[] {
-  return ALL_WIDGETS.filter(w => w.defaultVisible).map(w => w.id);
+  return AVAILABLE_WIDGETS.filter(w => w.defaultVisible).map(w => w.id);
 }
 
 function loadWidgets(): string[] {
@@ -496,58 +484,6 @@ function EditExerciseDialog({ exercise, open, onOpenChange }: { exercise: Exerci
   );
 }
 
-function EditGoalsDialog({ user, setUser }: { user: any; setUser: (u: any) => void }) {
-  const [open, setOpen] = useState(false);
-  const [goals, setGoals] = useState(user.goals || "");
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (open) setGoals(user.goals || "");
-  }, [open, user.goals]);
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest(`/api/users/${user.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goals }),
-      });
-    },
-    onSuccess: (data: any) => {
-      setUser(data);
-      setOpen(false);
-      toast({ title: "Goals updated", description: "Keep striving!" });
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary font-body gap-1 h-7 px-2">
-          <Edit3 className="h-3 w-3" /> Goals
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="bg-white border-border">
-        <DialogHeader>
-          <DialogTitle className="font-heading text-foreground">Edit Your Goals</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <textarea
-            value={goals}
-            onChange={(e) => setGoals(e.target.value)}
-            rows={5}
-            className="w-full rounded-lg border border-border bg-muted/50 p-3 text-sm font-body text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-            placeholder="What are your healing goals?"
-          />
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
-            {mutation.isPending ? "Saving..." : "Save Goals"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; onChange: (ids: string[]) => void }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(activeWidgets);
@@ -578,7 +514,7 @@ function WidgetPicker({ activeWidgets, onChange }: { activeWidgets: string[]; on
         </DialogHeader>
         <p className="text-sm text-muted-foreground font-body mb-2">Select the cards you'd like to see on your dashboard.</p>
         <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
-          {ALL_WIDGETS.map((w) => {
+          {AVAILABLE_WIDGETS.map((w) => {
             const isActive = selected.includes(w.id);
             return (
               <button
@@ -762,186 +698,6 @@ function TreatmentJourneyExpanded({ user }: { user: any }) {
         <p className="text-xs font-body text-muted-foreground leading-relaxed">
           {user.medicalNotes || "You're showing incredible resilience on this journey. Keep going."}
         </p>
-      </div>
-    </div>
-  );
-}
-
-function useImmuneRecoveryTimer() {
-  const immunoSuppressionEndDate = new Date("2025-12-01T00:00:00");
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const totalMs = now.getTime() - immunoSuppressionEndDate.getTime();
-  const totalSeconds = Math.floor(totalMs / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const weeks = Math.floor(days / 7);
-  const months = Math.floor(days / 30);
-
-  return { days, hours, minutes, seconds, weeks, months };
-}
-
-function ImmuneRecoveryCompactTimer({ onClick }: { onClick: () => void }) {
-  const { days, weeks } = useImmuneRecoveryTimer();
-
-  return (
-    <CompactStatCard
-      icon={<Zap className="h-5 w-5" />}
-      label="Immune Recovery"
-      value={`${days}d`}
-      subtitle={`${weeks} weeks recovering`}
-      onClick={onClick}
-    />
-  );
-}
-
-function ImmuneRecoveryExpanded() {
-  const { days, hours, minutes, seconds, weeks, months } = useImmuneRecoveryTimer();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-
-  const milestones = [
-    { weeks: 4, label: "Initial recovery phase", done: weeks >= 4 },
-    { weeks: 8, label: "Immune cells rebuilding", done: weeks >= 8 },
-    { weeks: 12, label: "T-cell function improving", done: weeks >= 12 },
-    { weeks: 24, label: "Substantial immune restoration", done: weeks >= 24 },
-    { weeks: 52, label: "Full immune reconstitution", done: weeks >= 52 },
-  ];
-
-  return (
-    <div className="space-y-5 py-2">
-      <div className="bg-primary/5 border border-primary/15 rounded-xl p-5">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-body text-center mb-3">Time Recovering</p>
-        <div className="flex items-center justify-center gap-1">
-          <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{days}</p>
-            <p className="text-[10px] text-muted-foreground font-body mt-1">days</p>
-          </div>
-          <span className="text-2xl font-heading text-primary/30 mx-2">:</span>
-          <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(hours)}</p>
-            <p className="text-[10px] text-muted-foreground font-body mt-1">hrs</p>
-          </div>
-          <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
-          <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-primary tabular-nums">{pad(minutes)}</p>
-            <p className="text-[10px] text-muted-foreground font-body mt-1">min</p>
-          </div>
-          <span className="text-2xl font-heading text-primary/30 mx-1">:</span>
-          <div className="text-center">
-            <p className="text-4xl font-heading font-bold text-accent tabular-nums">{pad(seconds)}</p>
-            <p className="text-[10px] text-muted-foreground font-body mt-1">sec</p>
-          </div>
-        </div>
-        <div className="flex justify-center gap-6 mt-3">
-          <span className="text-xs font-body text-muted-foreground"><strong className="text-primary font-heading">{weeks}</strong> weeks</span>
-          <span className="text-xs font-body text-muted-foreground"><strong className="text-accent font-heading">{months}</strong> months</span>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <p className="text-xs font-heading text-accent uppercase tracking-wider">Recovery Milestones</p>
-        {milestones.map((m, i) => (
-          <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${m.done ? "bg-primary/8" : "bg-muted"}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${m.done ? "bg-primary text-white" : "border-2 border-border"}`}>
-              {m.done && <Check className="h-3 w-3" />}
-            </div>
-            <span className={`text-sm font-body ${m.done ? "text-foreground" : "text-muted-foreground"}`}>{m.label}</span>
-            <span className="text-[10px] text-muted-foreground font-body ml-auto">{m.weeks}w</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ActivityStreakExpanded({ userId }: { userId: number }) {
-  const { data: recentMeals = [] } = useQuery<Meal[]>({
-    queryKey: ["/api/meals", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-  const { data: recentMindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-  const { data: recentExercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, recent: true }],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
-      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${todayStr()}`);
-      return res.json();
-    },
-  });
-
-  const activeDates = new Set<string>();
-  recentMeals.forEach((m) => activeDates.add(m.date));
-  recentMindBody.forEach((a) => activeDates.add(a.date));
-  recentExercises.forEach((e) => activeDates.add(e.date));
-
-  let streak = 0;
-  const d = new Date();
-  while (true) {
-    const dateStr = d.toISOString().split("T")[0];
-    if (activeDates.has(dateStr)) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else break;
-  }
-
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const dt = new Date(Date.now() - (6 - i) * 86400000);
-    const dateStr = dt.toISOString().split("T")[0];
-    const meals = recentMeals.filter(m => m.date === dateStr).length;
-    const mindBody = recentMindBody.filter(a => a.date === dateStr).length;
-    const exercises = recentExercises.filter(e => e.date === dateStr).length;
-    return {
-      day: dt.toLocaleDateString("en-AU", { weekday: "short" }),
-      date: dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" }),
-      active: activeDates.has(dateStr),
-      meals, mindBody, exercises
-    };
-  });
-
-  return (
-    <div className="space-y-4 py-2">
-      <div className="text-center">
-        <p className="text-4xl font-heading font-bold text-accent">{streak}</p>
-        <p className="text-sm text-muted-foreground font-body">Day Activity Streak</p>
-      </div>
-      <div className="grid grid-cols-7 gap-2">
-        {last7.map((d, i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5">
-            <p className="text-[9px] text-muted-foreground font-body">{d.day}</p>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-heading transition-all ${
-              d.active ? "bg-accent text-white shadow-sm" : "bg-muted text-muted-foreground"
-            }`}>
-              {d.active ? <Check className="h-3.5 w-3.5" /> : "·"}
-            </div>
-            <div className="flex gap-0.5">
-              {d.meals > 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
-              {d.mindBody > 0 && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
-              {d.exercises > 0 && <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-center gap-4 text-[10px] text-muted-foreground font-body">
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Meals</span>
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-accent" /> Mindfulness</span>
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-sky-500" /> Exercise</span>
       </div>
     </div>
   );
@@ -1429,164 +1185,6 @@ function DailyBriefWidget({ userId }: { userId: number }) {
   );
 }
 
-function GutCheckWidget({ userId }: { userId: number }) {
-  const [open, setOpen] = useState(false);
-  const [content, setContent] = useState("");
-  const [mood, setMood] = useState(3);
-  const [energy, setEnergy] = useState(3);
-  const [showAnalysis, setShowAnalysis] = useState(false);
-  const { toast } = useToast();
-
-  const { data: entries = [] } = useQuery<JournalEntry[]>({
-    queryKey: ["/api/journal", { userId }],
-    queryFn: async () => {
-      const res = await fetch(`/api/journal?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const todayEntry = entries.find(e => e.date === todayStr());
-
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("/api/journal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, date: todayStr(), mood, energy, content }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/journal"] });
-      setOpen(false);
-      setContent("");
-      setMood(3);
-      setEnergy(3);
-      toast({ title: "Gut check saved ✨" });
-    },
-  });
-
-  const analysisMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest<{ analysis: string }>("/api/ai/journal-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-    },
-  });
-
-  const moodEmojis = ["😔", "😐", "🙂", "😊", "🤩"];
-  const energyEmojis = ["🔋", "🪫", "⚡", "💪", "🚀"];
-
-  const recentEntries = entries
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5);
-
-  return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground text-base flex items-center gap-2">
-            <BookHeart className="h-5 w-5 text-primary" /> Daily Gut Check
-          </CardTitle>
-          <div className="flex gap-1">
-            {entries.length >= 2 && (
-              <Button variant="ghost" size="sm" onClick={() => { setShowAnalysis(!showAnalysis); if (!showAnalysis && !analysisMutation.data) analysisMutation.mutate(); }}
-                className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
-                {analysisMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                Insights
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => setOpen(true)}
-              className="text-xs text-muted-foreground hover:text-primary font-body h-7 px-2">
-              <Plus className="h-3 w-3 mr-1" /> Log
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {todayEntry ? (
-          <div className="bg-primary/5 rounded-xl p-3 mb-3">
-            <div className="flex items-center gap-3 mb-1">
-              <span className="text-lg">{moodEmojis[(todayEntry.mood || 3) - 1]}</span>
-              <span className="text-lg">{energyEmojis[(todayEntry.energy || 3) - 1]}</span>
-              <span className="text-[10px] text-muted-foreground font-body">Today</span>
-            </div>
-            <p className="text-sm font-body text-foreground line-clamp-2">{todayEntry.content}</p>
-          </div>
-        ) : (
-          <button onClick={() => setOpen(true)} className="w-full bg-muted/50 hover:bg-muted rounded-xl p-4 text-center transition-colors mb-3">
-            <SmilePlus className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-            <p className="text-xs font-body text-muted-foreground">How are you feeling today?</p>
-          </button>
-        )}
-
-        {showAnalysis && analysisMutation.data && (
-          <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 mb-3">
-            <p className="text-xs font-body text-foreground leading-relaxed">{(analysisMutation.data as any).analysis}</p>
-          </div>
-        )}
-
-        {recentEntries.length > 0 && (
-          <div className="flex gap-1.5">
-            {recentEntries.slice(0, 7).map((e) => (
-              <div key={e.id} className="flex flex-col items-center gap-0.5" title={`${e.date}: ${e.content}`}>
-                <span className="text-sm">{moodEmojis[(e.mood || 3) - 1]}</span>
-                <span className="text-[8px] text-muted-foreground font-body">
-                  {new Date(e.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Daily Gut Check</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-body text-muted-foreground mb-2 block">How's your mood?</label>
-              <div className="flex gap-2">
-                {moodEmojis.map((emoji, i) => (
-                  <button key={i} onClick={() => setMood(i + 1)}
-                    className={`text-2xl p-2 rounded-xl transition-all ${mood === i + 1 ? "bg-primary/15 scale-110 ring-2 ring-primary/30" : "hover:bg-muted"}`}>
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-body text-muted-foreground mb-2 block">Energy level?</label>
-              <div className="flex gap-2">
-                {energyEmojis.map((emoji, i) => (
-                  <button key={i} onClick={() => setEnergy(i + 1)}
-                    className={`text-2xl p-2 rounded-xl transition-all ${energy === i + 1 ? "bg-accent/15 scale-110 ring-2 ring-accent/30" : "hover:bg-muted"}`}>
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-body text-muted-foreground mb-2 block">What's on your mind?</label>
-              <Textarea value={content} onChange={(e) => setContent(e.target.value)}
-                placeholder="Just a few words... how are you really feeling?"
-                className="resize-none font-body text-sm min-h-[80px]" />
-            </div>
-            <Button onClick={() => createMutation.mutate()} disabled={!content.trim() || createMutation.isPending}
-              className="w-full bg-primary text-white hover:bg-primary/90 font-body rounded-xl">
-              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Gut Check
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-}
-
 function MotivationalWallWidget({ userId }: { userId: number }) {
   const [wallOpen, setWallOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -1728,57 +1326,6 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function FunFactsWidget({ userId }: { userId: number }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const { data: factsData } = useQuery<{ facts: string[] }>({
-    queryKey: ["/api/fun-facts", { userId }],
-    queryFn: async () => {
-      const res = await fetch(`/api/fun-facts?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const facts = factsData?.facts || [];
-  if (facts.length === 0) return null;
-
-  const fact = facts[currentIndex % facts.length];
-  const canPrev = currentIndex > 0;
-  const canNext = currentIndex < facts.length - 1;
-
-  return (
-    <Card className="bg-gradient-to-br from-primary/5 via-white to-accent/5 border-primary/20 rounded-2xl overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
-            <Trophy className="h-5 w-5 text-accent" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-0.5">Did you know?</p>
-            <p className="text-sm font-body text-foreground font-medium leading-snug">{fact}</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-3">
-          <button onClick={() => canPrev && setCurrentIndex(currentIndex - 1)}
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${canPrev ? "bg-muted hover:bg-primary/10 text-foreground" : "text-muted-foreground/30 cursor-default"}`}>
-            <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-          </button>
-          <div className="flex gap-1">
-            {facts.map((_, i) => (
-              <button key={i} onClick={() => setCurrentIndex(i)}
-                className={`h-1.5 rounded-full transition-all ${i === currentIndex % facts.length ? "bg-accent w-4" : "bg-border w-1.5 hover:bg-accent/30"}`} />
-            ))}
-          </div>
-          <button onClick={() => canNext && setCurrentIndex(currentIndex + 1)}
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${canNext ? "bg-muted hover:bg-primary/10 text-foreground" : "text-muted-foreground/30 cursor-default"}`}>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -1928,364 +1475,6 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
   );
 }
 
-function TreatmentTimelineWidget() {
-  const timeline = [
-    { date: "April 2025", title: "Diagnosis", desc: "Stage IV melanoma with liver metastases. Three liver tumours identified.", color: "bg-accent" },
-    { date: "April–July 2025", title: "Immunotherapy", desc: "4 cycles of ipilimumab + nivolumab. Major partial metabolic response achieved.", color: "bg-primary" },
-    { date: "July 2025", title: "Treatment Paused", desc: "Immunotherapy paused due to severe toxicity (Grade 4 hepatitis, colitis). Started immunosuppression.", color: "bg-red-500" },
-    { date: "December 2025", title: "Immunosuppression Ceased", desc: "Approximately 5 months of mycophenolate completed. Immune system now recovering.", color: "bg-accent" },
-    { date: "February 2026", title: "Continued Improvement", desc: "Latest scan shows continued improvement. One lesion metabolically complete. No new disease anywhere.", color: "bg-primary" },
-  ];
-
-  return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-          <Clock className="h-5 w-5 text-primary" /> Treatment Timeline
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {timeline.map((item, i) => (
-            <div key={i} className="flex items-start gap-4">
-              <div className="flex flex-col items-center">
-                <div className={`w-3 h-3 rounded-full ${item.color} flex-shrink-0`} />
-                {i < timeline.length && <div className="w-px h-8 bg-muted" />}
-              </div>
-              <div className="-mt-0.5">
-                <p className="font-body font-medium text-sm text-foreground">{item.date} — {item.title}</p>
-                <p className="text-xs text-muted-foreground font-body mt-0.5">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-          <div className="flex items-start gap-4">
-            <div className="w-3 h-3 rounded-full border-2 border-primary bg-white flex-shrink-0" />
-            <div className="-mt-0.5">
-              <p className="font-body font-medium text-sm text-primary">May 2026 — Goal: NED</p>
-              <p className="text-xs text-muted-foreground font-body mt-0.5">Target: No Evidence of Disease confirmation at next scan.</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AppointmentFormDialog({ userId, appointment, open, onOpenChange }: {
-  userId: number; appointment?: Appointment; open: boolean; onOpenChange: (v: boolean) => void;
-}) {
-  const [title, setTitle] = useState(appointment?.title || "");
-  const [description, setDescription] = useState(appointment?.description || "");
-  const [date, setDate] = useState(appointment?.date || "");
-  const [time, setTime] = useState(appointment?.time || "");
-  const [location, setLocation] = useState(appointment?.location || "");
-  const { toast } = useToast();
-  const isEdit = !!appointment;
-
-  useEffect(() => {
-    if (open) {
-      setTitle(appointment?.title || "");
-      setDescription(appointment?.description || "");
-      setDate(appointment?.date || "");
-      setTime(appointment?.time || "");
-      setLocation(appointment?.location || "");
-    }
-  }, [open, appointment]);
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const body = { userId, title, description: description || null, date, time, location: location || null };
-      if (isEdit) {
-        return apiRequest(`/api/appointments/${appointment.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-      return apiRequest("/api/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      onOpenChange(false);
-      toast({ title: isEdit ? "Appointment updated" : "Appointment added" });
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-heading text-foreground">{isEdit ? "Edit Appointment" : "Add Appointment"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Input placeholder="Title (e.g. Oncology Review)" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-muted/50 border-border font-body" />
-          <Input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} className="bg-muted/50 border-border font-body" />
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-muted/50 border-border font-body" />
-          <Input placeholder="Time (e.g. 10:30 AM)" value={time} onChange={(e) => setTime(e.target.value)} className="bg-muted/50 border-border font-body" />
-          <Input placeholder="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} className="bg-muted/50 border-border font-body" />
-          <Button onClick={() => mutation.mutate()} disabled={!title || !date || !time || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium">
-            {mutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Appointment"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function AppointmentsWidget({ userId }: { userId: number }) {
-  const [showForm, setShowForm] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const { toast } = useToast();
-
-  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
-    queryKey: ["/api/appointments", { userId }],
-    queryFn: async () => {
-      const res = await fetch(`/api/appointments?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest(`/api/appointments/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      toast({ title: "Appointment deleted" });
-    },
-  });
-
-  const sortedAppointments = [...appointments].sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return dateA.getTime() - dateB.getTime();
-  });
-
-  const upcomingAppointments = sortedAppointments.filter(a => new Date(a.date) >= new Date(todayStr()));
-
-  return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
-          </CardTitle>
-          <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1" onClick={() => setShowForm(true)}>
-            <Plus className="h-3.5 w-3.5" /> Add
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 text-primary animate-spin" /></div>
-        ) : upcomingAppointments.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body text-center py-4">No upcoming appointments.</p>
-        ) : (
-          <div className="space-y-4">
-            {upcomingAppointments.map((appt, i) => (
-              <div key={appt.id} className={`flex items-center justify-between pb-3 group ${i < upcomingAppointments.length - 1 ? "border-b border-border" : ""}`}>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body font-medium text-sm text-foreground">{appt.title}</p>
-                  {appt.description && <p className="text-xs text-muted-foreground font-body truncate">{appt.description}</p>}
-                  {appt.location && <p className="text-[10px] text-muted-foreground font-body">{appt.location}</p>}
-                </div>
-                <div className="text-right flex-shrink-0 ml-3">
-                  <p className="font-body font-medium text-sm text-accent">
-                    {new Date(appt.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-body">{appt.time}</p>
-                </div>
-                <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => setEditingAppointment(appt)} className="p-1 hover:bg-muted rounded">
-                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                  </button>
-                  <button onClick={() => deleteMutation.mutate(appt.id)} className="p-1 hover:bg-muted rounded">
-                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-
-      <AppointmentFormDialog userId={userId} open={showForm} onOpenChange={setShowForm} />
-      {editingAppointment && (
-        <AppointmentFormDialog userId={userId} appointment={editingAppointment} open={!!editingAppointment} onOpenChange={(v) => { if (!v) setEditingAppointment(null); }} />
-      )}
-    </Card>
-  );
-}
-
-function InspirationWidget() {
-  const affirmations = [
-    "My body knows how to heal, and I trust the process.",
-    "Every healthy choice I make today supports my immune system.",
-    "I am surrounded by love and support on this journey.",
-    "My scans show my body is responding. I am getting better every day.",
-    "I choose hope, nourishment, and peace today.",
-    "My immune system is my ally — growing stronger with each passing week.",
-    "I am more than my diagnosis. I am strong, resilient, and full of life.",
-    "Each day I give my body what it needs to heal — good food, gentle movement, and peace of mind.",
-    "The evidence of healing is all around me. I celebrate every improvement.",
-    "I trust my body, my team, and the journey ahead.",
-  ];
-
-  const today = new Date();
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-  const affirmation = affirmations[dayOfYear % affirmations.length];
-
-  return (
-    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/15">
-      <CardContent className="p-6 text-center">
-        <Sun className="h-8 w-8 text-accent mx-auto mb-3" />
-        <p className="font-body text-foreground italic leading-relaxed">"{affirmation}"</p>
-        <p className="text-[10px] text-muted-foreground font-body mt-3 uppercase tracking-widest">Today's Affirmation</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function getTherapyIcon(type: string) {
-  const t = type.toLowerCase();
-  if (t.includes("acupuncture") || t.includes("needle")) return <Target className="h-6 w-6" />;
-  if (t.includes("hyperbaric") || t.includes("oxygen")) return <Waves className="h-6 w-6" />;
-  if (t.includes("oncology") || t.includes("integrat")) return <Stethoscope className="h-6 w-6" />;
-  if (t.includes("meditation") || t.includes("mindful")) return <Sparkles className="h-6 w-6" />;
-  if (t.includes("yoga")) return <Leaf className="h-6 w-6" />;
-  if (t.includes("breath")) return <Heart className="h-6 w-6" />;
-  if (t.includes("walk") || t.includes("swim") || t.includes("exercise")) return <Activity className="h-6 w-6" />;
-  if (t.includes("journal") || t.includes("gratitude")) return <Sun className="h-6 w-6" />;
-  if (t.includes("visual")) return <Sparkles className="h-6 w-6" />;
-  if (t.includes("strength")) return <Flame className="h-6 w-6" />;
-  if (t.includes("stretch") || t.includes("tai")) return <Leaf className="h-6 w-6" />;
-  return <Heart className="h-6 w-6" />;
-}
-
-const therapyGradients = [
-  "from-emerald-50 to-teal-50 border-emerald-200",
-  "from-amber-50 to-orange-50 border-amber-200",
-  "from-violet-50 to-purple-50 border-violet-200",
-  "from-sky-50 to-cyan-50 border-sky-200",
-  "from-rose-50 to-pink-50 border-rose-200",
-  "from-lime-50 to-green-50 border-lime-200",
-  "from-indigo-50 to-blue-50 border-indigo-200",
-  "from-fuchsia-50 to-pink-50 border-fuchsia-200",
-];
-
-const therapyTextColors = [
-  "text-emerald-700",
-  "text-amber-700",
-  "text-violet-700",
-  "text-sky-700",
-  "text-rose-700",
-  "text-lime-700",
-  "text-indigo-700",
-  "text-fuchsia-700",
-];
-
-function HealingTherapiesWidget({ userId }: { userId: number }) {
-  const { data: allMindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, all: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/mind-body?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const { data: allExercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, all: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/exercises?userId=${userId}`);
-      return res.json();
-    },
-  });
-
-  const { data: therapyTypes = [] } = useQuery<CustomActivityType[]>({
-    queryKey: ["/api/activity-types", { userId, category: "therapy" }],
-    queryFn: async () => {
-      const res = await fetch(`/api/activity-types?userId=${userId}&category=therapy`);
-      return res.json();
-    },
-  });
-
-  const therapyMap = new Map<string, { sessions: number; minutes: number; label: string }>();
-
-  allMindBody.forEach((a) => {
-    const key = a.activityType;
-    const existing = therapyMap.get(key) || { sessions: 0, minutes: 0, label: key };
-    existing.sessions++;
-    existing.minutes += a.durationMinutes;
-    therapyMap.set(key, existing);
-  });
-
-  allExercises.forEach((e) => {
-    const key = e.exerciseType;
-    const existing = therapyMap.get(key) || { sessions: 0, minutes: 0, label: key };
-    existing.sessions++;
-    existing.minutes += e.durationMinutes;
-    therapyMap.set(key, existing);
-  });
-
-  therapyTypes.forEach((tt) => {
-    if (!therapyMap.has(tt.value)) {
-      therapyMap.set(tt.value, { sessions: 0, minutes: 0, label: tt.label });
-    }
-  });
-
-  const therapies = Array.from(therapyMap.entries())
-    .map(([key, data]) => ({ key, ...data }))
-    .filter(t => t.sessions > 0)
-    .sort((a, b) => b.sessions - a.sessions);
-
-  if (therapies.length === 0) {
-    return (
-      <Card className="bg-white border-border rounded-2xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-            <Stethoscope className="h-5 w-5 text-primary" /> Healing Therapies
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground font-body text-center py-4">Log activities to see your therapy progress here.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-foreground tracking-wide text-base flex items-center gap-2">
-          <Stethoscope className="h-5 w-5 text-primary" /> Healing Therapies
-        </CardTitle>
-        <CardDescription className="text-xs text-muted-foreground font-body">Your accumulated therapy journey</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {therapies.map((therapy, idx) => {
-            const gradientClass = therapyGradients[idx % therapyGradients.length];
-            const textColor = therapyTextColors[idx % therapyTextColors.length];
-            return (
-              <div key={therapy.key} className={`bg-gradient-to-br ${gradientClass} rounded-xl p-4 border text-center`}>
-                <div className={`mx-auto w-10 h-10 rounded-xl bg-white/60 flex items-center justify-center mb-2 ${textColor}`}>
-                  {getTherapyIcon(therapy.key)}
-                </div>
-                <p className={`text-2xl font-heading font-bold ${textColor}`}>{therapy.sessions}</p>
-                <p className="text-[10px] text-muted-foreground font-body mb-1">sessions</p>
-                <p className="text-xs font-body font-medium text-foreground capitalize">{therapy.label.replace(/-/g, " ")}</p>
-                <p className="text-[10px] text-muted-foreground font-body">{therapy.minutes} total mins</p>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
   title: string; icon: React.ReactNode; children: React.ReactNode;
   open: boolean; onOpenChange: (open: boolean) => void;
@@ -2301,174 +1490,6 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
         {children}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function WeeklyActivityRings({ userId }: { userId: number }) {
-  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
-  const today = todayStr();
-
-  const { data: meals = [] } = useQuery<Meal[]>({
-    queryKey: ["/api/meals", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-  const { data: mindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-  const { data: exercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-
-  const days = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const dt = new Date(Date.now() - (6 - i) * 86400000);
-      const dateStr = dt.toISOString().split("T")[0];
-      const hasMeals = meals.some(m => m.date === dateStr);
-      const hasMind = mindBody.some(a => a.date === dateStr);
-      const hasExercise = exercises.some(e => e.date === dateStr);
-      const mealCount = meals.filter(m => m.date === dateStr).length;
-      const mindMins = mindBody.filter(a => a.date === dateStr).reduce((s, a) => s + a.durationMinutes, 0);
-      const exMins = exercises.filter(e => e.date === dateStr).reduce((s, e) => s + e.durationMinutes, 0);
-      const score = (hasMeals ? 1 : 0) + (hasMind ? 1 : 0) + (hasExercise ? 1 : 0);
-      const isToday = dateStr === today;
-      return { dt, dateStr, hasMeals, hasMind, hasExercise, mealCount, mindMins, exMins, score, isToday };
-    });
-  }, [meals, mindBody, exercises, today]);
-
-  const activeDays = days.filter(d => d.score > 0).length;
-  const totalMeals = days.reduce((s, d) => s + d.mealCount, 0);
-  const totalMind = days.reduce((s, d) => s + d.mindMins, 0);
-  const totalEx = days.reduce((s, d) => s + d.exMins, 0);
-
-  return (
-    <Card className="bg-white border-border rounded-2xl">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium">Your Week</p>
-          <p className="text-xs font-body text-primary font-semibold">{activeDays}/7 active</p>
-        </div>
-        <div className="flex items-center justify-between gap-1 mb-4">
-          {days.map((d, i) => {
-            const size = 42;
-            const r = 16;
-            const circ = 2 * Math.PI * r;
-            const mealPct = d.hasMeals ? 100 : 0;
-            const mindPct = d.hasMind ? 100 : 0;
-            const exPct = d.hasExercise ? 100 : 0;
-            return (
-              <div key={i} className={`flex flex-col items-center gap-1 ${d.isToday ? "scale-110" : ""}`}>
-                <p className={`text-[9px] font-body ${d.isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                  {d.dt.toLocaleDateString("en-AU", { weekday: "narrow" })}
-                </p>
-                <div className="relative" style={{ width: size, height: size }}>
-                  <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                    <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
-                    <circle cx={size/2} cy={size/2} r={r-4.5} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
-                    <circle cx={size/2} cy={size/2} r={r-9} fill="none" stroke="hsl(30, 25%, 92%)" strokeWidth={3} />
-                    {exPct > 0 && (
-                      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="hsl(200, 70%, 50%)" strokeWidth={3} strokeLinecap="round"
-                        strokeDasharray={circ} strokeDashoffset={circ * (1 - exPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
-                    )}
-                    {mindPct > 0 && (
-                      <circle cx={size/2} cy={size/2} r={r-4.5} fill="none" stroke="hsl(158, 32%, 42%)" strokeWidth={3} strokeLinecap="round"
-                        strokeDasharray={circ * (r-4.5)/r} strokeDashoffset={circ * (r-4.5)/r * (1 - mindPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
-                    )}
-                    {mealPct > 0 && (
-                      <circle cx={size/2} cy={size/2} r={r-9} fill="none" stroke="hsl(34, 55%, 52%)" strokeWidth={3} strokeLinecap="round"
-                        strokeDasharray={circ * (r-9)/r} strokeDashoffset={circ * (r-9)/r * (1 - mealPct / 100)} transform={`rotate(-90 ${size/2} ${size/2})`} />
-                    )}
-                  </svg>
-                  {d.score === 0 && !d.isToday && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 rounded-full bg-muted" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex items-center justify-center gap-4 text-[10px] font-body text-muted-foreground">
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(34, 55%, 52%)"}} /> {totalMeals} meals</span>
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(158, 32%, 42%)"}} /> {totalMind}m mind</span>
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background: "hsl(200, 70%, 50%)"}} /> {totalEx}m move</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActivityHeatmap({ userId }: { userId: number }) {
-  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split("T")[0];
-  const today = todayStr();
-
-  const { data: meals = [] } = useQuery<Meal[]>({
-    queryKey: ["/api/meals", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-  const { data: mindBody = [] } = useQuery<MindBodyActivity[]>({
-    queryKey: ["/api/mind-body", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/mind-body?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-  const { data: exercises = [] } = useQuery<Exercise[]>({
-    queryKey: ["/api/exercises", { userId, trend: true }],
-    queryFn: async () => {
-      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${sevenDaysAgo}&dateTo=${today}`);
-      return res.json();
-    },
-  });
-
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const dt = new Date(Date.now() - (6 - i) * 86400000);
-    const dateStr = dt.toISOString().split("T")[0];
-    const hasMeal = meals.some(m => m.date === dateStr);
-    const hasMind = mindBody.some(a => a.date === dateStr);
-    const hasExercise = exercises.some(e => e.date === dateStr);
-    const score = (hasMeal ? 1 : 0) + (hasMind ? 1 : 0) + (hasExercise ? 1 : 0);
-    const isToday = dateStr === today;
-    return { dt, dateStr, hasMeal, hasMind, hasExercise, score, isToday };
-  });
-
-  const getIntensity = (score: number) => {
-    if (score === 0) return "bg-muted border-border";
-    if (score === 1) return "bg-primary/15 border-primary/25";
-    if (score === 2) return "bg-primary/30 border-primary/40";
-    return "bg-primary/50 border-primary/60";
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {days.map((d, i) => (
-        <div key={i} className="flex flex-col items-center gap-1 flex-1">
-          <p className="text-[9px] text-muted-foreground font-body">{d.dt.toLocaleDateString("en-AU", { weekday: "narrow" })}</p>
-          <div className={`w-full aspect-square rounded-lg border transition-all ${getIntensity(d.score)} ${d.isToday ? "ring-2 ring-accent/40 ring-offset-1" : ""}`}
-            title={`${d.dt.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${d.score} activities`}>
-          </div>
-          <div className="flex gap-0.5">
-            {d.hasMeal && <div className="w-1 h-1 rounded-full bg-accent" />}
-            {d.hasMind && <div className="w-1 h-1 rounded-full bg-primary" />}
-            {d.hasExercise && <div className="w-1 h-1 rounded-full bg-sky-500" />}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -2527,16 +1548,16 @@ export default function SimpleDashboard() {
 
   return (
     <div className="p-5 lg:p-8 max-w-5xl mx-auto">
-      {/* Header with goal */}
-      <div className="mb-4">
+      {/* Header */}
+      <div className="mb-5">
         <div className="flex items-center gap-3">
-          <div className="relative group">
+          <div className="relative">
             {user.profilePhoto ? (
-              <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md">
+              <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-sm">
                 <img src={user.profilePhoto} alt={user.displayName} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-primary/15 flex items-center justify-center shadow-sm">
                 <span className="text-lg font-heading text-primary/60">{(user.displayName || "L")[0]}</span>
               </div>
             )}
@@ -2547,43 +1568,29 @@ export default function SimpleDashboard() {
             <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg lg:text-xl font-heading text-foreground">
+            <h1 className="text-lg font-heading text-foreground">
               Hey {user?.displayName || "Friend"}
             </h1>
             <p className="text-xs text-muted-foreground font-body">
               {new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <EditGoalsDialog user={user} setUser={setUser} />
-            <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
-          </div>
+          <WidgetPicker activeWidgets={activeWidgets} onChange={handleWidgetChange} />
         </div>
-        {user.goals && (
-          <div className="mt-3 bg-gradient-to-r from-primary/8 to-accent/8 border border-primary/15 rounded-xl px-4 py-2.5 flex items-start gap-2">
-            <Target className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-xs font-body text-foreground leading-relaxed">{user.goals}</p>
-          </div>
-        )}
       </div>
 
-      {/* Today's Vibe — daily brief */}
+      {/* Today's Vibe */}
       {isActive("dailyBrief") && (
-        <div className="mb-4">
+        <div className="mb-5">
           <DailyBriefWidget userId={user.id} />
         </div>
       )}
 
-      {/* Combined: Log + Today's Wellness */}
+      {/* Quick Log + Today's Wellness (always visible) */}
       <TodayWellnessWidget userId={user.id} />
 
-      {/* Weekly Activity Rings */}
-      <div className="my-4">
-        <WeeklyActivityRings userId={user.id} />
-      </div>
-
-      {/* Compact Stat Tiles — no immune recovery */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      {/* Key Stats */}
+      <div className="grid grid-cols-2 gap-3 my-5">
         {isActive("scanCountdown") && (
           <CompactStatCard
             icon={<Scan className="h-5 w-5" />}
@@ -2605,14 +1612,21 @@ export default function SimpleDashboard() {
         )}
       </div>
 
-      {/* Tumour Response — horizontal, full width */}
+      {/* Tumour Response */}
       {isActive("tumourResponse") && (
-        <div className="mb-4">
+        <div className="mb-5">
           <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
         </div>
       )}
 
-      {/* Expanded stat dialogs */}
+      {/* Worth Fighting For */}
+      {isActive("motivationalWall") && (
+        <div className="mb-5">
+          <MotivationalWallWidget userId={user.id} />
+        </div>
+      )}
+
+      {/* Expanded dialogs */}
       <ExpandableWidget title="Next Scan Countdown" icon={<Scan className="h-5 w-5 text-primary" />}
         open={expandedWidget === "scanCountdown"} onOpenChange={(open) => setExpandedWidget(open ? "scanCountdown" : null)}>
         <ScanCountdownExpanded nextScanDate={user.nextScanDate} />
@@ -2625,33 +1639,6 @@ export default function SimpleDashboard() {
         open={expandedWidget === "tumourResponse"} onOpenChange={(open) => setExpandedWidget(open ? "tumourResponse" : null)}>
         <TumourResponseExpanded userId={user.id} />
       </ExpandableWidget>
-
-      {/* Evidence Worth Fighting For tile + Did You Know */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {isActive("motivationalWall") && <MotivationalWallWidget userId={user.id} />}
-        {isActive("funFacts") && <FunFactsWidget userId={user.id} />}
-      </div>
-
-      {/* Gut Check + Inspiration */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {isActive("gutCheck") && <GutCheckWidget userId={user.id} />}
-        {isActive("inspiration") && <InspirationWidget />}
-      </div>
-
-      {/* Healing Therapies */}
-      {isActive("healingTherapies") && (
-        <div className="mb-4">
-          <HealingTherapiesWidget userId={user.id} />
-        </div>
-      )}
-
-      {/* Treatment Timeline + Appointments */}
-      {(isActive("treatmentTimeline") || isActive("appointments")) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          {isActive("treatmentTimeline") && <TreatmentTimelineWidget />}
-          {isActive("appointments") && <AppointmentsWidget userId={user.id} />}
-        </div>
-      )}
     </div>
   );
 }

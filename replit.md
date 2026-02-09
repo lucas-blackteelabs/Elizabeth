@@ -4,16 +4,17 @@
 Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
 
 ## Recent Changes
-- **Feb 2026**: Dashboard Redesign v2 — Unified Cards & Activity Rings
-  - Combined Log + Wellness into single card (log buttons at top, summary stats + logged items below)
-  - Goals banner displayed below header with Target icon
-  - Daily Brief ("Today's Vibe") moved to top of dashboard
-  - 7-day activity rings replaced bar chart — concentric SVG circles per day (meals/mindfulness/exercise)
-  - Tumour response redesigned as horizontal full-width card with clearer axe emoji for resolved tumours
-  - "Evidence Worth Fighting For" converted to compact tile opening dialog collage + nano banana video placeholder
-  - "Did You Know" facts: user-driven prev/next navigation, no auto-rotation
-  - Immune recovery tile removed from dashboard and widget picker
+- **Feb 2026**: Dashboard Overhaul — Stripped Back, Slick & Simple
+  - Radically simplified dashboard — removed all noise, kept only killer features
+  - 5 core widgets only: Scan Countdown, Treatment Journey, Tumour Response, Today's Vibe, Worth Fighting For
+  - Removed: fun facts, gut check, inspiration, healing therapies, treatment timeline, appointments, activity rings, activity heatmap, activity streak, immune recovery, goals banner
+  - Combined Log + Wellness single card (log buttons at top, summary stats + logged items below)
+  - Daily Brief ("Today's Vibe") at top — AI-powered one-liner
+  - Tumour response: horizontal full-width card with axe emoji for resolved tumours
+  - "Worth Fighting For" compact tile → expandable collage dialog with nano banana video placeholder
   - Compact stat tiles: scan countdown + treatment journey (2-column grid)
+  - File reduced from ~2700 lines to ~1640 lines (40% reduction)
+  - Widget picker still available for customization (5 options)
   - Bottom nav: 7 items always visible (Home, Medical, Nutrition, AI, Treatment+, Timeline, Date Night)
 - **Feb 2026**: Medical Tracker Redesign + Community Page
   - Medical Tracker completely redesigned with dashboard-style visuals
