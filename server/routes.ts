@@ -5,7 +5,7 @@ import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestio
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users, communityGroupPosts } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
@@ -2014,6 +2014,11 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.post("/api/community/groups/:id/posts", async (req, res) => {
     try {
       const groupId = parseInt(req.params.id);
+      const userId = req.body.userId || 1;
+      const members = await storage.listGroupMembers(groupId);
+      if (!members.some(m => m.userId === userId)) {
+        return res.status(403).json({ error: "You must be a member to post in this group" });
+      }
       const post = await storage.createGroupPost({ ...req.body, groupId });
       return res.json(post);
     } catch (error) {
@@ -2051,6 +2056,14 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.post("/api/community/group-posts/:id/replies", async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
+      const [post] = await db.select().from(communityGroupPosts).where(eq(communityGroupPosts.id, postId));
+      if (post) {
+        const userId = req.body.userId || 1;
+        const members = await storage.listGroupMembers(post.groupId);
+        if (!members.some(m => m.userId === userId)) {
+          return res.status(403).json({ error: "You must be a member to reply in this group" });
+        }
+      }
       const reply = await storage.createGroupPostReply({ ...req.body, postId });
       return res.json(reply);
     } catch (error) {

@@ -26,7 +26,7 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Medical Tracking:** Comprehensive system including AI-generated medical summaries, document management (scans, blood tests, pathology), visual tumour cards with SVG graphics and progress bars, and scan comparison tables.
 - **Nutrition:** AI-generated personalized meal plans, structured meal cards with recipes, a "Discover" tab for new meal ideas, a "Saved" tab for shortlisted recipes, and an auto-generated shopping list.
 - **Treatment+:** Visual management of treatment programs (immunotherapy, complementary therapies), progress tracking, side effect logging, and AI-powered treatment suggestions.
-- **Community:** A Reddit-style discussion forum with thread creation, replies, categories, and live data synchronization.
+- **Community:** A Reddit-style discussion forum with thread creation, replies, categories, and live data synchronization. Community Groups feature (Facebook/LinkedIn-style) with browse, join/leave, group-specific feeds, posts and replies. Membership enforcement on posting/replying. 6 seeded groups.
 - **Timeline:** Vertical chronological view integrating appointments and treatment sessions with full CRUD operations and ICS calendar download.
 - **Date Night:** AI-powered restaurant and activity suggestions with dietary suitability assessments, shortlisting, and integration with the user's calendar.
 - **Nano Banana:** Utilizes multimodal AI to generate personalized motivational captions from user-uploaded images and personal notes.

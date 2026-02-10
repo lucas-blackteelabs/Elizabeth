@@ -1295,10 +1295,7 @@ export default function Community() {
                   <GroupCard key={group.id} group={group} isMember={false}
                     onJoin={() => joinGroupMut.mutate(group.id)}
                     onLeave={() => leaveGroupMut.mutate(group.id)}
-                    onOpen={() => {
-                      joinGroupMut.mutate(group.id);
-                      setSelectedGroup(group);
-                    }}
+                    onOpen={() => joinGroupMut.mutate(group.id)}
                     isPending={joinGroupMut.isPending || leaveGroupMut.isPending} />
                 ))}
                 {groups.filter(g => !memberGroupIds.has(g.id)).length === 0 && memberGroupIds.size > 0 && (
