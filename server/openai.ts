@@ -785,7 +785,7 @@ const nanoBananaStyles = [
   "A banana character floating in a hot air balloon shaped like a heart over rolling green hills, golden hour light, whimsical and uplifting",
 ];
 
-export async function generateNanoBananaImage(): Promise<{ imagePath: string; caption: string }> {
+export async function generateNanoBananaImage(mediaDescriptions: string[] = []): Promise<{ imagePath: string; caption: string }> {
   const outputDir = path.join(process.cwd(), "client", "public", "nano-banana");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -793,13 +793,19 @@ export async function generateNanoBananaImage(): Promise<{ imagePath: string; ca
 
   const stylePrompt = nanoBananaStyles[Math.floor(Math.random() * nanoBananaStyles.length)];
 
+  let mediaContext = "";
+  if (mediaDescriptions.length > 0) {
+    const picked = mediaDescriptions.sort(() => Math.random() - 0.5).slice(0, 3);
+    mediaContext = ` The scene should lovingly incorporate themes inspired by the patient's personal photos and memories: ${picked.join(", ")}.`;
+  }
+
   const filename = `nano-${Date.now()}.png`;
   const filepath = path.join(outputDir, filename);
 
   try {
     const response = await openai.images.generate({
       model: "dall-e-3",
-      prompt: `${stylePrompt}. The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`,
+      prompt: `${stylePrompt}.${mediaContext} The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`,
       n: 1,
       size: "1024x1024",
       quality: "standard",
@@ -813,9 +819,12 @@ export async function generateNanoBananaImage(): Promise<{ imagePath: string; ca
 
     let caption = "You've got this, warrior 🍌";
     try {
+      const captionContext = mediaDescriptions.length > 0
+        ? `The image is inspired by the patient's personal photos showing: ${mediaDescriptions.slice(0, 2).join(" and ")}. `
+        : "";
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: "Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text." }] }],
+        contents: [{ role: "user", parts: [{ text: `${captionContext}Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text.` }] }],
         generationConfig: { temperature: 1.2, maxOutputTokens: 50 },
       });
       const text = result.response.text().trim();

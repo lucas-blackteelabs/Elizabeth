@@ -1249,105 +1249,18 @@ function DaySummaryDialog({ userId, open, onOpenChange }: { userId: number; open
   );
 }
 
-function NanoBananaWidget({ userId }: { userId: number }) {
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [caption, setCaption] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  const generate = async () => {
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/ai/nano-banana", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setImagePath(data.imagePath);
-      setCaption(data.caption || "You've got this 🍌");
-    } catch {
-      setCaption("Tap to generate your Nano Banana 🍌");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  return (
-    <>
-      <button
-        onClick={() => imagePath ? setExpanded(true) : generate()}
-        disabled={generating}
-        className="group relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl overflow-hidden text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 w-full"
-      >
-        {imagePath ? (
-          <div className="relative">
-            <img src={imagePath} alt="Nano Banana" className="w-full aspect-square object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-amber-300 font-body font-medium mb-0.5">Nano Banana</p>
-              <p className="text-sm font-heading text-white leading-snug drop-shadow-md">{caption}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
-                {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-amber-600/70 font-body font-medium mb-0.5">Nano Banana</p>
-                {generating ? (
-                  <div className="space-y-2">
-                    <div className="h-3 bg-amber-100 rounded-full w-3/4 animate-pulse" />
-                    <p className="text-xs text-amber-500/70 font-body">Creating your image...</p>
-                  </div>
-                ) : (
-                  <p className="text-sm font-body text-muted-foreground">{caption || "Tap to generate a motivational image"}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </button>
-
-      <Dialog open={expanded} onOpenChange={setExpanded}>
-        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-amber-200/50">
-          {imagePath && (
-            <div className="relative">
-              <img src={imagePath} alt="Nano Banana" className="w-full aspect-square object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-5">
-                <p className="text-xs uppercase tracking-wider text-amber-300 font-body font-medium mb-1">Nano Banana</p>
-                <p className="text-lg font-heading text-white leading-snug drop-shadow-lg">{caption}</p>
-              </div>
-            </div>
-          )}
-          <div className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 flex justify-center">
-            <button
-              onClick={generate}
-              disabled={generating}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-body font-medium text-sm hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 shadow-md"
-            >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              {generating ? "Creating..." : "New Banana"}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function MotivationalWallWidget({ userId }: { userId: number }) {
+function WorthFightingForWidget({ userId }: { userId: number }) {
   const [wallOpen, setWallOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [newColor, setNewColor] = useState("amber");
   const [uploading, setUploading] = useState(false);
   const [previewItem, setPreviewItem] = useState<MotivationalWallItem | null>(null);
+  const [nanoBananaImage, setNanoBananaImage] = useState<string | null>(null);
+  const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { data: items = [] } = useQuery<MotivationalWallItem[]>({
@@ -1357,6 +1270,34 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
       return res.json();
     },
   });
+
+  const mediaItems = items.filter(i => i.type === "image" || i.type === "video");
+
+  const generateNanoBanana = async () => {
+    setGenerating(true);
+    try {
+      const descriptions = items
+        .filter(i => i.content && i.content.trim())
+        .map(i => i.content!)
+        .slice(0, 5);
+      const mediaTypes = mediaItems.map(i => i.type === "video" ? "a family video" : "a personal photo");
+      const allDescriptions = [...descriptions, ...mediaTypes].filter(Boolean);
+
+      const res = await fetch("/api/ai/nano-banana", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, mediaDescriptions: allDescriptions }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setNanoBananaImage(data.imagePath);
+      setNanoBananaCaption(data.caption || "You've got this 🍌");
+    } catch {
+      setNanoBananaCaption("Tap the banana to try again 🍌");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -1414,54 +1355,138 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
     purple: "from-purple-50 to-violet-50 border-purple-200/50",
   };
 
-  const mediaItems = items.filter(i => i.type === "image" || i.type === "video");
-
   return (
     <>
-      <button onClick={() => setWallOpen(true)}
-        className="group bg-gradient-to-br from-accent/10 via-white to-primary/5 border border-accent/20 rounded-2xl p-4 text-left transition-all hover:shadow-lg hover:-translate-y-0.5 w-full">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center flex-shrink-0">
-            <Heart className="h-5 w-5 text-accent" />
+      <div className="bg-gradient-to-br from-accent/5 via-white to-amber-50/50 border border-accent/20 rounded-2xl overflow-hidden transition-all hover:shadow-lg w-full">
+        {/* Nano Banana Image Section */}
+        <button
+          onClick={() => nanoBananaImage ? setWallOpen(true) : generateNanoBanana()}
+          disabled={generating}
+          className="w-full text-left relative"
+        >
+          {nanoBananaImage ? (
+            <div className="relative">
+              <img src={nanoBananaImage} alt="Nano Banana" className="w-full aspect-[4/3] object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <p className="text-lg font-heading text-white leading-snug drop-shadow-md">{nanoBananaCaption}</p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); generateNanoBanana(); }}
+                disabled={generating}
+                className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors disabled:opacity-50"
+              >
+                {generating ? <Loader2 className="h-3.5 w-3.5 text-white animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-white" />}
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 pb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
+                  {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {generating ? (
+                    <div className="space-y-1.5">
+                      <div className="h-3 bg-amber-100 rounded-full w-3/4 animate-pulse" />
+                      <p className="text-xs text-amber-500/70 font-body">Creating your image...</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-body text-muted-foreground">Tap to generate a Nano Banana 🍌</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </button>
+
+        {/* Title + Carousel Section */}
+        <div className="px-3 pt-2 pb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-accent" />
+              <p className="text-xs font-heading text-foreground uppercase tracking-wide">Worth Fighting For</p>
+            </div>
+            <button onClick={() => setWallOpen(true)} className="text-[10px] text-accent font-body font-medium hover:underline">
+              View All
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-heading text-foreground">Worth Fighting For</p>
-            <p className="text-[10px] text-muted-foreground font-body mt-0.5">
-              {items.length > 0 ? `${items.length} reasons on your wall` : "Tap to start your wall"}
-            </p>
-          </div>
-          {mediaItems.length > 0 && (
-            <div className="flex -space-x-2">
-              {mediaItems.slice(0, 3).map((item) => (
-                <div key={item.id} className="w-8 h-8 rounded-lg overflow-hidden border-2 border-white shadow-sm">
+
+          {mediaItems.length > 0 ? (
+            <div ref={carouselRef} className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {mediaItems.map((item) => (
+                <button key={item.id} onClick={() => setPreviewItem(item)}
+                  className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-border/50 hover:ring-2 hover:ring-accent/30 transition-all">
                   {item.type === "video" ? (
-                    <video src={item.imageUrl!} className="w-full h-full object-cover" muted />
+                    <div className="relative w-full h-full">
+                      <video src={item.imageUrl!} className="w-full h-full object-cover" muted preload="metadata" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Play className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
                   ) : (
                     <img src={item.imageUrl!} alt="" className="w-full h-full object-cover" />
                   )}
-                </div>
+                </button>
               ))}
+              <button onClick={() => fileInputRef.current?.click()}
+                className="flex-shrink-0 w-16 h-16 rounded-xl border-2 border-dashed border-border/50 flex items-center justify-center hover:border-accent/50 hover:bg-accent/5 transition-colors">
+                <Plus className="h-4 w-4 text-muted-foreground/50" />
+              </button>
             </div>
+          ) : (
+            <button onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center gap-2 py-2 px-3 rounded-xl border border-dashed border-border/50 hover:border-accent/50 hover:bg-accent/5 transition-colors">
+              <ImagePlus className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <span className="text-xs font-body text-muted-foreground/70">Add photos & videos</span>
+            </button>
           )}
-          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
         </div>
-      </button>
+      </div>
 
       <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
 
+      {/* Full Wall Dialog */}
       <Dialog open={wallOpen} onOpenChange={setWallOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-heading flex items-center gap-2">
-              <Heart className="h-5 w-5 text-accent" /> Worth Fighting For
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto p-0 rounded-2xl">
+          {/* Nano Banana hero in dialog */}
+          {nanoBananaImage && (
+            <div className="relative">
+              <img src={nanoBananaImage} alt="Nano Banana" className="w-full aspect-[4/3] object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <p className="text-lg font-heading text-white leading-snug drop-shadow-lg">{nanoBananaCaption}</p>
+              </div>
+              <button
+                onClick={generateNanoBanana}
+                disabled={generating}
+                className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/30 backdrop-blur-sm text-white rounded-full text-xs font-body hover:bg-black/50 transition-colors disabled:opacity-50"
+              >
+                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                {generating ? "Creating..." : "New 🍌"}
+              </button>
+            </div>
+          )}
+
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading text-base flex items-center gap-2">
+                <Heart className="h-5 w-5 text-accent" /> Worth Fighting For
+              </h3>
+              {!nanoBananaImage && (
+                <button onClick={generateNanoBanana} disabled={generating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full text-xs font-body hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 shadow-sm">
+                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                  Nano 🍌
+                </button>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}
                 className="flex-1 rounded-xl font-body text-xs h-9 border-dashed">
                 {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <ImagePlus className="h-3.5 w-3.5 mr-1.5" />}
-                {uploading ? "Uploading..." : "Add Photo or Video"}
+                {uploading ? "Uploading..." : "Add Photo / Video"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}
                 className="rounded-xl font-body text-xs h-9 border-dashed">
@@ -1511,6 +1536,7 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
         </DialogContent>
       </Dialog>
 
+      {/* Preview Item Dialog */}
       <Dialog open={!!previewItem} onOpenChange={(open) => { if (!open) setPreviewItem(null); }}>
         <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl">
           {previewItem && (
@@ -1542,6 +1568,7 @@ function MotivationalWallWidget({ userId }: { userId: number }) {
         </DialogContent>
       </Dialog>
 
+      {/* Add Text Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1880,15 +1907,10 @@ export default function SimpleDashboard() {
         </div>
       )}
 
-      {/* Nano Banana */}
-      <div className="mb-4">
-        <NanoBananaWidget userId={user.id} />
-      </div>
-
-      {/* Worth Fighting For */}
+      {/* Worth Fighting For + Nano Banana */}
       {isActive("motivationalWall") && (
         <div className="mb-4">
-          <MotivationalWallWidget userId={user.id} />
+          <WorthFightingForWidget userId={user.id} />
         </div>
       )}
 

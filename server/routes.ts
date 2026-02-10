@@ -1120,8 +1120,10 @@ HARD RULES:
   // Nano Banana — short AI-generated motivational content on demand
   app.post("/api/ai/nano-banana", async (req, res) => {
     try {
+      const userId = req.body.userId || 1;
+      const mediaDescriptions: string[] = req.body.mediaDescriptions || [];
       const { generateNanoBananaImage } = await import("./openai");
-      const result = await generateNanoBananaImage();
+      const result = await generateNanoBananaImage(mediaDescriptions);
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);
