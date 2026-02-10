@@ -906,10 +906,10 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
                 </div>
                 <div className="flex-1 min-w-0 text-right">
                   <p className={`text-lg font-heading font-bold leading-none ${t.isResolved ? "text-blue-600" : "text-green-700"}`}>
-                    {t.isResolved ? "Gone" : `↓${t.sizeReduction}%`}
+                    {t.isResolved ? "Gone" : t.noFocalUptake ? "Clear" : `↓${t.suvReduction}%`}
                   </p>
                   <p className="text-[9px] font-body text-muted-foreground mt-0.5">
-                    {t.isResolved ? "Resolved ❄️" : t.noFocalUptake ? "No focal uptake" : `SUV ↓${t.suvReduction}%`}
+                    {t.isResolved ? "Resolved ❄️" : t.noFocalUptake ? "No focal uptake" : `Size ↓${t.sizeReduction}%`}
                   </p>
                 </div>
               </div>
@@ -1058,15 +1058,15 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                   ) : (
                     <>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-body font-semibold">
-                          <ArrowDown className="h-3 w-3" />{sizeReduction}% size
-                        </span>
                         <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-body font-semibold">
                           {noFocalUptake ? (
                             <><ArrowDown className="h-3 w-3" />No focal uptake</>
                           ) : (
                             <><ArrowDown className="h-3 w-3" />{isMetabolicComplete ? "100" : suvReduction}% activity</>
                           )}
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-body font-semibold">
+                          <ArrowDown className="h-3 w-3" />{sizeReduction}% size
                         </span>
                       </div>
                       <p className="text-xs font-body text-muted-foreground">
