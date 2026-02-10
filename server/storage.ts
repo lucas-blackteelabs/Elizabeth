@@ -25,6 +25,8 @@ import {
   type SurvivorBooking, type InsertSurvivorBooking,
   type SurvivorTalk, type InsertSurvivorTalk,
   type SurvivorTalkRsvp, type InsertSurvivorTalkRsvp,
+  sleepEntries,
+  type SleepEntry, type InsertSleepEntry,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -134,6 +136,11 @@ export interface IStorage {
   listUserRsvps(userId: number): Promise<SurvivorTalkRsvp[]>;
   createSurvivorTalkRsvp(data: InsertSurvivorTalkRsvp): Promise<SurvivorTalkRsvp>;
   deleteSurvivorTalkRsvp(talkId: number, userId: number): Promise<void>;
+
+  listSleepEntries(userId: number, dateFrom?: string, dateTo?: string): Promise<SleepEntry[]>;
+  createSleepEntry(data: InsertSleepEntry): Promise<SleepEntry>;
+  updateSleepEntry(id: number, data: Partial<SleepEntry>): Promise<SleepEntry>;
+  deleteSleepEntry(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -591,6 +598,27 @@ export class DatabaseStorage implements IStorage {
     await db.update(survivorTalks)
       .set({ rsvpCount: (await this.listSurvivorTalkRsvps(talkId)).length })
       .where(eq(survivorTalks.id, talkId));
+  }
+
+  async listSleepEntries(userId: number, dateFrom?: string, dateTo?: string): Promise<SleepEntry[]> {
+    const conditions = [eq(sleepEntries.userId, userId)];
+    if (dateFrom) conditions.push(gte(sleepEntries.date, dateFrom));
+    if (dateTo) conditions.push(lte(sleepEntries.date, dateTo));
+    return db.select().from(sleepEntries).where(and(...conditions)).orderBy(sleepEntries.date);
+  }
+
+  async createSleepEntry(data: InsertSleepEntry): Promise<SleepEntry> {
+    const [entry] = await db.insert(sleepEntries).values(data).returning();
+    return entry;
+  }
+
+  async updateSleepEntry(id: number, data: Partial<SleepEntry>): Promise<SleepEntry> {
+    const [entry] = await db.update(sleepEntries).set(data).where(eq(sleepEntries.id, id)).returning();
+    return entry;
+  }
+
+  async deleteSleepEntry(id: number): Promise<void> {
+    await db.delete(sleepEntries).where(eq(sleepEntries.id, id));
   }
 }
 

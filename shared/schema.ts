@@ -582,3 +582,26 @@ export const insertSurvivorTalkRsvpSchema = createInsertSchema(survivorTalkRsvps
 
 export type SurvivorTalkRsvp = typeof survivorTalkRsvps.$inferSelect;
 export type InsertSurvivorTalkRsvp = z.infer<typeof insertSurvivorTalkRsvpSchema>;
+
+export const sleepEntries = pgTable("sleep_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  date: date("date").notNull(),
+  hours: real("hours").notNull(),
+  quality: integer("quality").notNull(),
+  notes: text("notes"),
+  source: text("source").default("manual"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSleepEntrySchema = createInsertSchema(sleepEntries).pick({
+  userId: true,
+  date: true,
+  hours: true,
+  quality: true,
+  notes: true,
+  source: true,
+});
+
+export type SleepEntry = typeof sleepEntries.$inferSelect;
+export type InsertSleepEntry = z.infer<typeof insertSleepEntrySchema>;

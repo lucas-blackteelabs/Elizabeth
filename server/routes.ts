@@ -1876,6 +1876,45 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     }
   });
 
+  app.get("/api/sleep", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const entries = await storage.listSleepEntries(userId, dateFrom, dateTo);
+      return res.json(entries);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch sleep entries" });
+    }
+  });
+
+  app.post("/api/sleep", async (req, res) => {
+    try {
+      const entry = await storage.createSleepEntry(req.body);
+      return res.json(entry);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create sleep entry" });
+    }
+  });
+
+  app.patch("/api/sleep/:id", async (req, res) => {
+    try {
+      const entry = await storage.updateSleepEntry(parseInt(req.params.id), req.body);
+      return res.json(entry);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update sleep entry" });
+    }
+  });
+
+  app.delete("/api/sleep/:id", async (req, res) => {
+    try {
+      await storage.deleteSleepEntry(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete sleep entry" });
+    }
+  });
+
   await seedSurvivorData();
 
   const httpServer = createServer(app);
