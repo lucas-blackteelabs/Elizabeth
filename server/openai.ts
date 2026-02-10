@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
 import https from "https";
+import sharp from "sharp";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -800,77 +801,123 @@ export async function generateNanoBananaImage(userImagePaths: string[] = [], tex
   let imagePath = `/nano-banana/${randomDefault}`;
   let caption = defaultNanaBananaCaptions[Math.floor(Math.random() * defaultNanaBananaCaptions.length)];
 
-  const nanoBananaPrompt = `You are generating content for a cancer support app called Elizabeth. The user has uploaded "Worth Fighting For" images — these are personal photos that remind them why they are fighting so hard to beat cancer (family, pets, places they love, special memories).
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) return { imagePath, caption };
 
-${userImagePaths.length > 0 ? "I am showing you " + userImagePaths.length + " of the user's personal Worth Fighting For images." : ""}
-${textDescriptions.length > 0 ? "The user also wrote these personal notes about what they're fighting for: " + textDescriptions.join("; ") : ""}
-
-Your job: Create a fun, playful, warm motivational message that references what you can see in their photos and notes. Remind them they have so much to live for and to keep going. The tone should be uplifting, sometimes cheeky, always loving — like a best friend cheering them on.
-
-Generate ONE short punchy motivational caption (max 12 words) inspired by their personal photos and notes. Be warm, playful, or badass. Australian English. Include one emoji. Output ONLY the caption text, nothing else.`;
-
-  try {
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
-
-    const parts: any[] = [];
-    for (const imgPath of userImagePaths) {
-      try {
-        const imageData = fs.readFileSync(imgPath);
-        const base64 = imageData.toString("base64");
-        const mimeType = getImageMimeType(imgPath);
-        parts.push({ inlineData: { mimeType, data: base64 } });
-      } catch {
-      }
+  const imageParts: any[] = [];
+  for (const imgPath of userImagePaths) {
+    try {
+      const resizedBuffer = await sharp(imgPath)
+        .resize(768, 768, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+      const base64 = resizedBuffer.toString("base64");
+      imageParts.push({ inline_data: { mime_type: "image/jpeg", data: base64 } });
+    } catch (err: any) {
+      console.error("Error resizing image:", imgPath, err?.message);
     }
-    parts.push({ text: nanoBananaPrompt });
-
-    for (const modelName of modelsToTry) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent({
-          contents: [{ role: "user", parts }],
-          generationConfig: { temperature: 1.0, maxOutputTokens: 60 },
-        });
-        const text = result.response.text().trim();
-        if (text && text.length < 100) caption = text;
-        break;
-      } catch (err: any) {
-        if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")) continue;
-      }
-    }
-  } catch {
   }
 
-  try {
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (apiKey && userImagePaths.length > 0) {
-      const imageGenPrompt = `Create a fun, playful, warm motivational illustration for a cancer patient. Use the themes and subjects from the user's personal "Worth Fighting For" photos to create a whimsical, uplifting scene. Style: modern illustration, warm colours, clean lines, joyful mood. The image should feel personal and loving — like a visual hug. NO text or words in the image.`;
+  const notesContext = textDescriptions.length > 0
+    ? `\n\nThe user also wrote these personal notes about what they're fighting for:\n${textDescriptions.join("\n")}`
+    : "";
 
-      const imagenResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
+  const imageGenPrompt = `Use the selection of images I have provided you to generate a motivational image for a user of an app called Elizabeth. The purpose of the image I want you to create is to use these "Worth Fighting For" images (which have been uploaded by the user to remind them why they are fighting so hard to beat cancer) to create a fun and playful way to remind them they have so much to live for and to keep going.${notesContext}
+
+Create a beautiful, warm, uplifting image inspired by what you see in their personal photos. Make it feel personal, loving, and joyful — like a visual hug. The style should be whimsical and artistic. DO NOT include any text or words in the generated image.`;
+
+  const captionPrompt = `Look at these personal "Worth Fighting For" photos from a cancer patient. They uploaded these to remind themselves why they're fighting.${notesContext}
+
+Generate ONE short punchy motivational caption (max 12 words) inspired by what you see in their photos. Reference specific things you notice — their family, pets, places, moments. Be warm, playful, or badass. Australian English. Include one emoji. Output ONLY the caption text.`;
+
+  const imageModels = ["gemini-2.5-flash-image", "nano-banana-pro-preview"];
+  for (const model of imageModels) {
+    try {
+      const imageRequestParts = [
+        ...imageParts,
+        { text: imageGenPrompt },
+      ];
+
+      console.log(`Nano Banana: trying ${model} with ${imageParts.length} user images...`);
+      const imageResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            instances: [{ prompt: imageGenPrompt }],
-            parameters: { sampleCount: 1 },
+            contents: [{ parts: imageRequestParts }],
+            generationConfig: {
+              responseModalities: ["IMAGE"],
+            },
           }),
         }
       );
 
-      if (imagenResponse.ok) {
-        const imagenData = await imagenResponse.json() as any;
-        const base64Image = imagenData?.predictions?.[0]?.bytesBase64Encoded;
-        if (base64Image) {
-          const filename = `nano-${Date.now()}.png`;
-          const filepath = path.join(outputDir, filename);
-          fs.writeFileSync(filepath, Buffer.from(base64Image, "base64"));
-          cleanupOldImages(outputDir, 10);
-          imagePath = `/nano-banana/${filename}`;
+      if (imageResponse.ok) {
+        const imageData = await imageResponse.json() as any;
+        const candidates = imageData?.candidates;
+        if (candidates?.[0]?.content?.parts) {
+          for (const part of candidates[0].content.parts) {
+            if (part.inlineData?.data) {
+              const filename = `nano-${Date.now()}.png`;
+              const filepath = path.join(outputDir, filename);
+              fs.writeFileSync(filepath, Buffer.from(part.inlineData.data, "base64"));
+              cleanupOldImages(outputDir, 10);
+              imagePath = `/nano-banana/${filename}`;
+              console.log(`Nano Banana: successfully generated image with ${model}`);
+              break;
+            }
+          }
         }
+        if (imagePath !== `/nano-banana/${randomDefault}`) break;
+      } else {
+        const errText = await imageResponse.text();
+        const errStatus = imageResponse.status;
+        console.error(`Nano Banana ${model} error:`, errStatus, errText.substring(0, 200));
+        if (errStatus === 429) continue;
       }
+    } catch (err: any) {
+      console.error(`Nano Banana ${model} failed:`, err?.message);
+      continue;
     }
-  } catch {
+  }
+
+  const captionModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+  for (const model of captionModels) {
+    try {
+      const captionParts = [
+        ...imageParts,
+        { text: captionPrompt },
+      ];
+
+      const captionResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: captionParts }],
+            generationConfig: {
+              temperature: 1.0,
+              maxOutputTokens: 60,
+            },
+          }),
+        }
+      );
+
+      if (captionResponse.ok) {
+        const captionData = await captionResponse.json() as any;
+        const text = captionData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text && text.length < 100) {
+          caption = text;
+          break;
+        }
+      } else if (captionResponse.status === 429) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
   }
 
   return { imagePath, caption };
