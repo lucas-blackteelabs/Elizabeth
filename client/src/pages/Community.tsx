@@ -10,13 +10,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, MessageCircle, Heart, ArrowLeft, Send, Users, Sparkles,
   Loader2, Pin, Trash2, Flame, Leaf, Brain, HelpCircle, ShieldCheck,
-  Calendar, Clock, Video, Star, ChevronRight, CalendarCheck, X, Mic
+  Calendar, Clock, Video, Star, ChevronRight, CalendarCheck, X, Mic,
+  Shield, Apple, Sun, Dumbbell, LogOut, UserPlus
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { CommunityThread, CommunityReply, Survivor, SurvivorAvailability, SurvivorTalk, SurvivorTalkRsvp } from "@shared/schema";
+import type { CommunityThread, CommunityReply, Survivor, SurvivorAvailability, SurvivorTalk, SurvivorTalkRsvp, CommunityGroup, CommunityGroupMember, CommunityGroupPost, CommunityGroupPostReply } from "@shared/schema";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Flame }> = {
   general: { label: "General", color: "text-slate-600", bg: "bg-slate-50", icon: MessageCircle },
@@ -642,7 +643,333 @@ function NewThreadDialog({ open, onClose, userId, userName }: {
   );
 }
 
-type Tab = "threads" | "survivors" | "talks";
+const GROUP_ICON_MAP: Record<string, typeof Shield> = {
+  shield: Shield,
+  apple: Apple,
+  sun: Sun,
+  brain: Brain,
+  heart: Heart,
+  dumbbell: Dumbbell,
+};
+
+function GroupCard({ group, isMember, onJoin, onLeave, onOpen, isPending }: {
+  group: CommunityGroup;
+  isMember: boolean;
+  onJoin: () => void;
+  onLeave: () => void;
+  onOpen: () => void;
+  isPending: boolean;
+}) {
+  const Icon = GROUP_ICON_MAP[group.icon || "heart"] || Heart;
+  return (
+    <Card className="bg-white border-border rounded-2xl hover:shadow-md transition-all duration-200 overflow-hidden">
+      <div className="h-2" style={{ backgroundColor: group.coverColor || '#7A9B76' }} />
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2.5 rounded-xl flex-shrink-0" style={{ backgroundColor: (group.coverColor || '#7A9B76') + '15' }}>
+            <Icon className="h-5 w-5" style={{ color: group.coverColor || '#7A9B76' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <button onClick={onOpen} className="text-left w-full group">
+              <h3 className="text-sm font-heading font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                {group.name}
+              </h3>
+            </button>
+            <p className="text-xs font-body text-muted-foreground mt-1 line-clamp-2">{group.description}</p>
+            <div className="flex items-center gap-3 mt-2.5">
+              <span className="text-[10px] font-body text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {group.memberCount || 0} members
+              </span>
+              <span className="text-[10px] font-body text-muted-foreground flex items-center gap-1">
+                <MessageCircle className="h-3 w-3" />
+                {group.postCount || 0} posts
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 flex-shrink-0">
+            {isMember ? (
+              <>
+                <Button onClick={onOpen} size="sm"
+                  className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-[10px] h-7 px-3">
+                  Open
+                </Button>
+                <Button onClick={onLeave} size="sm" variant="ghost" disabled={isPending}
+                  className="text-muted-foreground hover:text-destructive font-body rounded-xl text-[10px] h-7 px-3">
+                  <LogOut className="h-3 w-3 mr-1" /> Leave
+                </Button>
+              </>
+            ) : (
+              <Button onClick={onJoin} size="sm" disabled={isPending}
+                className="bg-primary/10 text-primary hover:bg-primary/20 font-body rounded-xl text-[10px] h-7 px-3">
+                {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <><UserPlus className="h-3 w-3 mr-1" /> Join</>}
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function GroupFeedView({ group, userId, userName, onBack }: {
+  group: CommunityGroup;
+  userId: number;
+  userName: string;
+  onBack: () => void;
+}) {
+  const { toast } = useToast();
+  const [newPostContent, setNewPostContent] = useState("");
+  const [expandedPost, setExpandedPost] = useState<number | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<number, string>>({});
+
+  const Icon = GROUP_ICON_MAP[group.icon || "heart"] || Heart;
+
+  const { data: posts = [], isLoading: postsLoading } = useQuery<CommunityGroupPost[]>({
+    queryKey: ["/api/community/groups", group.id, "posts"],
+    queryFn: async () => {
+      const res = await fetch(`/api/community/groups/${group.id}/posts`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const createPostMut = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/community/groups/${group.id}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, authorName: userName, content: newPostContent }),
+      });
+    },
+    onSuccess: () => {
+      setNewPostContent("");
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups", group.id, "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups"] });
+      toast({ title: "Posted!" });
+    },
+  });
+
+  const deletePostMut = useMutation({
+    mutationFn: async (postId: number) => {
+      return apiRequest(`/api/community/group-posts/${postId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups", group.id, "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups"] });
+      toast({ title: "Post deleted" });
+    },
+  });
+
+  return (
+    <div>
+      <button onClick={onBack}
+        className="flex items-center gap-2 text-sm font-body text-muted-foreground hover:text-foreground mb-4 transition-colors">
+        <ArrowLeft className="h-4 w-4" /> Back to Groups
+      </button>
+
+      <Card className="bg-white border-border rounded-2xl mb-5 overflow-hidden">
+        <div className="h-3" style={{ backgroundColor: group.coverColor || '#7A9B76' }} />
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl" style={{ backgroundColor: (group.coverColor || '#7A9B76') + '15' }}>
+              <Icon className="h-5 w-5" style={{ color: group.coverColor || '#7A9B76' }} />
+            </div>
+            <div>
+              <h2 className="text-lg font-heading font-bold text-foreground">{group.name}</h2>
+              <p className="text-xs font-body text-muted-foreground mt-0.5">{group.description}</p>
+              <span className="text-[10px] font-body text-muted-foreground mt-1 flex items-center gap-1">
+                <Users className="h-3 w-3" /> {group.memberCount || 0} members
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-white border-border rounded-2xl mb-4">
+        <CardContent className="p-4">
+          <Textarea
+            placeholder="Share something with the group..."
+            value={newPostContent}
+            onChange={(e) => setNewPostContent(e.target.value)}
+            className="border-border/50 rounded-xl font-body text-sm resize-none min-h-[80px] mb-3"
+          />
+          <div className="flex justify-end">
+            <Button onClick={() => createPostMut.mutate()} disabled={!newPostContent.trim() || createPostMut.isPending}
+              className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-8">
+              {createPostMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+              Post
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {postsLoading ? (
+        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>
+      ) : posts.length === 0 ? (
+        <Card className="bg-white border-border rounded-2xl">
+          <CardContent className="py-12 text-center">
+            <MessageCircle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm font-body text-muted-foreground">No posts yet. Be the first to share!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {[...posts].reverse().map(post => (
+            <GroupPostCard
+              key={post.id}
+              post={post}
+              userId={userId}
+              userName={userName}
+              isExpanded={expandedPost === post.id}
+              onToggleExpand={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+              onDelete={() => deletePostMut.mutate(post.id)}
+              replyText={replyTexts[post.id] || ""}
+              onReplyTextChange={(text) => setReplyTexts(prev => ({ ...prev, [post.id]: text }))}
+              onReplySent={() => setReplyTexts(prev => ({ ...prev, [post.id]: "" }))}
+              groupId={group.id}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onDelete, replyText, onReplyTextChange, onReplySent, groupId }: {
+  post: CommunityGroupPost;
+  userId: number;
+  userName: string;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onDelete: () => void;
+  replyText: string;
+  onReplyTextChange: (text: string) => void;
+  onReplySent: () => void;
+  groupId: number;
+}) {
+  const { toast } = useToast();
+
+  const { data: replies = [], isLoading: repliesLoading } = useQuery<CommunityGroupPostReply[]>({
+    queryKey: ["/api/community/group-posts", post.id, "replies"],
+    queryFn: async () => {
+      const res = await fetch(`/api/community/group-posts/${post.id}/replies`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: isExpanded,
+  });
+
+  const createReplyMut = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/community/group-posts/${post.id}/replies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, authorName: userName, content: replyText }),
+      });
+    },
+    onSuccess: () => {
+      onReplySent();
+      queryClient.invalidateQueries({ queryKey: ["/api/community/group-posts", post.id, "replies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups", groupId, "posts"] });
+      toast({ title: "Reply posted!" });
+    },
+  });
+
+  const deleteReplyMut = useMutation({
+    mutationFn: async (replyId: number) => {
+      return apiRequest(`/api/community/group-post-replies/${replyId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/group-posts", post.id, "replies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups", groupId, "posts"] });
+    },
+  });
+
+  const initial = (post.authorName || "A").charAt(0).toUpperCase();
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-sm flex-shrink-0">
+            {initial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-body font-semibold text-foreground">{post.authorName}</span>
+              <span className="text-[10px] font-body text-muted-foreground">{timeAgo(post.createdAt)}</span>
+            </div>
+            <p className="text-sm font-body text-foreground/90 mt-1.5 whitespace-pre-wrap">{post.content}</p>
+            <div className="flex items-center gap-3 mt-2.5">
+              <button onClick={onToggleExpand}
+                className="text-[10px] font-body text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors">
+                <MessageCircle className="h-3 w-3" /> {post.repliesCount || 0} replies
+              </button>
+              {post.userId === userId && (
+                <button onClick={onDelete}
+                  className="text-[10px] font-body text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors">
+                  <Trash2 className="h-3 w-3" /> Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-border/50 ml-12">
+            {repliesLoading ? (
+              <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-12 rounded-xl" />)}</div>
+            ) : replies.length > 0 ? (
+              <div className="space-y-2.5 mb-3">
+                {replies.map(reply => {
+                  const ri = (reply.authorName || "A").charAt(0).toUpperCase();
+                  return (
+                    <div key={reply.id} className="flex items-start gap-2.5 bg-muted/30 rounded-xl p-2.5">
+                      <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center text-accent font-heading font-bold text-[10px] flex-shrink-0">
+                        {ri}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-body font-semibold text-foreground">{reply.authorName}</span>
+                          <span className="text-[9px] font-body text-muted-foreground">{timeAgo(reply.createdAt)}</span>
+                          {reply.userId === userId && (
+                            <button onClick={() => deleteReplyMut.mutate(reply.id)}
+                              className="ml-auto text-muted-foreground/50 hover:text-destructive transition-colors">
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs font-body text-foreground/80 mt-0.5">{reply.content}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs font-body text-muted-foreground mb-3">No replies yet</p>
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Write a reply..."
+                value={replyText}
+                onChange={(e) => onReplyTextChange(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && replyText.trim()) createReplyMut.mutate(); }}
+                className="flex-1 text-xs font-body h-8 rounded-xl border-border/50"
+              />
+              <Button onClick={() => createReplyMut.mutate()} disabled={!replyText.trim() || createReplyMut.isPending}
+                size="sm" className="bg-primary text-white hover:bg-primary/90 rounded-xl h-8 px-3">
+                {createReplyMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+type Tab = "threads" | "survivors" | "talks" | "groups";
 
 export default function Community() {
   const { user } = useUser();
@@ -650,6 +977,7 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState<Tab>("threads");
   const [selectedThread, setSelectedThread] = useState<CommunityThread | null>(null);
   const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<CommunityGroup | null>(null);
   const [showNewThread, setShowNewThread] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const userId = user?.id || 1;
@@ -690,6 +1018,56 @@ export default function Community() {
     },
   });
 
+  const { data: groups = [], isLoading: groupsLoading } = useQuery<CommunityGroup[]>({
+    queryKey: ["/api/community/groups"],
+    queryFn: async () => {
+      const res = await fetch("/api/community/groups", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const { data: userMemberships = [] } = useQuery<CommunityGroupMember[]>({
+    queryKey: ["/api/community/group-memberships", userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/community/group-memberships?userId=${userId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const joinGroupMut = useMutation({
+    mutationFn: async (groupId: number) => {
+      return apiRequest(`/api/community/groups/${groupId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/group-memberships", userId] });
+      toast({ title: "Joined group!" });
+    },
+  });
+
+  const leaveGroupMut = useMutation({
+    mutationFn: async (groupId: number) => {
+      return apiRequest(`/api/community/groups/${groupId}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/community/groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community/group-memberships", userId] });
+      toast({ title: "Left group" });
+    },
+  });
+
+  const memberGroupIds = new Set(userMemberships.map(m => m.groupId));
+
   const rsvpMutation = useMutation({
     mutationFn: async (talkId: number) => {
       return apiRequest("/api/survivor-talk-rsvps", {
@@ -722,6 +1100,19 @@ export default function Community() {
     acc[s.id] = s;
     return acc;
   }, {});
+
+  if (selectedGroup) {
+    return (
+      <div className="p-4 lg:p-6 max-w-3xl mx-auto">
+        <GroupFeedView
+          group={selectedGroup}
+          userId={userId}
+          userName={user?.displayName || "Anonymous"}
+          onBack={() => setSelectedGroup(null)}
+        />
+      </div>
+    );
+  }
 
   if (selectedThread) {
     return (
@@ -760,6 +1151,7 @@ export default function Community() {
 
   const tabs: { key: Tab; label: string; icon: typeof MessageCircle; count?: number }[] = [
     { key: "threads", label: "Threads", icon: MessageCircle, count: threads.length },
+    { key: "groups", label: "Groups", icon: Users, count: groups.length },
     { key: "survivors", label: "Survivors", icon: ShieldCheck, count: survivorsList.filter(s => s.verified).length },
     { key: "talks", label: "Talks", icon: Mic, count: upcomingTalks.length },
   ];
@@ -854,6 +1246,70 @@ export default function Community() {
                 <ThreadCard key={thread.id} thread={thread} onClick={() => setSelectedThread(thread)} />
               ))}
             </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "groups" && (
+        <>
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/15 rounded-2xl mb-5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-heading text-foreground">Community Groups</h3>
+                  <p className="text-xs font-body text-muted-foreground mt-0.5">
+                    Join groups that match your journey. Share, learn, and connect with others who understand.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {memberGroupIds.size > 0 && (
+            <>
+              <h3 className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Groups</h3>
+              <div className="space-y-3 mb-6">
+                {groups.filter(g => memberGroupIds.has(g.id)).map(group => (
+                  <GroupCard key={group.id} group={group} isMember={true}
+                    onJoin={() => joinGroupMut.mutate(group.id)}
+                    onLeave={() => leaveGroupMut.mutate(group.id)}
+                    onOpen={() => setSelectedGroup(group)}
+                    isPending={joinGroupMut.isPending || leaveGroupMut.isPending} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {groupsLoading ? (
+            <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+          ) : (
+            <>
+              <h3 className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                {memberGroupIds.size > 0 ? "Discover Groups" : "All Groups"}
+              </h3>
+              <div className="space-y-3">
+                {groups.filter(g => !memberGroupIds.has(g.id)).map(group => (
+                  <GroupCard key={group.id} group={group} isMember={false}
+                    onJoin={() => joinGroupMut.mutate(group.id)}
+                    onLeave={() => leaveGroupMut.mutate(group.id)}
+                    onOpen={() => {
+                      joinGroupMut.mutate(group.id);
+                      setSelectedGroup(group);
+                    }}
+                    isPending={joinGroupMut.isPending || leaveGroupMut.isPending} />
+                ))}
+                {groups.filter(g => !memberGroupIds.has(g.id)).length === 0 && memberGroupIds.size > 0 && (
+                  <Card className="bg-white border-border rounded-2xl">
+                    <CardContent className="py-8 text-center">
+                      <p className="text-sm font-body text-muted-foreground">You've joined all available groups!</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </>
           )}
         </>
       )}
