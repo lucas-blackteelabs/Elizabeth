@@ -1,4 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
+import https from "https";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -701,4 +707,125 @@ export function addToKnowledgeBase(category: string, content: string): { success
     success: true, 
     message: `Successfully added new information about "${category}" to the AI knowledge base.` 
   };
+}
+
+function downloadFile(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    const request = https.get(url, { timeout: 30000 }, (response) => {
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        file.close();
+        fs.unlink(dest, () => {});
+        const redirectUrl = response.headers.location;
+        if (redirectUrl) {
+          downloadFile(redirectUrl, dest).then(resolve).catch(reject);
+          return;
+        }
+        reject(new Error("Redirect with no location"));
+        return;
+      }
+      if (response.statusCode !== 200) {
+        file.close();
+        fs.unlink(dest, () => {});
+        reject(new Error(`Download failed with status ${response.statusCode}`));
+        return;
+      }
+      response.pipe(file);
+      response.on("error", (err) => {
+        file.close();
+        fs.unlink(dest, () => {});
+        reject(err);
+      });
+      file.on("error", (err) => {
+        file.close();
+        fs.unlink(dest, () => {});
+        reject(err);
+      });
+      file.on("finish", () => { file.close(); resolve(); });
+    });
+    request.on("error", (err) => {
+      file.close();
+      fs.unlink(dest, () => {});
+      reject(err);
+    });
+    request.on("timeout", () => {
+      request.destroy();
+      file.close();
+      fs.unlink(dest, () => {});
+      reject(new Error("Download timed out"));
+    });
+  });
+}
+
+function cleanupOldImages(dir: string, maxKeep: number = 10) {
+  try {
+    if (!fs.existsSync(dir)) return;
+    const files = fs.readdirSync(dir)
+      .filter(f => f.startsWith("nano-") && f.endsWith(".png"))
+      .map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtimeMs }))
+      .sort((a, b) => b.time - a.time);
+    for (let i = maxKeep; i < files.length; i++) {
+      fs.unlinkSync(path.join(dir, files[i].name));
+    }
+  } catch {}
+}
+
+const nanoBananaStyles = [
+  "A vibrant watercolour illustration of a tiny banana character wearing a superhero cape, flying through a cosmic sky full of stars and nebulae, uplifting and joyful, warm golden tones",
+  "A whimsical digital painting of a small banana character doing a victory dance on top of a mountain at sunrise, warm orange and pink sky, triumphant and inspiring mood",
+  "A cute illustrated banana character meditating peacefully in a zen garden with cherry blossoms falling, soft pastel colours, calming and healing atmosphere",
+  "A playful banana character surfing a giant wave at golden hour, Australian beach vibes, energetic and fun, warm sunset colours",
+  "A tiny banana character planting a garden of wildflowers, bees and butterflies around, symbol of growth and renewal, soft watercolour style",
+  "A cheerful banana character stargazing through a telescope at night, surrounded by fireflies, magical and wonder-filled, deep blue and golden tones",
+  "A brave little banana character leading a parade of friendly woodland animals through an enchanted forest, dappled sunlight, magical realism style",
+  "A cosy illustration of a banana character wrapped in a blanket reading a book by a fireplace, warm amber glow, hygge feeling, nurturing and safe",
+  "A banana character riding a paper airplane through cotton candy clouds at sunset, dreamy pastel sky, sense of freedom and adventure",
+  "A tiny banana character standing on a cliff overlooking a vast beautiful valley at dawn, golden light breaking through clouds, feeling of possibility and hope",
+  "A cute banana character high-fiving a friendly sun, blue sky with rainbow, joyful and energetic, children's book illustration style",
+  "A banana character floating in a hot air balloon shaped like a heart over rolling green hills, golden hour light, whimsical and uplifting",
+];
+
+export async function generateNanoBananaImage(): Promise<{ imagePath: string; caption: string }> {
+  const outputDir = path.join(process.cwd(), "client", "public", "nano-banana");
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  const stylePrompt = nanoBananaStyles[Math.floor(Math.random() * nanoBananaStyles.length)];
+
+  const filename = `nano-${Date.now()}.png`;
+  const filepath = path.join(outputDir, filename);
+
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: `${stylePrompt}. The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+    });
+
+    const imageUrl = response.data?.[0]?.url;
+    if (!imageUrl) throw new Error("No image URL returned");
+
+    await downloadFile(imageUrl, filepath);
+    cleanupOldImages(outputDir, 10);
+
+    let caption = "You've got this, warrior 🍌";
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: "Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text." }] }],
+        generationConfig: { temperature: 1.2, maxOutputTokens: 50 },
+      });
+      const text = result.response.text().trim();
+      if (text && text.length < 80) caption = text;
+    } catch {
+    }
+
+    return { imagePath: `/nano-banana/${filename}`, caption };
+  } catch (error: any) {
+    console.error("DALL-E image generation failed:", error?.message);
+    throw new Error("Image generation temporarily unavailable");
+  }
 }

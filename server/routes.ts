@@ -339,6 +339,7 @@ async function seedDefaultAppointments(userId: number) {
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   app.use('/uploads', express.static(uploadDir));
+  app.use('/nano-banana', express.static(path.join(process.cwd(), 'client', 'public', 'nano-banana')));
 
   await seedLizAccount();
 
@@ -1119,58 +1120,12 @@ HARD RULES:
   // Nano Banana — short AI-generated motivational content on demand
   app.post("/api/ai/nano-banana", async (req, res) => {
     try {
-      const userId = req.body.userId || 1;
-      const user = await storage.getUser(userId);
-      if (!user) return res.status(404).json({ error: "User not found" });
-
-      const scanData = await storage.listScanResults(userId);
-      const programs = await storage.listTreatmentPrograms(userId);
-      const wallItems = await storage.listMotivationalWallItems(userId);
-      const textItems = wallItems.filter(i => i.type === "text").map(i => i.content).slice(0, 5);
-
-      const userContext = `
-PATIENT: ${user.displayName}
-DIAGNOSIS: ${user.cancerType || "Stage IV Melanoma"}, ${user.cancerStage || "Stage IV"}
-STATUS: ${user.treatmentStatus || "Active Surveillance"}
-SCAN SUMMARY: ${user.scanSummary || "2 of 4 tumours resolved"}
-TREATMENT: ${user.treatmentHistory || "Immunotherapy completed"}
-WALL ITEMS: ${textItems.join("; ") || "Family, friends, and life"}
-GOALS: ${user.goals || "Living fully"}`;
-
-      const { getHealthAdvice } = await import("./openai");
-      const prompt = `Generate ONE short, punchy motivational micro-story or fact for this cancer patient. Think TikTok energy meets cancer warrior.
-
-Pick ONE of these formats randomly:
-- A wild science fact about their immune system or treatment (e.g. "Fun fact: your NK cells can kill a cancer cell in 4 minutes flat")
-- A mini pep talk that hits different (e.g. "You survived 100% of your worst days. Batting average: perfect.")
-- A funny/badass remix using their real data (tumour stats, sessions done, etc.)
-- A micro-celebration of something they've achieved
-
-RULES:
-- MAX 2 short sentences. Punchy. Not preachy.
-- Mix their real data with wit
-- Make them smile, laugh, or feel like a warrior
-- Max 1 emoji. Australian English.
-- Output ONLY the text, nothing else`;
-
-      let content = await getHealthAdvice(prompt, userContext);
-      if (content.includes("trouble connecting") || content.includes("try again")) {
-        const fallbacks = [
-          "Fun fact: your NK cells can destroy a cancer cell in under 5 minutes. You're basically hosting a tiny army 🪖",
-          "Two tumours walked in, got absolutely rinsed, and didn't walk out. You did that.",
-          "Your immune system has a better win rate than most AFL teams right now 💪",
-          "Plot twist: the girl they said couldn't is currently smashing it",
-          "Your body remembered how to fight. That's not luck — that's you.",
-          "Somewhere right now, a melanoma cell is regretting its life choices 🍌",
-        ];
-        content = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      }
-      content = content.replace(/^["']|["']$/g, "").trim();
-      if (content.length > 200) content = content.substring(0, 197) + "...";
-      return res.json({ content });
-    } catch (error) {
-      console.error("Error generating nano banana:", error);
-      return res.status(500).json({ error: "Failed to generate content" });
+      const { generateNanoBananaImage } = await import("./openai");
+      const result = await generateNanoBananaImage();
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error generating nano banana image:", error);
+      return res.status(503).json({ error: error?.message || "Image generation unavailable" });
     }
   });
 

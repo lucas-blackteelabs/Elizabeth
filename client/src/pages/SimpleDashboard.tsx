@@ -1250,8 +1250,10 @@ function DaySummaryDialog({ userId, open, onOpenChange }: { userId: number; open
 }
 
 function NanoBananaWidget({ userId }: { userId: number }) {
-  const [content, setContent] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [caption, setCaption] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const generate = async () => {
     setGenerating(true);
@@ -1261,39 +1263,80 @@ function NanoBananaWidget({ userId }: { userId: number }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
+      if (!res.ok) throw new Error("Failed");
       const data = await res.json();
-      setContent(data.content || "You're literally unstoppable 🍌");
+      setImagePath(data.imagePath);
+      setCaption(data.caption || "You've got this 🍌");
     } catch {
-      setContent("Keep going, champion 🍌");
+      setCaption("Tap to generate your Nano Banana 🍌");
     } finally {
       setGenerating(false);
     }
   };
 
-  useEffect(() => { generate(); }, []);
-
   return (
-    <button
-      onClick={generate}
-      disabled={generating}
-      className="group relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 w-full overflow-hidden"
-    >
-      <div className="absolute top-2 right-3 text-lg opacity-30 group-hover:opacity-50 transition-opacity">🍌</div>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
-          {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wider text-amber-600/70 font-body font-medium mb-0.5">Nano Banana</p>
-          {generating ? (
-            <div className="h-4 bg-amber-100 rounded-full w-3/4 animate-pulse" />
-          ) : (
-            <p className="text-sm font-heading text-foreground leading-snug">{content}</p>
+    <>
+      <button
+        onClick={() => imagePath ? setExpanded(true) : generate()}
+        disabled={generating}
+        className="group relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl overflow-hidden text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 w-full"
+      >
+        {imagePath ? (
+          <div className="relative">
+            <img src={imagePath} alt="Nano Banana" className="w-full aspect-square object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-amber-300 font-body font-medium mb-0.5">Nano Banana</p>
+              <p className="text-sm font-heading text-white leading-snug drop-shadow-md">{caption}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
+                {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-amber-600/70 font-body font-medium mb-0.5">Nano Banana</p>
+                {generating ? (
+                  <div className="space-y-2">
+                    <div className="h-3 bg-amber-100 rounded-full w-3/4 animate-pulse" />
+                    <p className="text-xs text-amber-500/70 font-body">Creating your image...</p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-body text-muted-foreground">{caption || "Tap to generate a motivational image"}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </button>
+
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-amber-200/50">
+          {imagePath && (
+            <div className="relative">
+              <img src={imagePath} alt="Nano Banana" className="w-full aspect-square object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-5">
+                <p className="text-xs uppercase tracking-wider text-amber-300 font-body font-medium mb-1">Nano Banana</p>
+                <p className="text-lg font-heading text-white leading-snug drop-shadow-lg">{caption}</p>
+              </div>
+            </div>
           )}
-        </div>
-        <RefreshCw className={`h-4 w-4 text-amber-400 flex-shrink-0 ${generating ? "animate-spin" : "group-hover:text-amber-600"} transition-colors`} />
-      </div>
-    </button>
+          <div className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 flex justify-center">
+            <button
+              onClick={generate}
+              disabled={generating}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-body font-medium text-sm hover:from-amber-600 hover:to-yellow-600 transition-all disabled:opacity-50 shadow-md"
+            >
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {generating ? "Creating..." : "New Banana"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
