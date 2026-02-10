@@ -9,13 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus, MessageCircle, Heart, ArrowLeft, Send, Users, Sparkles,
-  Loader2, Pin, Trash2, Flame, Leaf, Brain, HelpCircle
+  Loader2, Pin, Trash2, Flame, Leaf, Brain, HelpCircle, ShieldCheck,
+  Calendar, Clock, Video, Star, ChevronRight, CalendarCheck, X, Mic
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { CommunityThread, CommunityReply } from "@shared/schema";
+import type { CommunityThread, CommunityReply, Survivor, SurvivorAvailability, SurvivorTalk, SurvivorTalkRsvp } from "@shared/schema";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Flame }> = {
   general: { label: "General", color: "text-slate-600", bg: "bg-slate-50", icon: MessageCircle },
@@ -27,8 +28,20 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; bg: string
   wins: { label: "Wins & Milestones", color: "text-emerald-600", bg: "bg-emerald-50", icon: Flame },
 };
 
+const TALK_CATEGORIES: Record<string, { label: string; color: string; bg: string; icon: typeof Flame }> = {
+  wellness: { label: "Wellness", color: "text-teal-600", bg: "bg-teal-50", icon: Heart },
+  education: { label: "Education", color: "text-blue-600", bg: "bg-blue-50", icon: Brain },
+  nutrition: { label: "Nutrition", color: "text-green-600", bg: "bg-green-50", icon: Leaf },
+  support: { label: "Support", color: "text-pink-600", bg: "bg-pink-50", icon: Heart },
+  general: { label: "General", color: "text-slate-600", bg: "bg-slate-50", icon: MessageCircle },
+};
+
 function getCat(category: string) {
   return CATEGORY_CONFIG[category] || CATEGORY_CONFIG.general;
+}
+
+function getTalkCat(category: string) {
+  return TALK_CATEGORIES[category] || TALK_CATEGORIES.general;
 }
 
 function timeAgo(date: string | Date) {
@@ -41,6 +54,321 @@ function timeAgo(date: string | Date) {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function formatDateTime(dateStr: string | Date) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }) +
+    " at " + d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Australia/Sydney' });
+}
+
+function SurvivorBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-yellow-50 border border-amber-200/60 text-amber-700 text-[10px] font-body font-semibold">
+      <ShieldCheck className="h-3 w-3" />
+      Verified Survivor
+    </span>
+  );
+}
+
+function SurvivorAvatar({ name, featured }: { name: string; featured?: boolean | null }) {
+  const initial = name.charAt(0).toUpperCase();
+  return (
+    <div className={`relative flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-heading font-bold text-lg ${
+      featured
+        ? "bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-md shadow-amber-200/50"
+        : "bg-gradient-to-br from-primary/80 to-primary text-white shadow-sm"
+    }`}>
+      {initial}
+      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center border-2 border-white">
+        <ShieldCheck className="h-2.5 w-2.5 text-white" />
+      </div>
+    </div>
+  );
+}
+
+function SurvivorCard({ survivor, onClick }: { survivor: Survivor; onClick: () => void }) {
+  return (
+    <Card className="bg-white border-border rounded-2xl hover:shadow-md transition-all duration-200 cursor-pointer group overflow-hidden"
+      onClick={onClick}>
+      {survivor.featured && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50/50 px-4 py-1.5 border-b border-amber-100/50">
+          <div className="flex items-center gap-1.5">
+            <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+            <span className="text-[10px] font-body font-semibold text-amber-600 uppercase tracking-wider">Featured Survivor</span>
+          </div>
+        </div>
+      )}
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <SurvivorAvatar name={survivor.name} featured={survivor.featured} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="text-sm font-body font-semibold text-foreground">{survivor.name}</span>
+              <SurvivorBadge />
+            </div>
+            <p className="text-xs font-body text-muted-foreground mb-0.5">{survivor.cancerType} &middot; {survivor.yearsSurvivor}+ years</p>
+            <p className="text-xs font-body text-foreground/70 line-clamp-2 mt-1">{survivor.bio}</p>
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {(survivor.expertise || []).slice(0, 3).map(tag => (
+                <span key={tag} className="text-[9px] font-body px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10">
+                  {tag}
+                </span>
+              ))}
+              {(survivor.expertise || []).length > 3 && (
+                <span className="text-[9px] font-body text-muted-foreground/60">+{(survivor.expertise || []).length - 3} more</span>
+              )}
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary/60 transition-colors flex-shrink-0 mt-2" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SurvivorProfile({ survivor, onBack, userId }: { survivor: Survivor; onBack: () => void; userId: number }) {
+  const { toast } = useToast();
+  const [bookingSlot, setBookingSlot] = useState<SurvivorAvailability | null>(null);
+  const [bookingNotes, setBookingNotes] = useState("");
+
+  const { data: slots = [], isLoading: slotsLoading } = useQuery<SurvivorAvailability[]>({
+    queryKey: ["/api/survivors", survivor.id, "availability"],
+    queryFn: async () => {
+      const res = await fetch(`/api/survivors/${survivor.id}/availability`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const availableSlots = slots.filter(s => !s.booked);
+
+  const slotsByDate = availableSlots.reduce((acc: Record<string, SurvivorAvailability[]>, slot) => {
+    if (!acc[slot.date]) acc[slot.date] = [];
+    acc[slot.date].push(slot);
+    return acc;
+  }, {});
+
+  const bookMutation = useMutation({
+    mutationFn: async () => {
+      if (!bookingSlot) throw new Error("No slot selected");
+      return apiRequest("/api/survivor-bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId: bookingSlot.id,
+          survivorId: survivor.id,
+          userId,
+          notes: bookingNotes || null,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/survivors", survivor.id, "availability"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/survivor-bookings"] });
+      toast({ title: "Session booked!", description: `You're booked in with ${survivor.name}. Check your calendar for details.` });
+      setBookingSlot(null);
+      setBookingNotes("");
+    },
+    onError: () => {
+      toast({ title: "Couldn't book", description: "Something went wrong. Please try again.", variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <Button variant="ghost" onClick={onBack} className="text-muted-foreground hover:text-foreground font-body text-xs -ml-2">
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Survivors
+      </Button>
+
+      <Card className="bg-white border-border rounded-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-primary/5 via-amber-50/40 to-primary/5 p-5 border-b border-border/50">
+          <div className="flex items-start gap-4">
+            <SurvivorAvatar name={survivor.name} featured={survivor.featured} />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-heading text-foreground">{survivor.name}</h2>
+                <SurvivorBadge />
+              </div>
+              <p className="text-xs font-body text-muted-foreground mt-0.5">
+                {survivor.cancerType} &middot; {survivor.yearsSurvivor}+ years survivor &middot; <Video className="h-3 w-3 inline" /> Video sessions
+              </p>
+            </div>
+          </div>
+        </div>
+        <CardContent className="p-5">
+          <p className="text-sm font-body text-foreground/80 leading-relaxed">{survivor.bio}</p>
+          <div className="flex gap-1.5 mt-3 flex-wrap">
+            {(survivor.expertise || []).map(tag => (
+              <span key={tag} className="text-[10px] font-body px-2.5 py-1 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div>
+        <h3 className="text-sm font-heading text-foreground mb-3 flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-primary" /> Available Times
+        </h3>
+        {slotsLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+          </div>
+        ) : Object.keys(slotsByDate).length === 0 ? (
+          <Card className="bg-muted/30 border-border/50 rounded-2xl">
+            <CardContent className="py-8 text-center">
+              <Calendar className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs font-body text-muted-foreground">No available times right now. Check back soon!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(slotsByDate).sort(([a], [b]) => a.localeCompare(b)).map(([date, dateSlots]) => (
+              <Card key={date} className="bg-white border-border rounded-2xl">
+                <CardContent className="p-4">
+                  <p className="text-xs font-body font-medium text-foreground mb-2.5 flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    {formatDate(date)}
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {dateSlots.map(slot => (
+                      <button key={slot.id} onClick={() => setBookingSlot(slot)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-body bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/30 transition-all flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        {slot.startTime} - {slot.endTime}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Dialog open={!!bookingSlot} onOpenChange={() => setBookingSlot(null)}>
+        <DialogContent className="bg-white border-border max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-foreground">Book a Session</DialogTitle>
+          </DialogHeader>
+          {bookingSlot && (
+            <div className="space-y-4">
+              <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
+                <div className="flex items-center gap-2">
+                  <SurvivorAvatar name={survivor.name} featured={false} />
+                  <div>
+                    <p className="text-sm font-body font-medium">{survivor.name}</p>
+                    <p className="text-xs font-body text-muted-foreground">
+                      {formatDate(bookingSlot.date)} &middot; {bookingSlot.startTime} - {bookingSlot.endTime}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-body text-muted-foreground">Anything you'd like to discuss? (optional)</label>
+                <Textarea value={bookingNotes} onChange={e => setBookingNotes(e.target.value)}
+                  placeholder="E.g. managing scanxiety, nutrition tips, just want to chat..."
+                  className="font-body rounded-xl resize-none mt-1" rows={3} />
+              </div>
+              <Button onClick={() => bookMutation.mutate()} disabled={bookMutation.isPending}
+                className="w-full bg-primary text-white hover:bg-primary/90 font-body rounded-xl">
+                {bookMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CalendarCheck className="h-4 w-4 mr-2" />}
+                Confirm Booking
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function TalkCard({ talk, survivor, isRsvpd, onRsvp, onCancelRsvp, isPending }: {
+  talk: SurvivorTalk;
+  survivor?: Survivor;
+  isRsvpd: boolean;
+  onRsvp: () => void;
+  onCancelRsvp: () => void;
+  isPending: boolean;
+}) {
+  const cat = getTalkCat(talk.category || "general");
+  const CatIcon = cat.icon;
+  const isFuture = new Date(talk.scheduledAt) > new Date();
+  const spotsLeft = talk.capacity ? talk.capacity - (talk.rsvpCount || 0) : null;
+
+  return (
+    <Card className={`bg-white border-border rounded-2xl overflow-hidden transition-all ${!isFuture ? "opacity-60" : ""}`}>
+      <div className="bg-gradient-to-r from-primary/5 via-transparent to-amber-50/30 px-4 py-2 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <Badge className={`text-[9px] font-body ${cat.bg} ${cat.color} border-0`}>
+            <CatIcon className="h-2.5 w-2.5 mr-1" /> {cat.label}
+          </Badge>
+          {!isFuture && <Badge className="text-[9px] font-body bg-muted text-muted-foreground border-0">Past</Badge>}
+          {spotsLeft !== null && spotsLeft <= 5 && isFuture && (
+            <Badge className="text-[9px] font-body bg-red-50 text-red-600 border-0">
+              {spotsLeft <= 0 ? "Full" : `${spotsLeft} spots left`}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <h3 className="text-sm font-heading font-semibold text-foreground mb-1">{talk.title}</h3>
+        <p className="text-xs font-body text-foreground/70 line-clamp-2 mb-3">{talk.description}</p>
+        <div className="flex items-center gap-3 text-[10px] font-body text-muted-foreground mb-3">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" /> {formatDateTime(talk.scheduledAt)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {talk.durationMinutes}min
+          </span>
+          {talk.rsvpCount !== null && (
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" /> {talk.rsvpCount} attending
+            </span>
+          )}
+        </div>
+        {survivor && (
+          <div className="flex items-center gap-2 mb-3 p-2 bg-muted/30 rounded-xl">
+            <SurvivorAvatar name={survivor.name} featured={survivor.featured} />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-body font-medium">{survivor.name}</span>
+                <SurvivorBadge />
+              </div>
+              <p className="text-[10px] font-body text-muted-foreground">{survivor.cancerType}</p>
+            </div>
+          </div>
+        )}
+        {isFuture && (
+          <div className="flex items-center gap-2">
+            {isRsvpd ? (
+              <>
+                <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 text-primary rounded-xl text-xs font-body">
+                  <CalendarCheck className="h-3.5 w-3.5" /> You're attending
+                </div>
+                <Button variant="ghost" size="sm" onClick={onCancelRsvp} disabled={isPending}
+                  className="text-muted-foreground hover:text-red-500 text-xs h-8 px-2">
+                  {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={onRsvp} disabled={isPending || (spotsLeft !== null && spotsLeft <= 0)}
+                className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9 flex-1">
+                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CalendarCheck className="h-3.5 w-3.5 mr-1.5" />}
+                {spotsLeft !== null && spotsLeft <= 0 ? "Full" : "RSVP to Attend"}
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () => void }) {
@@ -58,7 +386,7 @@ function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xs font-body text-muted-foreground">{thread.authorName}</span>
-              <span className="text-[10px] font-body text-muted-foreground/60">•</span>
+              <span className="text-[10px] font-body text-muted-foreground/60">&middot;</span>
               <span className="text-[10px] font-body text-muted-foreground/60">{timeAgo(thread.createdAt)}</span>
               {thread.pinned && <Pin className="h-3 w-3 text-accent" />}
             </div>
@@ -87,12 +415,11 @@ function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () 
   );
 }
 
-function ThreadDetailView({ thread: initialThread, onBack, userId, userName, onThreadUpdate }: {
+function ThreadDetailView({ thread: initialThread, onBack, userId, userName }: {
   thread: CommunityThread;
   onBack: () => void;
   userId: number;
   userName: string;
-  onThreadUpdate: (thread: CommunityThread) => void;
 }) {
   const { toast } = useToast();
   const [replyText, setReplyText] = useState("");
@@ -315,31 +642,86 @@ function NewThreadDialog({ open, onClose, userId, userName }: {
   );
 }
 
+type Tab = "threads" | "survivors" | "talks";
+
 export default function Community() {
   const { user } = useUser();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<Tab>("threads");
   const [selectedThread, setSelectedThread] = useState<CommunityThread | null>(null);
+  const [selectedSurvivor, setSelectedSurvivor] = useState<Survivor | null>(null);
   const [showNewThread, setShowNewThread] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
+  const userId = user?.id || 1;
 
-  const { data: threads = [], isLoading } = useQuery<CommunityThread[]>({
+  const { data: threads = [], isLoading: threadsLoading } = useQuery<CommunityThread[]>({
     queryKey: ["/api/community/threads"],
     queryFn: async () => {
       const res = await fetch("/api/community/threads", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch threads");
+      if (!res.ok) throw new Error("Failed");
       return res.json();
     },
   });
 
-  const filteredThreads = filterCategory === "all"
-    ? threads
-    : threads.filter(t => t.category === filterCategory);
-
-  const sortedThreads = [...filteredThreads].sort((a, b) => {
-    if (a.pinned && !b.pinned) return -1;
-    if (!a.pinned && b.pinned) return 1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  const { data: survivorsList = [], isLoading: survivorsLoading } = useQuery<Survivor[]>({
+    queryKey: ["/api/survivors"],
+    queryFn: async () => {
+      const res = await fetch("/api/survivors", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
   });
+
+  const { data: talks = [], isLoading: talksLoading } = useQuery<SurvivorTalk[]>({
+    queryKey: ["/api/survivor-talks"],
+    queryFn: async () => {
+      const res = await fetch("/api/survivor-talks", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const { data: userRsvps = [] } = useQuery<SurvivorTalkRsvp[]>({
+    queryKey: ["/api/survivor-talk-rsvps", userId],
+    queryFn: async () => {
+      const res = await fetch(`/api/survivor-talk-rsvps?userId=${userId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const rsvpMutation = useMutation({
+    mutationFn: async (talkId: number) => {
+      return apiRequest("/api/survivor-talk-rsvps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ talkId, userId }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/survivor-talk-rsvps", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/survivor-talks"] });
+      toast({ title: "You're in!", description: "You've been added to this talk." });
+    },
+  });
+
+  const cancelRsvpMutation = useMutation({
+    mutationFn: async (talkId: number) => {
+      return apiRequest(`/api/survivor-talk-rsvps/${talkId}?userId=${userId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/survivor-talk-rsvps", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/survivor-talks"] });
+      toast({ title: "RSVP cancelled" });
+    },
+  });
+
+  const rsvpTalkIds = new Set(userRsvps.map(r => r.talkId));
+
+  const survivorMap = survivorsList.reduce((acc: Record<number, Survivor>, s) => {
+    acc[s.id] = s;
+    return acc;
+  }, {});
 
   if (selectedThread) {
     return (
@@ -347,91 +729,231 @@ export default function Community() {
         <ThreadDetailView
           thread={selectedThread}
           onBack={() => setSelectedThread(null)}
-          userId={user?.id || 1}
+          userId={userId}
           userName={user?.displayName || "Anonymous"}
-          onThreadUpdate={setSelectedThread}
         />
       </div>
     );
   }
 
+  if (selectedSurvivor) {
+    return (
+      <div className="p-4 lg:p-6 max-w-3xl mx-auto">
+        <SurvivorProfile
+          survivor={selectedSurvivor}
+          onBack={() => setSelectedSurvivor(null)}
+          userId={userId}
+        />
+      </div>
+    );
+  }
+
+  const filteredThreads = filterCategory === "all" ? threads : threads.filter(t => t.category === filterCategory);
+  const sortedThreads = [...filteredThreads].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const upcomingTalks = talks.filter(t => new Date(t.scheduledAt) > new Date());
+  const pastTalks = talks.filter(t => new Date(t.scheduledAt) <= new Date());
+
+  const tabs: { key: Tab; label: string; icon: typeof MessageCircle; count?: number }[] = [
+    { key: "threads", label: "Threads", icon: MessageCircle, count: threads.length },
+    { key: "survivors", label: "Survivors", icon: ShieldCheck, count: survivorsList.filter(s => s.verified).length },
+    { key: "talks", label: "Talks", icon: Mic, count: upcomingTalks.length },
+  ];
+
   return (
     <div className="p-4 lg:p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="text-2xl font-heading font-bold text-accent tracking-wide">Community</h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">Connect, share, and support each other on the journey</p>
+        <p className="text-muted-foreground font-body text-sm mt-1">Connect, share, and learn from those who've walked this road</p>
         <div className="mt-3 h-px bg-gradient-to-r from-accent/40 via-primary/30 to-transparent" />
       </div>
 
-      <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/15 rounded-2xl mb-5">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-heading text-foreground">Welcome to the Community</h3>
-              <p className="text-xs font-body text-muted-foreground mt-0.5">
-                A safe space for cancer patients and supporters to share experiences, ask questions, and celebrate wins together.
-              </p>
-            </div>
-            <Button onClick={() => setShowNewThread(true)}
-              className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9 flex-shrink-0">
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> New Thread
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
-        <button onClick={() => setFilterCategory("all")}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-body transition-all flex-shrink-0 ${
-            filterCategory === "all" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"
-          }`}>
-          All
-        </button>
-        {Object.entries(CATEGORY_CONFIG).map(([key, val]) => {
-          const Icon = val.icon;
+      <div className="flex gap-1 mb-5 bg-muted/30 rounded-2xl p-1 border border-border/50">
+        {tabs.map(tab => {
+          const Icon = tab.icon;
           return (
-            <button key={key} onClick={() => setFilterCategory(key)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-body transition-all flex-shrink-0 ${
-                filterCategory === key ? `${val.bg} ${val.color} font-medium` : "text-muted-foreground hover:bg-muted"
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-body font-medium transition-all ${
+                activeTab === tab.key
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/70"
               }`}>
-              <Icon className="h-3 w-3" />
-              {val.label}
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                }`}>{tab.count}</span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-      ) : sortedThreads.length === 0 ? (
-        <Card className="bg-white border-border rounded-2xl">
-          <CardContent className="py-16 text-center">
-            <MessageCircle className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm font-body text-muted-foreground">
-              {filterCategory === "all" ? "No threads yet — be the first to start a conversation!" : `No ${getCat(filterCategory).label} threads yet`}
-            </p>
-            <Button onClick={() => setShowNewThread(true)} className="mt-4 bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs">
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a Thread
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {sortedThreads.map(thread => (
-            <ThreadCard key={thread.id} thread={thread} onClick={() => setSelectedThread(thread)} />
-          ))}
-        </div>
+      {activeTab === "threads" && (
+        <>
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/15 rounded-2xl mb-5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-heading text-foreground">Discussion Forum</h3>
+                  <p className="text-xs font-body text-muted-foreground mt-0.5">
+                    Share experiences, ask questions, and celebrate wins together.
+                  </p>
+                </div>
+                <Button onClick={() => setShowNewThread(true)}
+                  className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9 flex-shrink-0">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" /> New Thread
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+            <button onClick={() => setFilterCategory("all")}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-body transition-all flex-shrink-0 ${
+                filterCategory === "all" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"
+              }`}>All</button>
+            {Object.entries(CATEGORY_CONFIG).map(([key, val]) => {
+              const Icon = val.icon;
+              return (
+                <button key={key} onClick={() => setFilterCategory(key)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-body transition-all flex-shrink-0 ${
+                    filterCategory === key ? `${val.bg} ${val.color} font-medium` : "text-muted-foreground hover:bg-muted"
+                  }`}>
+                  <Icon className="h-3 w-3" /> {val.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {threadsLoading ? (
+            <div className="space-y-3">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+          ) : sortedThreads.length === 0 ? (
+            <Card className="bg-white border-border rounded-2xl">
+              <CardContent className="py-16 text-center">
+                <MessageCircle className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm font-body text-muted-foreground">
+                  {filterCategory === "all" ? "No threads yet — be the first to start a conversation!" : `No ${getCat(filterCategory).label} threads yet`}
+                </p>
+                <Button onClick={() => setShowNewThread(true)} className="mt-4 bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" /> Start a Thread
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {sortedThreads.map(thread => (
+                <ThreadCard key={thread.id} thread={thread} onClick={() => setSelectedThread(thread)} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "survivors" && (
+        <>
+          <Card className="bg-gradient-to-r from-amber-50/80 to-yellow-50/40 border-amber-200/30 rounded-2xl mb-5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl shadow-sm">
+                  <ShieldCheck className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-heading text-foreground">Verified Survivors</h3>
+                  <p className="text-xs font-body text-muted-foreground mt-0.5">
+                    Connect 1-on-1 with verified cancer survivors who volunteer their time to support others on their journey.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {survivorsLoading ? (
+            <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+          ) : survivorsList.length === 0 ? (
+            <Card className="bg-white border-border rounded-2xl">
+              <CardContent className="py-16 text-center">
+                <ShieldCheck className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm font-body text-muted-foreground">No verified survivors yet. Check back soon!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {[...survivorsList].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)).map(survivor => (
+                <SurvivorCard key={survivor.id} survivor={survivor} onClick={() => setSelectedSurvivor(survivor)} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "talks" && (
+        <>
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/15 rounded-2xl mb-5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <Mic className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-heading text-foreground">Survivor Talks & Events</h3>
+                  <p className="text-xs font-body text-muted-foreground mt-0.5">
+                    Live sessions hosted by verified survivors. RSVP to attend and learn from their experiences.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {talksLoading ? (
+            <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-2xl" />)}</div>
+          ) : talks.length === 0 ? (
+            <Card className="bg-white border-border rounded-2xl">
+              <CardContent className="py-16 text-center">
+                <Mic className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm font-body text-muted-foreground">No talks scheduled yet. Check back soon!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {upcomingTalks.length > 0 && (
+                <>
+                  <h3 className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h3>
+                  {upcomingTalks.map(talk => (
+                    <TalkCard key={talk.id} talk={talk} survivor={survivorMap[talk.survivorId]}
+                      isRsvpd={rsvpTalkIds.has(talk.id)}
+                      onRsvp={() => rsvpMutation.mutate(talk.id)}
+                      onCancelRsvp={() => cancelRsvpMutation.mutate(talk.id)}
+                      isPending={rsvpMutation.isPending || cancelRsvpMutation.isPending} />
+                  ))}
+                </>
+              )}
+              {pastTalks.length > 0 && (
+                <>
+                  <h3 className="text-xs font-body font-semibold text-muted-foreground uppercase tracking-wider mt-6">Past Talks</h3>
+                  {pastTalks.map(talk => (
+                    <TalkCard key={talk.id} talk={talk} survivor={survivorMap[talk.survivorId]}
+                      isRsvpd={false} onRsvp={() => {}} onCancelRsvp={() => {}} isPending={false} />
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       <NewThreadDialog
         open={showNewThread}
         onClose={() => setShowNewThread(false)}
-        userId={user?.id || 1}
+        userId={userId}
         userName={user?.displayName || "Anonymous"}
       />
     </div>

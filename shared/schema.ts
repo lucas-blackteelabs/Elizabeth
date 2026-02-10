@@ -466,3 +466,119 @@ export const insertMedicalDocumentSchema = createInsertSchema(medicalDocuments).
 
 export type MedicalDocument = typeof medicalDocuments.$inferSelect;
 export type InsertMedicalDocument = z.infer<typeof insertMedicalDocumentSchema>;
+
+export const survivors = pgTable("survivors", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  bio: text("bio").notNull(),
+  cancerType: text("cancer_type").notNull(),
+  yearsSurvivor: integer("years_survivor"),
+  expertise: text("expertise").array(),
+  avatarUrl: text("avatar_url"),
+  verified: boolean("verified").default(false),
+  featured: boolean("featured").default(false),
+  sessionMode: text("session_mode").default("video"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSurvivorSchema = createInsertSchema(survivors).pick({
+  name: true,
+  bio: true,
+  cancerType: true,
+  yearsSurvivor: true,
+  expertise: true,
+  avatarUrl: true,
+  verified: true,
+  featured: true,
+  sessionMode: true,
+});
+
+export type Survivor = typeof survivors.$inferSelect;
+export type InsertSurvivor = z.infer<typeof insertSurvivorSchema>;
+
+export const survivorAvailability = pgTable("survivor_availability", {
+  id: serial("id").primaryKey(),
+  survivorId: integer("survivor_id").notNull(),
+  date: date("date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  booked: boolean("booked").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSurvivorAvailabilitySchema = createInsertSchema(survivorAvailability).pick({
+  survivorId: true,
+  date: true,
+  startTime: true,
+  endTime: true,
+  booked: true,
+});
+
+export type SurvivorAvailability = typeof survivorAvailability.$inferSelect;
+export type InsertSurvivorAvailability = z.infer<typeof insertSurvivorAvailabilitySchema>;
+
+export const survivorBookings = pgTable("survivor_bookings", {
+  id: serial("id").primaryKey(),
+  slotId: integer("slot_id").notNull(),
+  survivorId: integer("survivor_id").notNull(),
+  userId: integer("user_id").notNull(),
+  status: text("status").notNull().default("confirmed"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSurvivorBookingSchema = createInsertSchema(survivorBookings).pick({
+  slotId: true,
+  survivorId: true,
+  userId: true,
+  status: true,
+  notes: true,
+});
+
+export type SurvivorBooking = typeof survivorBookings.$inferSelect;
+export type InsertSurvivorBooking = z.infer<typeof insertSurvivorBookingSchema>;
+
+export const survivorTalks = pgTable("survivor_talks", {
+  id: serial("id").primaryKey(),
+  survivorId: integer("survivor_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  location: text("location"),
+  meetingLink: text("meeting_link"),
+  capacity: integer("capacity"),
+  rsvpCount: integer("rsvp_count").default(0),
+  category: text("category").default("general"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSurvivorTalkSchema = createInsertSchema(survivorTalks).pick({
+  survivorId: true,
+  title: true,
+  description: true,
+  scheduledAt: true,
+  durationMinutes: true,
+  location: true,
+  meetingLink: true,
+  capacity: true,
+  category: true,
+});
+
+export type SurvivorTalk = typeof survivorTalks.$inferSelect;
+export type InsertSurvivorTalk = z.infer<typeof insertSurvivorTalkSchema>;
+
+export const survivorTalkRsvps = pgTable("survivor_talk_rsvps", {
+  id: serial("id").primaryKey(),
+  talkId: integer("talk_id").notNull(),
+  userId: integer("user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSurvivorTalkRsvpSchema = createInsertSchema(survivorTalkRsvps).pick({
+  talkId: true,
+  userId: true,
+});
+
+export type SurvivorTalkRsvp = typeof survivorTalkRsvps.$inferSelect;
+export type InsertSurvivorTalkRsvp = z.infer<typeof insertSurvivorTalkRsvpSchema>;

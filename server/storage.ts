@@ -19,6 +19,12 @@ import {
   type CommunityThread, type InsertCommunityThread,
   type CommunityReply, type InsertCommunityReply,
   type MedicalDocument, type InsertMedicalDocument,
+  survivors, survivorAvailability, survivorBookings, survivorTalks, survivorTalkRsvps,
+  type Survivor, type InsertSurvivor,
+  type SurvivorAvailability, type InsertSurvivorAvailability,
+  type SurvivorBooking, type InsertSurvivorBooking,
+  type SurvivorTalk, type InsertSurvivorTalk,
+  type SurvivorTalkRsvp, type InsertSurvivorTalkRsvp,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -109,6 +115,25 @@ export interface IStorage {
   createMedicalDocument(data: InsertMedicalDocument): Promise<MedicalDocument>;
   updateMedicalDocument(id: number, data: Partial<MedicalDocument>): Promise<MedicalDocument>;
   deleteMedicalDocument(id: number): Promise<void>;
+
+  listSurvivors(): Promise<Survivor[]>;
+  getSurvivor(id: number): Promise<Survivor | undefined>;
+  createSurvivor(data: InsertSurvivor): Promise<Survivor>;
+
+  listSurvivorAvailability(survivorId: number): Promise<SurvivorAvailability[]>;
+  createSurvivorAvailability(data: InsertSurvivorAvailability): Promise<SurvivorAvailability>;
+
+  createSurvivorBooking(data: InsertSurvivorBooking): Promise<SurvivorBooking>;
+  listSurvivorBookings(userId: number): Promise<SurvivorBooking[]>;
+  cancelSurvivorBooking(id: number): Promise<void>;
+
+  listSurvivorTalks(): Promise<SurvivorTalk[]>;
+  createSurvivorTalk(data: InsertSurvivorTalk): Promise<SurvivorTalk>;
+
+  listSurvivorTalkRsvps(talkId: number): Promise<SurvivorTalkRsvp[]>;
+  listUserRsvps(userId: number): Promise<SurvivorTalkRsvp[]>;
+  createSurvivorTalkRsvp(data: InsertSurvivorTalkRsvp): Promise<SurvivorTalkRsvp>;
+  deleteSurvivorTalkRsvp(talkId: number, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -481,6 +506,91 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMedicalDocument(id: number): Promise<void> {
     await db.delete(medicalDocuments).where(eq(medicalDocuments.id, id));
+  }
+
+  async listSurvivors(): Promise<Survivor[]> {
+    return db.select().from(survivors).orderBy(survivors.createdAt);
+  }
+
+  async getSurvivor(id: number): Promise<Survivor | undefined> {
+    const [s] = await db.select().from(survivors).where(eq(survivors.id, id));
+    return s;
+  }
+
+  async createSurvivor(data: InsertSurvivor): Promise<Survivor> {
+    const [s] = await db.insert(survivors).values(data).returning();
+    return s;
+  }
+
+  async listSurvivorAvailability(survivorId: number): Promise<SurvivorAvailability[]> {
+    return db.select().from(survivorAvailability)
+      .where(eq(survivorAvailability.survivorId, survivorId))
+      .orderBy(survivorAvailability.date);
+  }
+
+  async createSurvivorAvailability(data: InsertSurvivorAvailability): Promise<SurvivorAvailability> {
+    const [slot] = await db.insert(survivorAvailability).values(data).returning();
+    return slot;
+  }
+
+  async createSurvivorBooking(data: InsertSurvivorBooking): Promise<SurvivorBooking> {
+    const [slot] = await db.select().from(survivorAvailability).where(eq(survivorAvailability.id, data.slotId));
+    if (!slot || slot.booked) {
+      throw new Error("Slot is no longer available");
+    }
+    await db.update(survivorAvailability).set({ booked: true }).where(eq(survivorAvailability.id, data.slotId));
+    const [booking] = await db.insert(survivorBookings).values(data).returning();
+    return booking;
+  }
+
+  async listSurvivorBookings(userId: number): Promise<SurvivorBooking[]> {
+    return db.select().from(survivorBookings)
+      .where(eq(survivorBookings.userId, userId))
+      .orderBy(survivorBookings.createdAt);
+  }
+
+  async cancelSurvivorBooking(id: number): Promise<void> {
+    const [booking] = await db.select().from(survivorBookings).where(eq(survivorBookings.id, id));
+    if (booking) {
+      await db.update(survivorAvailability).set({ booked: false }).where(eq(survivorAvailability.id, booking.slotId));
+      await db.delete(survivorBookings).where(eq(survivorBookings.id, id));
+    }
+  }
+
+  async listSurvivorTalks(): Promise<SurvivorTalk[]> {
+    return db.select().from(survivorTalks).orderBy(survivorTalks.scheduledAt);
+  }
+
+  async createSurvivorTalk(data: InsertSurvivorTalk): Promise<SurvivorTalk> {
+    const [talk] = await db.insert(survivorTalks).values(data).returning();
+    return talk;
+  }
+
+  async listSurvivorTalkRsvps(talkId: number): Promise<SurvivorTalkRsvp[]> {
+    return db.select().from(survivorTalkRsvps).where(eq(survivorTalkRsvps.talkId, talkId));
+  }
+
+  async listUserRsvps(userId: number): Promise<SurvivorTalkRsvp[]> {
+    return db.select().from(survivorTalkRsvps).where(eq(survivorTalkRsvps.userId, userId));
+  }
+
+  async createSurvivorTalkRsvp(data: InsertSurvivorTalkRsvp): Promise<SurvivorTalkRsvp> {
+    const existing = await db.select().from(survivorTalkRsvps)
+      .where(and(eq(survivorTalkRsvps.talkId, data.talkId), eq(survivorTalkRsvps.userId, data.userId)));
+    if (existing.length > 0) return existing[0];
+    const [rsvp] = await db.insert(survivorTalkRsvps).values(data).returning();
+    await db.update(survivorTalks)
+      .set({ rsvpCount: (await this.listSurvivorTalkRsvps(data.talkId)).length })
+      .where(eq(survivorTalks.id, data.talkId));
+    return rsvp;
+  }
+
+  async deleteSurvivorTalkRsvp(talkId: number, userId: number): Promise<void> {
+    await db.delete(survivorTalkRsvps)
+      .where(and(eq(survivorTalkRsvps.talkId, talkId), eq(survivorTalkRsvps.userId, userId)));
+    await db.update(survivorTalks)
+      .set({ rsvpCount: (await this.listSurvivorTalkRsvps(talkId)).length })
+      .where(eq(survivorTalks.id, talkId));
   }
 }
 

@@ -336,6 +336,142 @@ async function seedDefaultAppointments(userId: number) {
   }
 }
 
+async function seedSurvivorData() {
+  const existing = await storage.listSurvivors();
+  if (existing.length > 0) return;
+
+  const sarah = await storage.createSurvivor({
+    name: "Sarah M.",
+    bio: "Diagnosed with Stage III melanoma in 2019. After surgery and immunotherapy, I've been NED since 2021. Now I volunteer to support others through their journey — because nobody should walk this road feeling alone.",
+    cancerType: "Stage III Melanoma",
+    yearsSurvivor: 5,
+    expertise: ["Immunotherapy", "Managing Side Effects", "Returning to Work", "Scanxiety"],
+    verified: true,
+    featured: true,
+    sessionMode: "video",
+  });
+
+  const james = await storage.createSurvivor({
+    name: "James K.",
+    bio: "Bowel cancer survivor — diagnosed 2018, NED since 2020. I know how isolating treatment can feel. Happy to chat about nutrition during chemo, keeping active, and the mental game of recovery.",
+    cancerType: "Stage III Bowel Cancer",
+    yearsSurvivor: 6,
+    expertise: ["Nutrition", "Exercise During Treatment", "Mental Health", "Caregiver Support"],
+    verified: true,
+    featured: false,
+    sessionMode: "video",
+  });
+
+  const mei = await storage.createSurvivor({
+    name: "Mei L.",
+    bio: "Breast cancer survivor and oncology nurse. I bring both personal and professional perspectives. Passionate about helping patients understand their treatment options and advocating for themselves.",
+    cancerType: "Stage II Breast Cancer",
+    yearsSurvivor: 8,
+    expertise: ["Treatment Options", "Self-Advocacy", "Complementary Therapies", "Body Image"],
+    verified: true,
+    featured: true,
+    sessionMode: "video",
+  });
+
+  const david = await storage.createSurvivor({
+    name: "David R.",
+    bio: "Living with Stage IV lung cancer as a chronic condition since 2020. On targeted therapy. I'm proof that Stage IV doesn't mean giving up — it means adapting and thriving.",
+    cancerType: "Stage IV Lung Cancer",
+    yearsSurvivor: 4,
+    expertise: ["Living with Stage IV", "Targeted Therapy", "Mindfulness", "Family Conversations"],
+    verified: true,
+    featured: false,
+    sessionMode: "video",
+  });
+
+  const now = new Date();
+  const slots = [
+    { survivorId: sarah.id, daysAhead: 3, times: [["10:00", "10:30"], ["10:30", "11:00"], ["14:00", "14:30"]] },
+    { survivorId: sarah.id, daysAhead: 5, times: [["9:00", "9:30"], ["9:30", "10:00"]] },
+    { survivorId: james.id, daysAhead: 2, times: [["15:00", "15:30"], ["15:30", "16:00"]] },
+    { survivorId: james.id, daysAhead: 4, times: [["11:00", "11:30"]] },
+    { survivorId: mei.id, daysAhead: 3, times: [["13:00", "13:30"], ["13:30", "14:00"], ["14:00", "14:30"]] },
+    { survivorId: mei.id, daysAhead: 6, times: [["10:00", "10:30"], ["10:30", "11:00"]] },
+    { survivorId: david.id, daysAhead: 4, times: [["16:00", "16:30"], ["16:30", "17:00"]] },
+  ];
+
+  for (const group of slots) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + group.daysAhead);
+    const dateStr = d.toISOString().split("T")[0];
+    for (const [start, end] of group.times) {
+      await storage.createSurvivorAvailability({
+        survivorId: group.survivorId,
+        date: dateStr,
+        startTime: start,
+        endTime: end,
+      });
+    }
+  }
+
+  const talks = [
+    {
+      survivorId: sarah.id,
+      title: "Living Beyond Scanxiety",
+      description: "How to manage the anxiety between scans and build confidence in your body's healing. Sarah shares practical tools she uses to stay grounded during surveillance.",
+      daysAhead: 7,
+      hour: 18,
+      durationMinutes: 45,
+      capacity: 20,
+      category: "wellness",
+    },
+    {
+      survivorId: mei.id,
+      title: "Becoming Your Own Best Advocate",
+      description: "Understanding your treatment plan, asking the right questions, and feeling empowered in medical appointments. Practical tips from both patient and nurse perspectives.",
+      daysAhead: 10,
+      hour: 12,
+      durationMinutes: 60,
+      capacity: 25,
+      category: "education",
+    },
+    {
+      survivorId: james.id,
+      title: "Nutrition That Nourishes: Eating Well During & After Treatment",
+      description: "Practical, evidence-based nutrition advice for cancer patients. What actually helps, what's a myth, and how to enjoy food again when treatment makes eating hard.",
+      daysAhead: 14,
+      hour: 19,
+      durationMinutes: 50,
+      capacity: 30,
+      category: "nutrition",
+    },
+    {
+      survivorId: david.id,
+      title: "Thriving with Stage IV: A Fireside Chat",
+      description: "An honest conversation about living with advanced cancer as a chronic condition. David shares how he found joy, purpose, and peace alongside uncertainty.",
+      daysAhead: 12,
+      hour: 17,
+      durationMinutes: 60,
+      capacity: 15,
+      category: "support",
+    },
+  ];
+
+  for (const talk of talks) {
+    const talkDate = new Date(now);
+    talkDate.setDate(talkDate.getDate() + talk.daysAhead);
+    talkDate.setHours(talk.hour, 0, 0, 0);
+    await storage.createSurvivorTalk({
+      survivorId: talk.survivorId,
+      title: talk.title,
+      description: talk.description,
+      scheduledAt: talkDate,
+      durationMinutes: talk.durationMinutes,
+      capacity: talk.capacity,
+      category: talk.category,
+      location: "Online (Zoom)",
+      meetingLink: "https://zoom.us/j/example",
+    });
+  }
+
+  console.log("Seeded survivor profiles, availability slots, and upcoming talks");
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   app.use('/uploads', express.static(uploadDir));
@@ -1634,6 +1770,113 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
       return res.status(500).json({ error: "Failed to generate summary" });
     }
   });
+
+  // Survivors
+  app.get("/api/survivors", async (req, res) => {
+    try {
+      const list = await storage.listSurvivors();
+      return res.json(list);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch survivors" });
+    }
+  });
+
+  app.get("/api/survivors/:id", async (req, res) => {
+    try {
+      const s = await storage.getSurvivor(parseInt(req.params.id));
+      if (!s) return res.status(404).json({ error: "Not found" });
+      return res.json(s);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch survivor" });
+    }
+  });
+
+  app.get("/api/survivors/:id/availability", async (req, res) => {
+    try {
+      const slots = await storage.listSurvivorAvailability(parseInt(req.params.id));
+      return res.json(slots);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch availability" });
+    }
+  });
+
+  app.post("/api/survivor-bookings", async (req, res) => {
+    try {
+      const booking = await storage.createSurvivorBooking(req.body);
+      return res.json(booking);
+    } catch (error: any) {
+      const msg = error?.message || "Failed to create booking";
+      return res.status(msg.includes("no longer available") ? 409 : 500).json({ error: msg });
+    }
+  });
+
+  app.get("/api/survivor-bookings", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const bookings = await storage.listSurvivorBookings(userId);
+      return res.json(bookings);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch bookings" });
+    }
+  });
+
+  app.delete("/api/survivor-bookings/:id", async (req, res) => {
+    try {
+      await storage.cancelSurvivorBooking(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to cancel booking" });
+    }
+  });
+
+  app.get("/api/survivor-talks", async (req, res) => {
+    try {
+      const talks = await storage.listSurvivorTalks();
+      return res.json(talks);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch talks" });
+    }
+  });
+
+  app.get("/api/survivor-talks/:id/rsvps", async (req, res) => {
+    try {
+      const rsvps = await storage.listSurvivorTalkRsvps(parseInt(req.params.id));
+      return res.json(rsvps);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch RSVPs" });
+    }
+  });
+
+  app.get("/api/survivor-talk-rsvps", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const rsvps = await storage.listUserRsvps(userId);
+      return res.json(rsvps);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch user RSVPs" });
+    }
+  });
+
+  app.post("/api/survivor-talk-rsvps", async (req, res) => {
+    try {
+      const rsvp = await storage.createSurvivorTalkRsvp(req.body);
+      return res.json(rsvp);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to RSVP" });
+    }
+  });
+
+  app.delete("/api/survivor-talk-rsvps/:talkId", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      await storage.deleteSurvivorTalkRsvp(parseInt(req.params.talkId), userId);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to cancel RSVP" });
+    }
+  });
+
+  await seedSurvivorData();
 
   const httpServer = createServer(app);
   return httpServer;
