@@ -1256,8 +1256,8 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
   const [newColor, setNewColor] = useState("amber");
   const [uploading, setUploading] = useState(false);
   const [previewItem, setPreviewItem] = useState<MotivationalWallItem | null>(null);
-  const [nanoBananaImage, setNanoBananaImage] = useState<string | null>(null);
-  const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>(null);
+  const [nanoBananaImage, setNanoBananaImage] = useState<string | null>("/nano-banana/default-1.png");
+  const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>("You've got this, warrior 🍌");
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);

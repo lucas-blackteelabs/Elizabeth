@@ -1,10 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 import https from "https";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
@@ -144,11 +141,11 @@ IMPORTANT GUIDELINES:
 - Keep responses concise but thorough (2-4 paragraphs)
 - Use gentle formatting with bullet points where helpful`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     for (let i = 0; i < modelsToTry.length; i++) {
       const modelName = modelsToTry[i];
       try {
-        if (i > 0) await new Promise(r => setTimeout(r, 500));
+        if (i > 0) await new Promise(r => setTimeout(r, 1500 * i));
         const m = genAI.getGenerativeModel({ model: modelName });
         const result = await m.generateContent({
           contents: [
@@ -161,10 +158,12 @@ IMPORTANT GUIDELINES:
         });
         return result.response.text() || "I'm sorry, I couldn't process your request at this time.";
       } catch (err: any) {
-        if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("rate")) {
-          console.log(`Chat: model ${modelName} rate-limited, trying next...`);
+        const errMsg = err?.message || "";
+        if (err?.status === 429 || errMsg.includes("429") || errMsg.includes("rate") || errMsg.includes("quota") || errMsg.includes("RESOURCE_EXHAUSTED")) {
+          console.log(`Chat: model ${modelName} rate-limited, trying next... (${errMsg.substring(0, 200)})`);
           continue;
         }
+        console.error(`Chat: model ${modelName} error:`, errMsg);
         throw err;
       }
     }
@@ -199,7 +198,7 @@ For each meal:
 End with a brief encouraging note about how this day of eating supports their healing.
 Format with clear headers and bullet points. Keep it warm and supportive in tone.`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     for (const modelName of modelsToTry) {
       try {
         const m = genAI.getGenerativeModel({ model: modelName });
@@ -242,7 +241,7 @@ Provide:
 
 Keep it warm, concise, and encouraging.`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     for (const modelName of modelsToTry) {
       try {
         const m = genAI.getGenerativeModel({ model: modelName });
@@ -291,8 +290,6 @@ export interface DateNightSuggestions {
 
 export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", type: string = "both"): Promise<DateNightSuggestions> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
     const dietaryInfo = dietaryPreferences
       ? `\n\nDIETARY PREFERENCES (for the patient — her partner can eat anything, and restaurants can usually tailor their menu when briefed):\n${dietaryPreferences}\n\nIMPORTANT: Factor these preferences into your recommendations and highlight which dishes suit her needs, but do NOT exclude restaurants that don't strictly adhere — the partner eats other things and restaurants can usually accommodate when asked.`
       : "";
@@ -348,7 +345,7 @@ ${jsonStructure}
 
 ${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT ones.` : ""}`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {
@@ -440,8 +437,6 @@ export interface MealSuggestions {
 
 export async function getMealIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", mealTypes: string = "all"): Promise<MealSuggestions> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
     const dietaryInfo = dietaryPreferences
       ? `\n\nDIETARY PREFERENCES:\n${dietaryPreferences}\n\nFactor these preferences into all meal suggestions. Focus on meals that align with these dietary needs.`
       : "";
@@ -519,7 +514,7 @@ Choose the imageCategory that best visually matches each meal:
 
 Keep the tone warm and encouraging. Make recipes practical and delicious.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested meals: ${excludeNames}. Suggest DIFFERENT recipes.` : ""}`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {
@@ -654,7 +649,7 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks). Return this e
 
 If the query is very specific (a single restaurant name), return just that one restaurant with detailed information. If broader, return up to 4 matching restaurants. If you don't recognise the restaurant or query, return an empty array and be honest.`;
 
-    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {
@@ -785,56 +780,91 @@ const nanoBananaStyles = [
   "A banana character floating in a hot air balloon shaped like a heart over rolling green hills, golden hour light, whimsical and uplifting",
 ];
 
+const defaultNanaBananaImages = [
+  "default-1.png", "default-2.png", "default-3.png",
+  "default-4.png", "default-5.png", "default-6.png",
+];
+
+const defaultNanaBananaCaptions = [
+  "You've got this, warrior 🍌",
+  "Unstoppable banana energy 💛",
+  "Peel back the doubt, legend 🔥",
+  "One tough little banana 💪",
+  "Sunshine in banana form ☀️",
+  "Keep going, superstar 🌟",
+  "Stronger than you know 🍌",
+  "Your banana believes in you 💛",
+];
+
 export async function generateNanoBananaImage(mediaDescriptions: string[] = []): Promise<{ imagePath: string; caption: string }> {
   const outputDir = path.join(process.cwd(), "client", "public", "nano-banana");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const stylePrompt = nanoBananaStyles[Math.floor(Math.random() * nanoBananaStyles.length)];
-
-  let mediaContext = "";
-  if (mediaDescriptions.length > 0) {
-    const picked = mediaDescriptions.sort(() => Math.random() - 0.5).slice(0, 3);
-    mediaContext = ` The scene should lovingly incorporate themes inspired by the patient's personal photos and memories: ${picked.join(", ")}.`;
-  }
-
-  const filename = `nano-${Date.now()}.png`;
-  const filepath = path.join(outputDir, filename);
+  const randomDefault = defaultNanaBananaImages[Math.floor(Math.random() * defaultNanaBananaImages.length)];
+  let imagePath = `/nano-banana/${randomDefault}`;
+  let caption = defaultNanaBananaCaptions[Math.floor(Math.random() * defaultNanaBananaCaptions.length)];
 
   try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: `${stylePrompt}.${mediaContext} The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    });
-
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) throw new Error("No image URL returned");
-
-    await downloadFile(imageUrl, filepath);
-    cleanupOldImages(outputDir, 10);
-
-    let caption = "You've got this, warrior 🍌";
-    try {
-      const captionContext = mediaDescriptions.length > 0
-        ? `The image is inspired by the patient's personal photos showing: ${mediaDescriptions.slice(0, 2).join(" and ")}. `
-        : "";
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: `${captionContext}Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text.` }] }],
-        generationConfig: { temperature: 1.2, maxOutputTokens: 50 },
-      });
-      const text = result.response.text().trim();
-      if (text && text.length < 80) caption = text;
-    } catch {
+    const captionContext = mediaDescriptions.length > 0
+      ? `The image is inspired by the patient's personal photos showing: ${mediaDescriptions.slice(0, 2).join(" and ")}. `
+      : "";
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: `${captionContext}Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text.` }] }],
+          generationConfig: { temperature: 1.2, maxOutputTokens: 50 },
+        });
+        const text = result.response.text().trim();
+        if (text && text.length < 80) caption = text;
+        break;
+      } catch (err: any) {
+        if (err?.status === 429) continue;
+      }
     }
-
-    return { imagePath: `/nano-banana/${filename}`, caption };
-  } catch (error: any) {
-    console.error("DALL-E image generation failed:", error?.message);
-    throw new Error("Image generation temporarily unavailable");
+  } catch {
   }
+
+  try {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (apiKey) {
+      const stylePrompt = nanoBananaStyles[Math.floor(Math.random() * nanoBananaStyles.length)];
+      let mediaContext = "";
+      if (mediaDescriptions.length > 0) {
+        const picked = mediaDescriptions.sort(() => Math.random() - 0.5).slice(0, 3);
+        mediaContext = ` The scene should lovingly incorporate themes inspired by the patient's personal photos and memories: ${picked.join(", ")}.`;
+      }
+      const fullPrompt = `${stylePrompt}.${mediaContext} The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`;
+
+      const imagenResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instances: [{ prompt: fullPrompt }],
+            parameters: { sampleCount: 1 },
+          }),
+        }
+      );
+
+      if (imagenResponse.ok) {
+        const imagenData = await imagenResponse.json() as any;
+        const base64Image = imagenData?.predictions?.[0]?.bytesBase64Encoded;
+        if (base64Image) {
+          const filename = `nano-${Date.now()}.png`;
+          const filepath = path.join(outputDir, filename);
+          fs.writeFileSync(filepath, Buffer.from(base64Image, "base64"));
+          cleanupOldImages(outputDir, 10);
+          imagePath = `/nano-banana/${filename}`;
+        }
+      }
+    }
+  } catch {
+  }
+
+  return { imagePath, caption };
 }
