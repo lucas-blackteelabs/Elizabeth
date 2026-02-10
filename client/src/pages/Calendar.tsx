@@ -82,6 +82,7 @@ export default function Calendar() {
   const [formData, setFormData] = useState<AppointmentFormData>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [weeksToShow, setWeeksToShow] = useState(1);
 
   const { data: appointments = [], isLoading: loadingAppts } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments", userId],
@@ -174,7 +175,14 @@ export default function Calendar() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const grouped = timelineEvents.reduce<Record<string, TimelineEvent[]>>((acc, ev) => {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + weeksToShow * 7);
+  const endDateStr = endDate.toISOString().split("T")[0];
+
+  const visibleEvents = timelineEvents.filter(ev => ev.date >= today && ev.date <= endDateStr);
+  const hasMoreEvents = timelineEvents.some(ev => ev.date > endDateStr);
+
+  const grouped = visibleEvents.reduce<Record<string, TimelineEvent[]>>((acc, ev) => {
     const d = new Date(ev.date + "T00:00:00");
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     if (!acc[key]) acc[key] = [];
@@ -318,17 +326,24 @@ export default function Calendar() {
             </div>
           ))}
         </div>
-      ) : timelineEvents.length === 0 ? (
+      ) : visibleEvents.length === 0 ? (
         <Card className="bg-white border-border p-12 text-center">
           <CalendarPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-heading text-lg text-foreground mb-2">No upcoming events</h3>
+          <h3 className="font-heading text-lg text-foreground mb-2">Nothing this week</h3>
           <p className="text-muted-foreground font-body text-sm mb-6">
-            Add your first appointment to start building your timeline.
+            {hasMoreEvents ? "You have events coming up later." : "Add your first appointment to start building your timeline."}
           </p>
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Add Appointment
-          </Button>
+          <div className="flex gap-3 justify-center">
+            {hasMoreEvents && (
+              <Button variant="outline" onClick={() => setWeeksToShow(w => w + 1)} className="gap-2">
+                See next week
+              </Button>
+            )}
+            <Button onClick={() => setCreateOpen(true)} className="gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Add Appointment
+            </Button>
+          </div>
         </Card>
       ) : (
         <div className="space-y-10">
@@ -481,6 +496,14 @@ export default function Calendar() {
               </div>
             </div>
           ))}
+
+          {hasMoreEvents && (
+            <div className="text-center pt-4">
+              <Button variant="outline" onClick={() => setWeeksToShow(w => w + 1)} className="gap-2 rounded-xl font-body">
+                See more
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
