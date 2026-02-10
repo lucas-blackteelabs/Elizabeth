@@ -866,13 +866,14 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     const baselineArea = baseline.sizeX * baseline.sizeY;
     const latestArea = latest.sizeX * latest.sizeY;
     const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
+    const noFocalUptake = !latest.suvMax && latest.sizeX > 0;
     const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
     const baselineSuv = baseline.suvMax || 0;
     const latestSuv = latest.suvMax || 0;
     const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
     const maxDim = Math.max(baseline.sizeX, baseline.sizeY);
-    return { label: tl, isResolved, sizeReduction, suvReduction, baselineSize: `${baseline.sizeX}x${baseline.sizeY}`, latestSize: isResolved ? "Gone" : `${latest.sizeX}x${latest.sizeY}`, baselineR: maxDim, latestR: isResolved ? 0 : Math.max(latest.sizeX, latest.sizeY) };
-  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; suvReduction: number; baselineSize: string; latestSize: string; baselineR: number; latestR: number }[];
+    return { label: tl, isResolved, noFocalUptake, sizeReduction, suvReduction, baselineSize: `${baseline.sizeX}x${baseline.sizeY}`, latestSize: isResolved ? "Gone" : `${latest.sizeX}x${latest.sizeY}`, baselineR: maxDim, latestR: isResolved ? 0 : Math.max(latest.sizeX, latest.sizeY) };
+  }).filter(Boolean) as { label: string; isResolved: boolean; noFocalUptake: boolean; sizeReduction: number; suvReduction: number; baselineSize: string; latestSize: string; baselineR: number; latestR: number }[];
 
   const maxR = Math.max(...tumourData.map(t => t.baselineR), 1);
 
@@ -908,7 +909,7 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
                     {t.isResolved ? "Gone" : `↓${t.sizeReduction}%`}
                   </p>
                   <p className="text-[9px] font-body text-muted-foreground mt-0.5">
-                    {t.isResolved ? "Resolved ❄️" : `SUV ↓${t.suvReduction}%`}
+                    {t.isResolved ? "Resolved ❄️" : t.noFocalUptake ? "No focal uptake" : `SUV ↓${t.suvReduction}%`}
                   </p>
                 </div>
               </div>
@@ -970,6 +971,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
           const baselineArea = baseline.sizeX * baseline.sizeY;
           const latestArea = latest.sizeX * latest.sizeY;
           const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
+          const noFocalUptake = !latest.suvMax && latest.sizeX > 0;
           const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
           const isMetabolicComplete = !latest.suvMax || latest.suvMax === 0;
           const baselineSuv = baseline.suvMax || 0;
@@ -1042,8 +1044,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-heading mb-1 ${isResolved ? "text-muted-foreground/60" : "text-foreground"}`}>
+                  <div className={`flex items-center gap-1.5 text-sm font-heading mb-1 ${isResolved ? "text-muted-foreground/60" : "text-foreground"}`}>
                     <NicknameEditor userId={userId} tumourLabel={tl} currentNickname={nickname} displayLabel={displayName} />
+                    <ScanResultEditor userId={userId} tumourLabel={tl} displayName={displayName} />
                   </div>
                   {isResolved ? (
                     <div>
@@ -1059,12 +1062,16 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                           <ArrowDown className="h-3 w-3" />{sizeReduction}% size
                         </span>
                         <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-body font-semibold">
-                          <ArrowDown className="h-3 w-3" />{isMetabolicComplete ? "100" : suvReduction}% activity
+                          {noFocalUptake ? (
+                            <><ArrowDown className="h-3 w-3" />No focal uptake</>
+                          ) : (
+                            <><ArrowDown className="h-3 w-3" />{isMetabolicComplete ? "100" : suvReduction}% activity</>
+                          )}
                         </span>
                       </div>
                       <p className="text-xs font-body text-muted-foreground">
                         {latest.sizeX}×{latest.sizeY}mm
-                        {isMetabolicComplete ? " · No metabolic activity" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
+                        {noFocalUptake ? " · No focal uptake" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
                       </p>
                     </>
                   )}
@@ -1077,7 +1084,7 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                       <span className="text-muted-foreground">Latest</span>
                       <span className={`font-medium ${isResolved ? "text-blue-500" : "text-foreground"}`}>
                         {latest.sizeX === 0 && latest.sizeY === 0 ? "🪓 Axed!" : `${latest.sizeX}×${latest.sizeY}mm`}
-                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : isResolved ? " · Ice cold ❄️" : " · Clear"}
+                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : isResolved ? " · Ice cold ❄️" : noFocalUptake ? " · No focal uptake" : ""}
                       </span>
                     </div>
                   </div>
@@ -1094,6 +1101,168 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
         <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> Activity remaining</span>
       </div>
     </div>
+  );
+}
+
+function ScanResultEditor({ userId, tumourLabel, displayName }: { userId: number; tumourLabel: string; displayName: string }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const { data: allScans = [] } = useQuery<ScanResult[]>({
+    queryKey: ["/api/scan-results", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/scan-results?userId=${userId}`);
+      return res.json();
+    },
+  });
+
+  const tumourScans = useMemo(() =>
+    allScans
+      .filter(s => s.tumourLabel === tumourLabel)
+      .sort((a, b) => a.scanDate.localeCompare(b.scanDate)),
+    [allScans, tumourLabel]
+  );
+
+  const [editValues, setEditValues] = useState<Record<number, { sizeX: string; sizeY: string; suvMax: string; notes: string }>>({});
+
+  const scanKey = tumourScans.map(s => `${s.id}-${s.sizeX}-${s.sizeY}-${s.suvMax}`).join("|");
+  useEffect(() => {
+    if (open) {
+      const vals: Record<number, { sizeX: string; sizeY: string; suvMax: string; notes: string }> = {};
+      tumourScans.forEach(s => {
+        vals[s.id] = {
+          sizeX: String(s.sizeX),
+          sizeY: String(s.sizeY),
+          suvMax: s.suvMax != null ? String(s.suvMax) : "",
+          notes: s.notes || "",
+        };
+      });
+      setEditValues(vals);
+    }
+  }, [open, scanKey]);
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { sizeX?: number; sizeY?: number; suvMax?: number | null; notes?: string } }) => {
+      return apiRequest(`/api/scan-results/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/scan-results", { userId }] });
+    },
+  });
+
+  const handleSave = async () => {
+    let saved = 0;
+    for (const scan of tumourScans) {
+      const ev = editValues[scan.id];
+      if (!ev) continue;
+      const newSizeX = parseFloat(ev.sizeX) || 0;
+      const newSizeY = parseFloat(ev.sizeY) || 0;
+      const newSuvMax = ev.suvMax.trim() === "" ? null : parseFloat(ev.suvMax);
+      const newNotes = ev.notes.trim();
+
+      const changed = newSizeX !== scan.sizeX || newSizeY !== scan.sizeY ||
+        (newSuvMax !== scan.suvMax) || newNotes !== (scan.notes || "");
+
+      if (changed) {
+        await updateMutation.mutateAsync({
+          id: scan.id,
+          data: { sizeX: newSizeX, sizeY: newSizeY, suvMax: newSuvMax, notes: newNotes },
+        });
+        saved++;
+      }
+    }
+    toast({ title: saved > 0 ? "Scan results updated" : "No changes to save" });
+    if (saved > 0) setOpen(false);
+  };
+
+  const updateField = (id: number, field: string, value: string) => {
+    setEditValues(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value },
+    }));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors" title="Edit scan results">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-lg">{displayName}</DialogTitle>
+          <p className="text-xs font-body text-muted-foreground">Update size and SUV from your scan results</p>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          {tumourScans.map((scan) => {
+            const ev = editValues[scan.id];
+            if (!ev) return null;
+            const scanDateFormatted = new Date(scan.scanDate + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+            return (
+              <div key={scan.id} className="border border-border rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-heading font-semibold">{scanDateFormatted}</p>
+                  <p className="text-[10px] font-body text-muted-foreground">{scan.scanLabel}</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground block mb-1">Size X (mm)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={ev.sizeX}
+                      onChange={(e) => updateField(scan.id, "sizeX", e.target.value)}
+                      className="h-8 text-sm font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground block mb-1">Size Y (mm)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={ev.sizeY}
+                      onChange={(e) => updateField(scan.id, "sizeY", e.target.value)}
+                      className="h-8 text-sm font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground block mb-1">SUV Max</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={ev.suvMax}
+                      onChange={(e) => updateField(scan.id, "suvMax", e.target.value)}
+                      className="h-8 text-sm font-body"
+                      placeholder="—"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-body text-muted-foreground block mb-1">Notes</label>
+                  <Input
+                    value={ev.notes}
+                    onChange={(e) => updateField(scan.id, "notes", e.target.value)}
+                    className="h-8 text-sm font-body"
+                    placeholder="e.g. No focal uptake"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex gap-2 mt-4">
+          <Button variant="outline" className="flex-1 font-body" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button className="flex-1 font-body bg-primary hover:bg-primary/90" onClick={handleSave} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            Save Changes
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
