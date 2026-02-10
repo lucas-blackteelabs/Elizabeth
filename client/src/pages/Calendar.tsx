@@ -28,7 +28,6 @@ import {
   PlusCircle,
   Pencil,
   Trash2,
-  Download,
   Stethoscope,
   Pill,
   CalendarPlus,
@@ -83,6 +82,8 @@ export default function Calendar() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [weeksToShow, setWeeksToShow] = useState(1);
+  const [createdApptId, setCreatedApptId] = useState<number | null>(null);
+  const [createdApptTitle, setCreatedApptTitle] = useState("");
 
   const { data: appointments = [], isLoading: loadingAppts } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments", userId],
@@ -101,16 +102,17 @@ export default function Calendar() {
 
   const createMutation = useMutation({
     mutationFn: (data: AppointmentFormData) =>
-      apiRequest("/api/appointments", {
+      apiRequest<Appointment>("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, userId }),
       }),
-    onSuccess: () => {
+    onSuccess: (newAppt: Appointment) => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments", userId] });
       setCreateOpen(false);
+      setCreatedApptId(newAppt.id);
+      setCreatedApptTitle(formData.title);
       setFormData(emptyForm);
-      toast({ title: "Appointment created" });
     },
     onError: () => toast({ title: "Failed to create appointment", variant: "destructive" }),
   });
@@ -460,31 +462,33 @@ export default function Calendar() {
                             </div>
 
                             {event.type === "appointment" && appt && (
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <a
                                   href={`/api/appointments/${appt.id}/ics`}
                                   download
-                                  title="Add to Calendar"
-                                  className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-body font-medium transition-colors"
                                 >
-                                  <Download className="h-4 w-4 text-muted-foreground" />
+                                  <CalendarPlus className="h-3.5 w-3.5" />
+                                  Add to Calendar
                                 </a>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleEdit(appt)}
-                                >
-                                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleDelete(appt.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                                </Button>
+                                <div className="flex items-center gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => handleEdit(appt)}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => handleDelete(appt.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                                  </Button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -538,6 +542,36 @@ export default function Calendar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!createdApptId} onOpenChange={(open) => { if (!open) { setCreatedApptId(null); setCreatedApptTitle(""); } }}>
+        <DialogContent className="sm:max-w-sm text-center">
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CalendarPlus className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-heading text-lg text-foreground mb-1">Appointment Created</h3>
+              <p className="text-sm text-muted-foreground font-body">{createdApptTitle}</p>
+            </div>
+            <a
+              href={`/api/appointments/${createdApptId}/ics`}
+              download
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-body font-medium text-sm hover:bg-primary/90 transition-colors shadow-md w-full justify-center"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Add to Your Calendar
+            </a>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setCreatedApptId(null); setCreatedApptTitle(""); }}
+              className="text-muted-foreground font-body text-xs"
+            >
+              Skip for now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

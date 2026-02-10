@@ -1022,16 +1022,77 @@ PATIENT CONTEXT:
       if (!appt) return res.status(404).json({ error: "Appointment not found" });
 
       const startDate = appt.date.replace(/-/g, '');
+
+      const parseTimeToHHMM = (timeStr: string): string | null => {
+        if (!timeStr) return null;
+        const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!match) return null;
+        let hours = parseInt(match[1], 10);
+        const minutes = match[2];
+        const ampm = match[3]?.toUpperCase();
+        if (ampm === "PM" && hours < 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+        return `${String(hours).padStart(2, '0')}${minutes}`;
+      };
+
+      const timeParsed = parseTimeToHHMM(appt.time);
+      let dtStart: string;
+      let dtEnd: string;
+      if (timeParsed) {
+        dtStart = `DTSTART;TZID=Australia/Sydney:${startDate}T${timeParsed}00`;
+        const startHour = parseInt(timeParsed.substring(0, 2), 10);
+        const endHour = startHour + 1;
+        if (endHour < 24) {
+          dtEnd = `DTEND;TZID=Australia/Sydney:${startDate}T${String(endHour).padStart(2, '0')}${timeParsed.substring(2)}00`;
+        } else {
+          const nextDay = new Date(appt.date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDateStr = nextDay.toISOString().split('T')[0].replace(/-/g, '');
+          dtEnd = `DTEND;TZID=Australia/Sydney:${nextDateStr}T${String(endHour % 24).padStart(2, '0')}${timeParsed.substring(2)}00`;
+        }
+      } else {
+        const nextDay = new Date(appt.date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDateStr = nextDay.toISOString().split('T')[0].replace(/-/g, '');
+        dtStart = `DTSTART;VALUE=DATE:${startDate}`;
+        dtEnd = `DTEND;VALUE=DATE:${nextDateStr}`;
+      }
+
       const ics = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
         'PRODID:-//Elizabeth//Cancer Support//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VTIMEZONE',
+        'TZID:Australia/Sydney',
+        'BEGIN:STANDARD',
+        'DTSTART:19700405T030000',
+        'RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU',
+        'TZOFFSETFROM:+1100',
+        'TZOFFSETTO:+1000',
+        'END:STANDARD',
+        'BEGIN:DAYLIGHT',
+        'DTSTART:19701004T020000',
+        'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU',
+        'TZOFFSETFROM:+1000',
+        'TZOFFSETTO:+1100',
+        'END:DAYLIGHT',
+        'END:VTIMEZONE',
         'BEGIN:VEVENT',
-        `DTSTART;VALUE=DATE:${startDate}`,
+        dtStart,
+        dtEnd,
         `SUMMARY:${appt.title}`,
         appt.description ? `DESCRIPTION:${appt.description.replace(/\n/g, '\\n')}` : '',
         appt.location ? `LOCATION:${appt.location}` : '',
         `UID:elizabeth-appt-${appt.id}@elizabeth.app`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT30M',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Reminder',
+        'END:VALARM',
         'END:VEVENT',
         'END:VCALENDAR',
       ].filter(Boolean).join('\r\n');
