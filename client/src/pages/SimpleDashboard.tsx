@@ -3,7 +3,7 @@ import { useUser } from "@/contexts/UserContext";
 import {
   TrendingUp, Heart, Sparkles, Shield, Target, Scan, Plus, Check, Loader2, Settings2, X,
   ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity,
-  ImagePlus, Play, Calendar, RefreshCw, Zap
+  ImagePlus, Play, Calendar, RefreshCw, Zap, Moon, Star, CloudMoon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -14,7 +14,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType, TumourNickname, MotivationalWallItem } from "@shared/schema";
+import type { Meal, MindBodyActivity, Exercise, ScanResult, Appointment, CustomActivityType, TumourNickname, MotivationalWallItem, SleepEntry } from "@shared/schema";
 import { Textarea } from "@/components/ui/textarea";
 
 function todayStr() {
@@ -37,6 +37,7 @@ const AVAILABLE_WIDGETS: WidgetDef[] = [
   { id: "tumourResponse", label: "Tumour Response", description: "Track tumour changes", icon: <TrendingUp className="h-4 w-4" />, defaultVisible: true },
   { id: "dailyBrief", label: "Today's Vibe", description: "AI wellness message", icon: <Sparkles className="h-4 w-4" />, defaultVisible: true },
   { id: "motivationalWall", label: "Worth Fighting For", description: "Your reasons to keep going", icon: <Heart className="h-4 w-4" />, defaultVisible: true },
+  { id: "sleepTracker", label: "Sleep Tracker", description: "Track your sleep hours & quality", icon: <Moon className="h-4 w-4" />, defaultVisible: true },
 ];
 
 function getDefaultWidgets(): string[] {
@@ -1968,6 +1969,283 @@ function TodayWellnessWidget({ userId }: { userId: number }) {
   );
 }
 
+function SleepTrackerWidget({ userId }: { userId: number }) {
+  const [logOpen, setLogOpen] = useState(false);
+  const [hours, setHours] = useState("7");
+  const [quality, setQuality] = useState("3");
+  const [notes, setNotes] = useState("");
+  const [logDate, setLogDate] = useState(todayStr());
+  const { toast } = useToast();
+
+  const last7Start = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  const { data: sleepData = [], isLoading: sleepLoading } = useQuery<SleepEntry[]>({
+    queryKey: ["/api/sleep", { userId, dateFrom: last7Start, dateTo: todayStr() }],
+    queryFn: async () => {
+      const res = await fetch(`/api/sleep?userId=${userId}&dateFrom=${last7Start}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/sleep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          date: logDate,
+          hours: parseFloat(hours),
+          quality: parseInt(quality),
+          notes: notes || null,
+          source: "manual",
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sleep"] });
+      setLogOpen(false);
+      setHours("7");
+      setQuality("3");
+      setNotes("");
+      setLogDate(todayStr());
+      toast({ title: "Sleep logged", description: "Sweet dreams tracked." });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest(`/api/sleep/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sleep"] });
+      toast({ title: "Entry removed" });
+    },
+  });
+
+  const todayEntry = sleepData.find((e) => e.date === todayStr());
+  const avgHours = sleepData.length > 0 ? (sleepData.reduce((sum, e) => sum + e.hours, 0) / sleepData.length).toFixed(1) : null;
+  const avgQuality = sleepData.length > 0 ? (sleepData.reduce((sum, e) => sum + e.quality, 0) / sleepData.length).toFixed(1) : null;
+
+  const qualityLabel = (q: number) => {
+    if (q <= 1) return "Poor";
+    if (q <= 2) return "Fair";
+    if (q <= 3) return "Good";
+    if (q <= 4) return "Great";
+    return "Excellent";
+  };
+
+  const qualityColor = (q: number) => {
+    if (q <= 1) return "text-red-400";
+    if (q <= 2) return "text-amber-400";
+    if (q <= 3) return "text-primary";
+    if (q <= 4) return "text-emerald-500";
+    return "text-emerald-600";
+  };
+
+  const renderStars = (q: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star key={i} className={`h-3 w-3 ${i < q ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
+    ));
+  };
+
+  const last7Days = useMemo(() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      const entry = sleepData.find((e) => e.date === dateStr);
+      days.push({
+        label: d.toLocaleDateString("en-AU", { weekday: "short" }).charAt(0),
+        date: dateStr,
+        hours: entry?.hours ?? 0,
+        quality: entry?.quality ?? 0,
+        hasData: !!entry,
+      });
+    }
+    return days;
+  }, [sleepData]);
+
+  const maxHours = Math.max(10, ...last7Days.map((d) => d.hours));
+
+  return (
+    <Card className="bg-white border-border rounded-2xl">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-heading text-foreground flex items-center gap-2">
+            <Moon className="h-4 w-4 text-indigo-400" /> Sleep
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground font-body flex items-center gap-1">
+              <CloudMoon className="h-3 w-3" /> Wearable ready
+            </span>
+            <Dialog open={logOpen} onOpenChange={setLogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-body gap-1 h-7">
+                  <Plus className="h-3 w-3" /> Log
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white border-border">
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-foreground flex items-center gap-2">
+                    <Moon className="h-5 w-5 text-indigo-400" /> Log Sleep
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-body text-muted-foreground mb-1 block">Date</label>
+                    <Input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} className="bg-muted/50 border-border font-body" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-body text-muted-foreground mb-1 block">Hours slept</label>
+                    <div className="flex items-center gap-3">
+                      <Slider
+                        value={[parseFloat(hours)]}
+                        onValueChange={(v) => setHours(v[0].toString())}
+                        min={0}
+                        max={14}
+                        step={0.5}
+                        className="flex-1"
+                      />
+                      <span className="text-lg font-heading text-indigo-500 w-12 text-right">{hours}h</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-body text-muted-foreground mb-1 block">Quality</label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => setQuality(q.toString())}
+                          className={`flex-1 py-2 rounded-xl border text-xs font-body transition-all ${
+                            parseInt(quality) === q
+                              ? "bg-indigo-50 border-indigo-300 text-indigo-700 font-medium"
+                              : "border-border text-muted-foreground hover:border-indigo-200"
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Star className={`h-3.5 w-3.5 ${parseInt(quality) === q ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}`} />
+                            <span className="text-[10px]">{qualityLabel(q)}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-body text-muted-foreground mb-1 block">Notes (optional)</label>
+                    <Textarea
+                      placeholder="How did you feel? Any dreams?"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="bg-muted/50 border-border font-body text-sm resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => createMutation.mutate()}
+                    disabled={createMutation.isPending}
+                    className="w-full bg-indigo-500 text-white hover:bg-indigo-600 font-body font-medium"
+                  >
+                    {createMutation.isPending ? "Saving..." : "Log Sleep"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {sleepLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 text-indigo-300 animate-spin" />
+          </div>
+        ) : sleepData.length > 0 ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100">
+                <p className="text-[10px] uppercase tracking-wider text-indigo-400 font-body mb-0.5">Last Night</p>
+                <p className="text-xl font-heading text-indigo-600">
+                  {todayEntry ? `${todayEntry.hours}h` : "—"}
+                </p>
+                {todayEntry && (
+                  <div className="flex items-center gap-0.5 mt-1">{renderStars(todayEntry.quality)}</div>
+                )}
+              </div>
+              <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-0.5">7-Day Avg</p>
+                <p className="text-xl font-heading text-foreground">{avgHours}h</p>
+                <p className={`text-[10px] font-body ${qualityColor(Math.round(parseFloat(avgQuality || "0")))}`}>
+                  {avgQuality ? qualityLabel(Math.round(parseFloat(avgQuality))) : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-muted/20 rounded-xl p-3 border border-border/30">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body mb-2">This Week</p>
+              <div className="flex items-end gap-1 h-16">
+                {last7Days.map((day, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full flex items-end justify-center" style={{ height: "48px" }}>
+                      {day.hasData ? (
+                        <div
+                          className="w-full max-w-[20px] rounded-t-md transition-all"
+                          style={{
+                            height: `${(day.hours / maxHours) * 48}px`,
+                            background: day.quality >= 4 ? "linear-gradient(to top, #818cf8, #6366f1)" :
+                                        day.quality >= 3 ? "linear-gradient(to top, #a5b4fc, #818cf8)" :
+                                        day.quality >= 2 ? "linear-gradient(to top, #c7d2fe, #a5b4fc)" :
+                                        "linear-gradient(to top, #e0e7ff, #c7d2fe)",
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full max-w-[20px] h-1 rounded bg-muted-foreground/10" />
+                      )}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground font-body">{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {sleepData.length > 0 && (
+              <div className="space-y-1">
+                {sleepData.slice(-3).reverse().map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-2 text-xs font-body text-foreground group">
+                    <Moon className="h-3 w-3 text-indigo-400 flex-shrink-0" />
+                    <span className="text-muted-foreground">
+                      {new Date(entry.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                    </span>
+                    <span className="font-medium">{entry.hours}h</span>
+                    <div className="flex items-center gap-0.5">{renderStars(entry.quality)}</div>
+                    {entry.source !== "manual" && (
+                      <span className="text-[9px] bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded-full">{entry.source}</span>
+                    )}
+                    <div className="flex-1" />
+                    <button
+                      onClick={() => deleteMutation.mutate(entry.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <Moon className="h-8 w-8 text-indigo-200 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground font-body">No sleep data yet</p>
+            <p className="text-[10px] text-muted-foreground/70 font-body mt-1">Log your first night or connect a wearable</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
   title: string; icon: React.ReactNode; children: React.ReactNode;
   open: boolean; onOpenChange: (open: boolean) => void;
@@ -2131,6 +2409,13 @@ export default function SimpleDashboard() {
       {isActive("motivationalWall") && (
         <div className="mb-4">
           <WorthFightingForWidget userId={user.id} />
+        </div>
+      )}
+
+      {/* Sleep Tracker */}
+      {isActive("sleepTracker") && (
+        <div className="mb-4">
+          <SleepTrackerWidget userId={user.id} />
         </div>
       )}
 

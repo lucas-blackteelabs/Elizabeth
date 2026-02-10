@@ -31,6 +31,7 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Date Night:** AI-powered restaurant and activity suggestions with dietary suitability assessments, shortlisting, and integration with the user's calendar.
 - **Nano Banana:** Utilizes multimodal AI to generate personalized motivational captions from user-uploaded images and personal notes.
 - **Community - Verified Survivors:** Tabbed community section (Threads, Survivors, Talks). Verified survivors have distinct visual treatment (amber badges, gradient avatars). Users can book 1-on-1 video sessions via available time slots. Survivors host periodic talks/events with RSVP system. Includes double-booking prevention and duplicate RSVP guards.
+- **Sleep Tracker:** Dashboard widget for tracking sleep hours and quality (1-5 stars). Manual entry with hours slider, quality picker, and optional notes. 7-day bar chart visualization, today's sleep stats, and weekly averages. Future-proofed with `source` field for wearable integrations (Whoop, etc.).
 
 ## External Dependencies
 - **Database:** PostgreSQL (Neon)
