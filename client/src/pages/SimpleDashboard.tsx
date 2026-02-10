@@ -892,7 +892,9 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
           const nowCircle = t.isResolved ? 0 : Math.max(6, (t.latestR / maxR) * 36);
           return (
             <div key={t.label} className={`rounded-xl p-3 border ${
-              t.isResolved ? "bg-gradient-to-br from-blue-50 to-sky-50/60 border-blue-200/50" : "bg-gradient-to-br from-green-50 to-emerald-50/60 border-green-200/50"
+              t.isResolved ? "bg-gradient-to-br from-blue-50 to-sky-50/60 border-blue-200/50"
+              : t.noFocalUptake ? "bg-gradient-to-br from-sky-50 to-blue-50/60 border-sky-200/50"
+              : "bg-gradient-to-br from-green-50 to-emerald-50/60 border-green-200/50"
             }`}>
               <p className="text-[10px] font-body text-muted-foreground mb-2 truncate">{t.label}</p>
               <div className="flex items-end gap-2 mb-1.5">
@@ -900,23 +902,27 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
                   <div className="rounded-full border-2 border-red-300/60 bg-red-100/50 flex-shrink-0" style={{ width: baseCircle, height: baseCircle }} title={`Baseline: ${t.baselineSize}mm`} />
                   {t.isResolved ? (
                     <span className="text-base leading-none">🪓</span>
+                  ) : t.noFocalUptake ? (
+                    <div className="rounded-full border-2 border-sky-400/70 flex-shrink-0 relative" style={{ width: nowCircle, height: nowCircle, background: "linear-gradient(135deg, #bfdbfe 0%, #e0f2fe 40%, #dbeafe 100%)" }} title={`Now: ${t.latestSize}mm`}>
+                      <span className="absolute -top-1 -right-1 text-[8px]">❄️</span>
+                    </div>
                   ) : (
                     <div className="rounded-full border-2 border-green-400/70 bg-green-200/60 flex-shrink-0" style={{ width: nowCircle, height: nowCircle }} title={`Now: ${t.latestSize}mm`} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0 text-right">
-                  <p className={`text-lg font-heading font-bold leading-none ${t.isResolved ? "text-blue-600" : "text-green-700"}`}>
-                    {t.isResolved ? "Gone" : t.noFocalUptake ? "Clear" : `↓${t.suvReduction}%`}
+                  <p className={`text-lg font-heading font-bold leading-none ${t.isResolved ? "text-blue-600" : t.noFocalUptake ? "text-sky-600" : "text-green-700"}`}>
+                    {t.isResolved ? "Gone" : t.noFocalUptake ? "Cold" : `↓${t.suvReduction}%`}
                   </p>
                   <p className="text-[9px] font-body text-muted-foreground mt-0.5">
-                    {t.isResolved ? "Resolved ❄️" : t.noFocalUptake ? "No focal uptake" : `Size ↓${t.sizeReduction}%`}
+                    {t.isResolved ? "Resolved ❄️" : t.noFocalUptake ? "No focal uptake ❄️" : `Size ↓${t.sizeReduction}%`}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[9px] font-body text-muted-foreground/70">
                 <span>{t.baselineSize}mm</span>
                 <span>→</span>
-                <span className={t.isResolved ? "text-blue-500 font-medium" : "text-green-600 font-medium"}>{t.latestSize}{t.isResolved ? "" : "mm"}</span>
+                <span className={t.isResolved ? "text-blue-500 font-medium" : t.noFocalUptake ? "text-sky-500 font-medium" : "text-green-600 font-medium"}>{t.latestSize}{t.isResolved ? "" : "mm"}</span>
               </div>
             </div>
           );
@@ -994,7 +1000,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
             <div
               key={tl}
               className={`rounded-2xl border p-5 transition-all ${
-                isResolved ? "bg-gradient-to-br from-blue-50/60 via-white to-sky-50/40 border-blue-200/50" : "bg-white border-border"
+                isResolved ? "bg-gradient-to-br from-blue-50/60 via-white to-sky-50/40 border-blue-200/50"
+                : noFocalUptake ? "bg-gradient-to-br from-sky-50/40 via-white to-blue-50/30 border-sky-200/50"
+                : "bg-white border-border"
               }`}
             >
               <div className="flex items-center gap-5">
@@ -1033,6 +1041,30 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                       <div className="absolute -top-0.5 -right-0.5 text-[10px]">❄️</div>
                       <div className="absolute -bottom-0.5 -left-0.5 text-[10px]">❄️</div>
                     </>
+                  ) : noFocalUptake ? (
+                    <>
+                      <svg width={svgSize} height={svgSize}>
+                        <defs>
+                          <linearGradient id={`cold-grad-${tl}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.7" />
+                            <stop offset="40%" stopColor="#e0f2fe" stopOpacity="0.6" />
+                            <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.8" />
+                          </linearGradient>
+                          <clipPath id={`cold-clip-${tl}`}>
+                            <circle cx={cx} cy={cy} r={currentR} />
+                          </clipPath>
+                        </defs>
+                        <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#e5e7eb" strokeWidth={2} strokeDasharray="4 4" />
+                        <circle cx={cx} cy={cy} r={currentR} fill={`url(#cold-grad-${tl})`} stroke="#7dd3fc" strokeWidth={1.5} className="transition-all duration-1000" />
+                        <g clipPath={`url(#cold-clip-${tl})`} opacity={0.5}>
+                          <line x1={cx - currentR * 0.8} y1={cy + currentR * 0.1} x2={cx + currentR * 0.8} y2={cy - currentR * 0.1} stroke="#38bdf8" strokeWidth={1.5} strokeLinecap="round" />
+                          <line x1={cx - currentR * 0.6} y1={cy - currentR * 0.3} x2={cx + currentR * 0.5} y2={cy + currentR * 0.3} stroke="#7dd3fc" strokeWidth={1} strokeLinecap="round" />
+                          <line x1={cx - currentR * 0.3} y1={cy + currentR * 0.5} x2={cx + currentR * 0.4} y2={cy - currentR * 0.6} stroke="#93c5fd" strokeWidth={0.8} strokeLinecap="round" />
+                        </g>
+                        <circle cx={cx} cy={cy} r={activityRingR} fill="none" stroke="#7dd3fc" strokeWidth={3} strokeDasharray="2 6" opacity={0.3} />
+                      </svg>
+                      <div className="absolute -top-0.5 -right-0.5 text-[10px]">❄️</div>
+                    </>
                   ) : (
                     <svg width={svgSize} height={svgSize}>
                       <circle cx={cx} cy={cy} r={baselineR} fill="none" stroke="#e5e7eb" strokeWidth={2} strokeDasharray="4 4" />
@@ -1058,9 +1090,11 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                   ) : (
                     <>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-body font-semibold">
+                        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-body font-semibold ${
+                          noFocalUptake ? "bg-sky-50 text-sky-700 border border-sky-200/50" : "bg-amber-50 text-amber-700"
+                        }`}>
                           {noFocalUptake ? (
-                            <><ArrowDown className="h-3 w-3" />No focal uptake</>
+                            <>❄️ Cold — no focal uptake</>
                           ) : (
                             <><ArrowDown className="h-3 w-3" />{isMetabolicComplete ? "100" : suvReduction}% activity</>
                           )}
@@ -1069,9 +1103,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                           <ArrowDown className="h-3 w-3" />{sizeReduction}% size
                         </span>
                       </div>
-                      <p className="text-xs font-body text-muted-foreground">
+                      <p className={`text-xs font-body ${noFocalUptake ? "text-sky-500" : "text-muted-foreground"}`}>
                         {latest.sizeX}×{latest.sizeY}mm
-                        {noFocalUptake ? " · No focal uptake" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
+                        {noFocalUptake ? " · Metabolically cold ❄️" : latest.suvMax ? ` · SUV ${latest.suvMax}` : ""}
                       </p>
                     </>
                   )}
@@ -1082,9 +1116,9 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
                     </div>
                     <div className="flex items-center justify-between text-[10px] font-body">
                       <span className="text-muted-foreground">Latest</span>
-                      <span className={`font-medium ${isResolved ? "text-blue-500" : "text-foreground"}`}>
+                      <span className={`font-medium ${isResolved ? "text-blue-500" : noFocalUptake ? "text-sky-500" : "text-foreground"}`}>
                         {latest.sizeX === 0 && latest.sizeY === 0 ? "🪓 Axed!" : `${latest.sizeX}×${latest.sizeY}mm`}
-                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : isResolved ? " · Ice cold ❄️" : noFocalUptake ? " · No focal uptake" : ""}
+                        {latest.suvMax ? ` · SUV ${latest.suvMax}` : isResolved ? " · Ice cold ❄️" : noFocalUptake ? " · Cold ❄️" : ""}
                       </span>
                     </div>
                   </div>
