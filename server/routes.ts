@@ -1178,13 +1178,28 @@ HARD RULES:
     }
   });
 
-  // Nano Banana — short AI-generated motivational content on demand
   app.post("/api/ai/nano-banana", async (req, res) => {
     try {
       const userId = req.body.userId || 1;
-      const mediaDescriptions: string[] = req.body.mediaDescriptions || [];
+      const wallItems = await storage.listMotivationalWallItems(userId);
+      const imageItems = wallItems
+        .filter(i => (i.type === "image" || i.type === "video") && i.imageUrl)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      const textItems = wallItems
+        .filter(i => i.content && i.content.trim())
+        .map(i => i.content!)
+        .slice(0, 3);
+
+      const imagePaths: string[] = imageItems
+        .map(i => {
+          const filePath = path.join(process.cwd(), i.imageUrl!.startsWith("/") ? i.imageUrl!.substring(1) : i.imageUrl!);
+          return fs.existsSync(filePath) ? filePath : null;
+        })
+        .filter(Boolean) as string[];
+
       const { generateNanoBananaImage } = await import("./openai");
-      const result = await generateNanoBananaImage(mediaDescriptions);
+      const result = await generateNanoBananaImage(imagePaths, textItems);
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);

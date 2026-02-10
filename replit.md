@@ -1,163 +1,7 @@
 # Elizabeth - Cancer Support & Healing Journey App
 
 ## Overview
-Elizabeth is a web application supporting cancer patients based on Radical Remission research focusing on nine key healing factors. Features include a warm, soft light mode interface, Google Gemini-powered AI assistance, medical tracking, AI-generated meal plans, and personalized guidance. The first user is named "Liz."
-
-## Recent Changes
-- **Feb 2026**: Dashboard Overhaul — Stripped Back, Slick & Simple
-  - Radically simplified dashboard — removed all noise, kept only killer features
-  - 5 core widgets only: Scan Countdown, Treatment Journey, Tumour Response, Today's Vibe, Worth Fighting For
-  - Removed: fun facts, gut check, inspiration, healing therapies, treatment timeline, appointments, activity rings, activity heatmap, activity streak, immune recovery, goals banner
-  - Combined Log + Wellness single card (log buttons at top, summary stats + logged items below)
-  - Daily Brief ("Today's Vibe") at top — AI-powered one-liner
-  - Tumour response: horizontal full-width card with axe emoji for resolved tumours
-  - "Worth Fighting For" compact tile → expandable collage dialog with nano banana video placeholder
-  - Compact stat tiles: scan countdown + treatment journey (2-column grid)
-  - File reduced from ~2700 lines to ~1640 lines (40% reduction)
-  - Widget picker still available for customization (5 options)
-  - Bottom nav: 7 items always visible (Home, Medical, Nutrition, AI, Treatment+, Timeline, Date Night)
-- **Feb 2026**: Medical Tracker Redesign + Community Page
-  - Medical Tracker completely redesigned with dashboard-style visuals
-    - AI-generated medical summary (warm, patient-friendly language)
-    - Documents section: CRUD for scans, blood tests, pathology reports, letters
-    - Tumour cards with proportional SVG visuals, progress bars, scan history
-    - Scan comparison table, treatment timeline, status cards
-    - Tab-based navigation (Overview, Documents, Timeline, Status)
-  - New Community page: Reddit-style discussion forum
-    - Thread creation with 7 categories (General, Treatment, Nutrition, Mind & Body, Support, Questions, Wins)
-    - Thread detail view with replies, likes, and category badges
-    - Category filter pills for browsing
-    - Reply system with author avatars, timestamps, and delete capability
-    - Seeded with 7 sample threads and 13 replies from various community members
-    - Live thread data sync (likes/replies update immediately)
-  - medical_documents table for storing scan reports, blood tests, pathology
-  - community_threads + community_replies tables with full CRUD
-  - New API endpoints: /api/community/threads, /api/community/replies, /api/medical-documents, /api/ai/medical-summary
-  - Community added to sidebar navigation
-  - 8 sample medical documents seeded (scans, blood tests, pathology, letters)
-- **Feb 2026**: Major Feature Overhaul — Treatment+, Resources, Timeline, Dashboard Redesign
-  - New "Treatment +" page: visual treatment program management with progress tracking
-    - Immunotherapy program with 4 cycle timeline, side effects tracking, celebration on completion
-    - Complementary therapy programs (hyperbaric, acupuncture, yoga, psychology, integrative oncology)
-    - AI-powered treatment suggestions based on patient profile
-    - Session management with calendar booking integration
-    - Category-specific icons/colours (medical=blue, complementary=green, mind-body=purple, integrative=amber)
-  - New "Resources" page: merged Mind & Body, Movement, Wellbeing into unified Radical Remission resource hub
-    - 4 tabs: Mind & Body, Movement, Nutrition, Wellbeing
-    - Each resource card linked to specific Radical Remission healing factor
-    - Personalised for Stage IV Melanoma active surveillance
-  - Calendar rebuilt as vertical "Timeline" view
-    - Events shown in chronological timeline with month grouping
-    - Integrates appointments AND treatment sessions
-    - Full CRUD for appointments with add/edit/delete dialogs
-    - ICS calendar download for each appointment (Add to Calendar)
-    - Past events muted, today highlighted, future events prominent
-  - Dashboard tumour visualization redesigned
-    - "Iced over" frost effect for resolved tumours (gone cold) — blue gradients, snowflake icon
-    - Celebration banner when scans show >30% reduction ("Amazing Progress!")
-    - Apple rings with baseline vs latest comparison
-    - Metabolically complete tumours labeled "No Activity Detected"
-  - Daily Brief widget on dashboard
-    - AI-generated personalised daily briefing (cached per session)
-    - Warm greeting, upcoming appointments, progress notes, wellness suggestion
-  - User profile: added phone number field
-  - Navigation: streamlined sidebar (removed Mind & Body, Movement, Community, Wellbeing; added Treatment+, Resources; renamed Calendar to Timeline)
-  - Treatment programs DB: treatment_programs + treatment_sessions tables with full CRUD APIs
-  - Seeded Liz's treatment data: 6 programs with immunotherapy session history
-  - New API endpoints: /api/treatment-programs, /api/treatment-sessions, /api/ai/daily-brief, /api/ai/treatment-suggestions, /api/appointments/:id/ics
-- **Feb 2026**: Full CRUD & Data Management Overhaul
-  - Edit/delete past movement, meals, mind-body activities from dashboard wellness widget
-  - Date picker on all log dialogs — log activities for any date (past or future)
-  - DB-backed appointments with full add/edit/delete (replaced hardcoded data)
-  - Appointment seeding for new users with default PET/CT, oncology, nutrition entries
-  - Edit goals dialog on dashboard
-  - Customizable activity type dropdowns (add/edit/delete custom exercise, mind-body, therapy types)
-  - Custom activity types stored in `custom_activity_types` DB table with CRUD API
-  - PATCH/DELETE endpoints for meals, exercises, mind-body, appointments, scan results
-  - Future-dated scans and events supported in all date inputs
-- **Feb 2026**: 4th Tumour Tracking (Small Bowel)
-  - Added Tumour 4 (Small Bowel) to scan data: 18x15mm SUV 4.2 → 8x6mm SUV 1.1 → Resolved
-  - Handles resolved tumours (size 0x0, no SUV) with "Resolved" badge and "Gone" label
-  - Updated MedicalTracker timeline and summary text
-  - Scan comparison table now handles 4 tumours with responsive grid
-- **Feb 2026**: Apple Rings Tumour Visualization
-  - TumourResponseExpanded widget uses Apple Watch-style concentric SVG rings
-  - Outer ring: % size reduction (green); Inner ring: % SUV activity reduction (amber)
-  - Full rings with labels for resolved and metabolically complete tumours
-  - Per-tumour percentage display in center of rings
-- **Feb 2026**: Accumulated Therapy Totals Widget
-  - New "Healing Therapies" widget in dashboard widget picker
-  - Shows total sessions and minutes for each therapy type (acupuncture, hyperbaric, etc.)
-  - Colorful gradient cards with therapy-specific icons
-  - Aggregates all historical mind-body activities and exercises
-- **Feb 2026**: Restaurant Search feature on Date Night page
-  - New "Search" tab: search any Sydney restaurant by name, cuisine, or suburb
-  - AI-powered dietary suitability assessment (1-10 score) with colour-coded badges
-  - Review highlights, ratings, opening hours, contact info, and menu suggestions
-  - Shortlist and "Book It" actions on searched restaurants
-  - Detail dialog with full info including dietary notes, suitability explanation, and review quotes
-  - New API endpoint: /api/ai/restaurant-search (Gemini-powered with multi-model fallback)
-- **Feb 2026**: Meal Planner overhaul (DateNight-style)
-  - AI-generated structured meal cards with photos, recipes, ingredients, instructions
-  - 10 beautiful food category images (breakfast bowl, smoothie, salad, soup, fish, grain bowl, snack, tea, chicken, berry bowl)
-  - Discover tab: AI generates 6 meals with filter by type (breakfast, lunch, dinner, snack, smoothie, tea)
-  - Saved tab: shortlist recipes with pin/unpin (localStorage persistence)
-  - Shopping tab: auto-generated categorised shopping list (produce, proteins, pantry, spices)
-  - Dismiss functionality with smooth animations (dismissed meals don't reappear)
-  - Click-to-detail dialog with full recipe, healing benefits, ingredients, step-by-step instructions
-  - "More breakfast/lunch/dinner/snack" buttons to load additional recipes
-  - Tags with color-coded badges (anti-inflammatory, liver-support, omega-3, etc.)
-  - New API endpoint: /api/ai/meal-ideas (structured JSON from Gemini)
-- **Feb 2026**: Design system modernisation
-  - All hardcoded HSL color values replaced with CSS variable-based Tailwind classes
-  - text-muted-foreground, text-foreground, text-accent, bg-white, bg-muted, border-border
-  - Consistent theming across 20+ component/page files
-- **Feb 2026**: Fixed authentication system
-  - Login credentials: username "Liz", password "Cookie"
-  - Persistent login with 90-day JWT + cookie session
-  - First-time users can register via /register
-  - Migrated old "." account to new "Liz" credentials
-- **Feb 2026**: PWA (Progressive Web App) support
-  - App can be installed on phones via "Add to Home Screen"
-  - Install prompt popup appears on first visit with instructions
-  - Service worker for offline caching (network-first strategy)
-  - App icons (192px, 512px) and manifest.json configured
-  - iOS and Android install flows supported
-- **Feb 2026**: Compact clickable dashboard widgets with expand-to-detail UX
-  - Top stats (Scan Countdown, Treatment Journey, Immune Recovery, Healing Streak) are compact tiles
-  - Clicking a compact tile opens a dialog with full detail, charts, and milestones
-  - Smooth hover animations, lift effects, and modern transitions throughout
-  - Healing tools grid now includes Date Night link
-- **Feb 2026**: Date Night feature (enhanced)
-  - Gemini-powered structured restaurant cards with summaries, dietary notes, menu suggestions
-  - Click-to-detail view for restaurants and activities with full information
-  - Save date nights to calendar with date picker
-  - History tab: upcoming planned dates and completed dates with star ratings and reviews
-  - Dietary preferences stored on user profile (editable in Profile page)
-  - AI factors dietary preferences but doesn't strictly exclude (partner can eat other things)
-  - Liz's defaults: sugar-free, dairy-free, fish or organic chicken
-  - Activity cards with categories (active, relaxing, creative, adventurous, romantic)
-  - Database table: date_nights (with rating, review, status fields)
-  - API endpoints: /api/ai/date-night (structured JSON), /api/date-nights (CRUD)
-- **Feb 2026**: Customizable dashboard with pick-and-mix widget system
-  - 11 widgets: Scan Countdown, Treatment Journey, Tumour Response (Apple rings), Today's Wellness, Immune Recovery, Healing Streak, Treatment Timeline, AI Assistant, Appointments (DB-backed CRUD), Daily Inspiration, Healing Therapies
-  - Widget picker dialog stores preferences in localStorage
-  - Tumour Response widget with recharts bar chart showing size/SUV reduction
-  - Reframed "days off treatment" to "Days of Treatment Journey"
-  - Visual scan countdown ring with SVG progress circle
-- **Feb 2026**: Switched AI from OpenAI to Google Gemini (gemini-2.5-flash)
-  - AI Assistant chat now uses Gemini API via @google/generative-ai SDK
-  - Added AI-generated personalised meal plans on Nutrition page
-  - Added AI meal suggestions in meal logging dialog on Dashboard
-  - Removed old server/ai.ts (had hardcoded OpenAI key)
-  - New API endpoints: /api/ai/meal-plan, /api/ai/meal-suggestion
-- **Feb 2026**: Complete redesign to LIGHT MODE - soft, warm, nurturing feel
-  - Warm cream backgrounds, soft white cards, sage green primary, honey amber accent
-  - Dark warm text on light backgrounds for readability
-  - All 20+ component/page files updated for consistent light mode
-  - Softer rounded corners (0.75rem), gentle shadows
-- **Feb 2026**: Softened dark theme (superseded by light mode)
-- **Feb 2026**: Initial dark elegant theme with serif typography (Cinzel/Lora)
+Elizabeth is a web application designed to support cancer patients by integrating insights from Radical Remission research. It focuses on nine key healing factors, offering personalized tools and guidance to assist users throughout their healing journey. The application provides features such as an AI-powered assistant (Google Gemini), medical tracking, AI-generated meal plans, and a nurturing user interface. Its core purpose is to empower cancer patients with accessible, personalized support and resources.
 
 ## User Preferences
 - LIGHT MODE - soft, warm, nurturing design aesthetic
@@ -167,40 +11,30 @@ Elizabeth is a web application supporting cancer patients based on Radical Remis
 - Warm cream/ivory backgrounds (not harsh white)
 - Cancer support app should feel gentle, supportive, nurturing
 
-## Project Architecture
-- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
-- **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL (Neon-backed via Replit)
-- **ORM**: Drizzle
-- **Routing**: wouter (frontend), Express (backend)
-- **State**: TanStack React Query + UserContext
-- **AI**: Google Gemini API (gemini-2.5-flash via @google/generative-ai)
+## System Architecture
+The application is built with a React, Vite, TypeScript, and Tailwind CSS frontend, utilizing `shadcn/ui` for UI components. The backend is an Express.js application written in TypeScript. Data persistence is managed with PostgreSQL, hosted on Neon, and accessed via the Drizzle ORM. Frontend routing is handled by `wouter`, while backend routing uses Express. State management relies on TanStack React Query and a UserContext. All AI functionalities are powered by the Google Gemini API.
 
-### Key Files
-- `client/src/App.tsx` - Main router and providers
-- `client/src/index.css` - Global styles and CSS variables (light theme)
-- `client/src/components/Layout.tsx` - Main layout with sidebar
-- `client/src/components/Sidebar.tsx` - Navigation sidebar (light themed)
-- `client/src/pages/SimpleDashboard.tsx` - Main dashboard page
-- `server/routes.ts` - API routes
-- `server/storage.ts` - Data storage interface
-- `shared/schema.ts` - Database schema and types
+**UI/UX Decisions:**
+- **Color Scheme:** Warm cream backgrounds, soft white cards, sage green primary, honey amber accent, warm dark brown text.
+- **Typography:** Serif fonts (Cinzel for headings, Lora for body).
+- **Design Elements:** Soft rounded corners (0.75rem), gentle shadows, consistent theming across components.
 
-### Design System
-- Background: `hsl(35, 45%, 96%)` - warm cream
-- Card background: `hsl(36, 40%, 98%)` - soft white
-- Primary: `hsl(158, 32%, 42%)` - sage green
-- Accent/Honey: `hsl(34, 55%, 52%)` - honey amber
-- Text: `hsl(25, 35%, 22%)` - warm dark brown
-- Muted text: `hsl(25, 18%, 48%)` - warm medium brown
-- Borders: `hsl(30, 25%, 87%)` - soft warm gray
-- Sidebar: `hsl(32, 35%, 94%)` - warm off-white
-- Border radius: `0.75rem` - rounded, friendly
-- Heading font: `font-heading` (Cinzel)
-- Body font: `font-body` (Lora)
+**Technical Implementations:**
+- **Authentication:** JWT-based persistent login with a 90-day session.
+- **PWA Support:** Configured for Progressive Web App installation with offline caching via a service worker.
+- **Dashboard:** Features a streamlined dashboard with core widgets (Scan Countdown, Treatment Journey, Tumour Response, Today's Vibe, Worth Fighting For), customizable via a widget picker.
+- **Medical Tracking:** Comprehensive system including AI-generated medical summaries, document management (scans, blood tests, pathology), visual tumour cards with SVG graphics and progress bars, and scan comparison tables.
+- **Nutrition:** AI-generated personalized meal plans, structured meal cards with recipes, a "Discover" tab for new meal ideas, a "Saved" tab for shortlisted recipes, and an auto-generated shopping list.
+- **Treatment+:** Visual management of treatment programs (immunotherapy, complementary therapies), progress tracking, side effect logging, and AI-powered treatment suggestions.
+- **Community:** A Reddit-style discussion forum with thread creation, replies, categories, and live data synchronization.
+- **Timeline:** Vertical chronological view integrating appointments and treatment sessions with full CRUD operations and ICS calendar download.
+- **Date Night:** AI-powered restaurant and activity suggestions with dietary suitability assessments, shortlisting, and integration with the user's calendar.
+- **Nano Banana:** Utilizes multimodal AI to generate personalized motivational captions from user-uploaded images and personal notes.
 
-### Notes
-- AI Assistant uses Google Gemini API (GOOGLE_API_KEY secret)
-- AI features: Chat assistant, personalised meal plans, meal suggestions
-- Login: username "Liz", password "Cookie" (90-day persistent session)
-- Google Fonts loaded via CDN in index.html
+## External Dependencies
+- **Database:** PostgreSQL (Neon)
+- **AI:** Google Gemini API (gemini-2.5-flash)
+- **Image Generation:** Google Imagen (for AI-generated images, when billing is available)
+- **Frontend Libraries:** React, Vite, Tailwind CSS, shadcn/ui, TanStack React Query, wouter
+- **Backend Libraries:** Express.js, Drizzle ORM
+- **Other Services:** Google Fonts (via CDN)

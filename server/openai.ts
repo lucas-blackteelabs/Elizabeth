@@ -765,21 +765,6 @@ function cleanupOldImages(dir: string, maxKeep: number = 10) {
   } catch {}
 }
 
-const nanoBananaStyles = [
-  "A vibrant watercolour illustration of a tiny banana character wearing a superhero cape, flying through a cosmic sky full of stars and nebulae, uplifting and joyful, warm golden tones",
-  "A whimsical digital painting of a small banana character doing a victory dance on top of a mountain at sunrise, warm orange and pink sky, triumphant and inspiring mood",
-  "A cute illustrated banana character meditating peacefully in a zen garden with cherry blossoms falling, soft pastel colours, calming and healing atmosphere",
-  "A playful banana character surfing a giant wave at golden hour, Australian beach vibes, energetic and fun, warm sunset colours",
-  "A tiny banana character planting a garden of wildflowers, bees and butterflies around, symbol of growth and renewal, soft watercolour style",
-  "A cheerful banana character stargazing through a telescope at night, surrounded by fireflies, magical and wonder-filled, deep blue and golden tones",
-  "A brave little banana character leading a parade of friendly woodland animals through an enchanted forest, dappled sunlight, magical realism style",
-  "A cosy illustration of a banana character wrapped in a blanket reading a book by a fireplace, warm amber glow, hygge feeling, nurturing and safe",
-  "A banana character riding a paper airplane through cotton candy clouds at sunset, dreamy pastel sky, sense of freedom and adventure",
-  "A tiny banana character standing on a cliff overlooking a vast beautiful valley at dawn, golden light breaking through clouds, feeling of possibility and hope",
-  "A cute banana character high-fiving a friendly sun, blue sky with rainbow, joyful and energetic, children's book illustration style",
-  "A banana character floating in a hot air balloon shaped like a heart over rolling green hills, golden hour light, whimsical and uplifting",
-];
-
 const defaultNanaBananaImages = [
   "default-1.png", "default-2.png", "default-3.png",
   "default-4.png", "default-5.png", "default-6.png",
@@ -796,7 +781,16 @@ const defaultNanaBananaCaptions = [
   "Your banana believes in you 💛",
 ];
 
-export async function generateNanoBananaImage(mediaDescriptions: string[] = []): Promise<{ imagePath: string; caption: string }> {
+function getImageMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeMap: Record<string, string> = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".webp": "image/webp",
+  };
+  return mimeMap[ext] || "image/jpeg";
+}
+
+export async function generateNanoBananaImage(userImagePaths: string[] = [], textDescriptions: string[] = []): Promise<{ imagePath: string; caption: string }> {
   const outputDir = path.join(process.cwd(), "client", "public", "nano-banana");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -806,23 +800,42 @@ export async function generateNanoBananaImage(mediaDescriptions: string[] = []):
   let imagePath = `/nano-banana/${randomDefault}`;
   let caption = defaultNanaBananaCaptions[Math.floor(Math.random() * defaultNanaBananaCaptions.length)];
 
+  const nanoBananaPrompt = `You are generating content for a cancer support app called Elizabeth. The user has uploaded "Worth Fighting For" images — these are personal photos that remind them why they are fighting so hard to beat cancer (family, pets, places they love, special memories).
+
+${userImagePaths.length > 0 ? "I am showing you " + userImagePaths.length + " of the user's personal Worth Fighting For images." : ""}
+${textDescriptions.length > 0 ? "The user also wrote these personal notes about what they're fighting for: " + textDescriptions.join("; ") : ""}
+
+Your job: Create a fun, playful, warm motivational message that references what you can see in their photos and notes. Remind them they have so much to live for and to keep going. The tone should be uplifting, sometimes cheeky, always loving — like a best friend cheering them on.
+
+Generate ONE short punchy motivational caption (max 12 words) inspired by their personal photos and notes. Be warm, playful, or badass. Australian English. Include one emoji. Output ONLY the caption text, nothing else.`;
+
   try {
-    const captionContext = mediaDescriptions.length > 0
-      ? `The image is inspired by the patient's personal photos showing: ${mediaDescriptions.slice(0, 2).join(" and ")}. `
-      : "";
     const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+
+    const parts: any[] = [];
+    for (const imgPath of userImagePaths) {
+      try {
+        const imageData = fs.readFileSync(imgPath);
+        const base64 = imageData.toString("base64");
+        const mimeType = getImageMimeType(imgPath);
+        parts.push({ inlineData: { mimeType, data: base64 } });
+      } catch {
+      }
+    }
+    parts.push({ text: nanoBananaPrompt });
+
     for (const modelName of modelsToTry) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent({
-          contents: [{ role: "user", parts: [{ text: `${captionContext}Generate ONE short punchy motivational caption (max 8 words) for a cute banana superhero image. Cancer patient context. Be warm, funny, or badass. Australian English. Include one emoji. Output ONLY the caption text.` }] }],
-          generationConfig: { temperature: 1.2, maxOutputTokens: 50 },
+          contents: [{ role: "user", parts }],
+          generationConfig: { temperature: 1.0, maxOutputTokens: 60 },
         });
         const text = result.response.text().trim();
-        if (text && text.length < 80) caption = text;
+        if (text && text.length < 100) caption = text;
         break;
       } catch (err: any) {
-        if (err?.status === 429) continue;
+        if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("quota")) continue;
       }
     }
   } catch {
@@ -830,14 +843,8 @@ export async function generateNanoBananaImage(mediaDescriptions: string[] = []):
 
   try {
     const apiKey = process.env.GOOGLE_API_KEY;
-    if (apiKey) {
-      const stylePrompt = nanoBananaStyles[Math.floor(Math.random() * nanoBananaStyles.length)];
-      let mediaContext = "";
-      if (mediaDescriptions.length > 0) {
-        const picked = mediaDescriptions.sort(() => Math.random() - 0.5).slice(0, 3);
-        mediaContext = ` The scene should lovingly incorporate themes inspired by the patient's personal photos and memories: ${picked.join(", ")}.`;
-      }
-      const fullPrompt = `${stylePrompt}.${mediaContext} The banana character should be small, cute, and expressive with simple dot eyes and a warm smile. Style: modern illustration, clean lines, warm palette. NO text or words in the image.`;
+    if (apiKey && userImagePaths.length > 0) {
+      const imageGenPrompt = `Create a fun, playful, warm motivational illustration for a cancer patient. Use the themes and subjects from the user's personal "Worth Fighting For" photos to create a whimsical, uplifting scene. Style: modern illustration, warm colours, clean lines, joyful mood. The image should feel personal and loving — like a visual hug. NO text or words in the image.`;
 
       const imagenResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict?key=${apiKey}`,
@@ -845,7 +852,7 @@ export async function generateNanoBananaImage(mediaDescriptions: string[] = []):
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            instances: [{ prompt: fullPrompt }],
+            instances: [{ prompt: imageGenPrompt }],
             parameters: { sampleCount: 1 },
           }),
         }

@@ -1276,17 +1276,10 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
   const generateNanoBanana = async () => {
     setGenerating(true);
     try {
-      const descriptions = items
-        .filter(i => i.content && i.content.trim())
-        .map(i => i.content!)
-        .slice(0, 5);
-      const mediaTypes = mediaItems.map(i => i.type === "video" ? "a family video" : "a personal photo");
-      const allDescriptions = [...descriptions, ...mediaTypes].filter(Boolean);
-
       const res = await fetch("/api/ai/nano-banana", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, mediaDescriptions: allDescriptions }),
+        body: JSON.stringify({ userId }),
       });
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
