@@ -24,6 +24,9 @@ export const users = pgTable("users", {
   dietaryPreferences: text("dietary_preferences"),
   phoneNumber: text("phone_number"),
   profilePhoto: text("profile_photo"),
+  nanoBananaImage: text("nano_banana_image"),
+  nanoBananaCaption: text("nano_banana_caption"),
+  nanoBananaDate: text("nano_banana_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

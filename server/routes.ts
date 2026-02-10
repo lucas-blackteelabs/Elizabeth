@@ -1355,6 +1355,24 @@ RULES:
     }
   });
 
+  app.get("/api/ai/nano-banana/latest", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      if (user.nanoBananaImage && user.nanoBananaCaption) {
+        return res.json({
+          imagePath: user.nanoBananaImage,
+          caption: user.nanoBananaCaption,
+          date: user.nanoBananaDate || null,
+        });
+      }
+      return res.json({ imagePath: null, caption: null, date: null });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch latest nano banana" });
+    }
+  });
+
   app.post("/api/ai/nano-banana", async (req, res) => {
     try {
       const userId = req.body.userId || 1;
@@ -1378,6 +1396,14 @@ RULES:
       const creativity = typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
       const { generateNanoBananaImage } = await import("./openai");
       const result = await generateNanoBananaImage(imagePaths, textItems, creativity);
+
+      const todayStr = new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' }).split('/').reverse().join('-');
+      await storage.updateUser(userId, {
+        nanoBananaImage: result.imagePath,
+        nanoBananaCaption: result.caption,
+        nanoBananaDate: todayStr,
+      });
+
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);

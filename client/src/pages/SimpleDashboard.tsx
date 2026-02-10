@@ -1454,6 +1454,10 @@ function DaySummaryDialog({ userId, open, onOpenChange }: { userId: number; open
   );
 }
 
+function getTodayDateString() {
+  return new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' }).split('/').reverse().join('-');
+}
+
 function WorthFightingForWidget({ userId }: { userId: number }) {
   const [wallOpen, setWallOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -1461,13 +1465,63 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
   const [newColor, setNewColor] = useState("amber");
   const [uploading, setUploading] = useState(false);
   const [previewItem, setPreviewItem] = useState<MotivationalWallItem | null>(null);
-  const [nanoBananaImage, setNanoBananaImage] = useState<string | null>("/nano-banana/default-1.png");
-  const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>("You've got this, warrior 🍌");
+  const [nanoBananaImage, setNanoBananaImage] = useState<string | null>(null);
+  const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [creativity, setCreativity] = useState(0.3);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function loadLatestBanana() {
+      try {
+        const res = await fetch(`/api/ai/nano-banana/latest?userId=${userId}`);
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (data.imagePath) {
+          setNanoBananaImage(data.imagePath);
+          setNanoBananaCaption(data.caption || "You've got this 🍌");
+          const today = getTodayDateString();
+          if (data.date !== today) {
+            generateNanoBananaAuto();
+          }
+        } else {
+          generateNanoBananaAuto();
+        }
+      } catch {
+        setNanoBananaImage("/nano-banana/default-1.png");
+        setNanoBananaCaption("You've got this, warrior 🍌");
+      } finally {
+        setInitialLoadDone(true);
+      }
+    }
+
+    async function generateNanoBananaAuto() {
+      try {
+        setGenerating(true);
+        const res = await fetch("/api/ai/nano-banana", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, creativity: 0.3 }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        setNanoBananaImage(data.imagePath);
+        setNanoBananaCaption(data.caption || "You've got this 🍌");
+      } catch {
+        if (!nanoBananaImage) {
+          setNanoBananaImage("/nano-banana/default-1.png");
+          setNanoBananaCaption("You've got this, warrior 🍌");
+        }
+      } finally {
+        setGenerating(false);
+      }
+    }
+
+    loadLatestBanana();
+  }, [userId]);
 
   const { data: items = [] } = useQuery<MotivationalWallItem[]>({
     queryKey: ["/api/motivational-wall", { userId }],
