@@ -138,9 +138,11 @@ IMPORTANT GUIDELINES:
 - Keep responses concise but thorough (2-4 paragraphs)
 - Use gentle formatting with bullet points where helpful`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
-    for (const modelName of modelsToTry) {
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+    for (let i = 0; i < modelsToTry.length; i++) {
+      const modelName = modelsToTry[i];
       try {
+        if (i > 0) await new Promise(r => setTimeout(r, 500));
         const m = genAI.getGenerativeModel({ model: modelName });
         const result = await m.generateContent({
           contents: [
@@ -153,7 +155,7 @@ IMPORTANT GUIDELINES:
         });
         return result.response.text() || "I'm sorry, I couldn't process your request at this time.";
       } catch (err: any) {
-        if (err?.status === 429) {
+        if (err?.status === 429 || err?.message?.includes("429") || err?.message?.includes("rate")) {
           console.log(`Chat: model ${modelName} rate-limited, trying next...`);
           continue;
         }
@@ -191,7 +193,7 @@ For each meal:
 End with a brief encouraging note about how this day of eating supports their healing.
 Format with clear headers and bullet points. Keep it warm and supportive in tone.`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
     for (const modelName of modelsToTry) {
       try {
         const m = genAI.getGenerativeModel({ model: modelName });
@@ -234,7 +236,7 @@ Provide:
 
 Keep it warm, concise, and encouraging.`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
     for (const modelName of modelsToTry) {
       try {
         const m = genAI.getGenerativeModel({ model: modelName });
@@ -283,7 +285,7 @@ export interface DateNightSuggestions {
 
 export async function getDateNightIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", type: string = "both"): Promise<DateNightSuggestions> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const dietaryInfo = dietaryPreferences
       ? `\n\nDIETARY PREFERENCES (for the patient — her partner can eat anything, and restaurants can usually tailor their menu when briefed):\n${dietaryPreferences}\n\nIMPORTANT: Factor these preferences into your recommendations and highlight which dishes suit her needs, but do NOT exclude restaurants that don't strictly adhere — the partner eats other things and restaurants can usually accommodate when asked.`
@@ -340,7 +342,7 @@ ${jsonStructure}
 
 ${countInstruction} Keep summaries concise (1-2 sentences each). Keep the tone warm and encouraging.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested places: ${excludeNames}. Suggest DIFFERENT ones.` : ""}`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {
@@ -432,7 +434,7 @@ export interface MealSuggestions {
 
 export async function getMealIdeas(userContext: string = "", dietaryPreferences: string = "", excludeNames: string = "", mealTypes: string = "all"): Promise<MealSuggestions> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const dietaryInfo = dietaryPreferences
       ? `\n\nDIETARY PREFERENCES:\n${dietaryPreferences}\n\nFactor these preferences into all meal suggestions. Focus on meals that align with these dietary needs.`
@@ -509,7 +511,7 @@ Choose the imageCategory that best visually matches each meal:
 
 Keep the tone warm and encouraging. Make recipes practical and delicious.${excludeNames ? `\n\nIMPORTANT: Do NOT suggest any of these already-suggested meals: ${excludeNames}. Suggest DIFFERENT recipes.` : ""}`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {
@@ -644,7 +646,7 @@ You MUST respond with ONLY valid JSON (no markdown, no backticks). Return this e
 
 If the query is very specific (a single restaurant name), return just that one restaurant with detailed information. If broader, return up to 4 matching restaurants. If you don't recognise the restaurant or query, return an empty array and be honest.`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+    const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
     let result;
     let lastError: any;
     for (const modelName of modelsToTry) {

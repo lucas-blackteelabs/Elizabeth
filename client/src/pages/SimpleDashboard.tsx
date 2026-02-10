@@ -3,7 +3,7 @@ import { useUser } from "@/contexts/UserContext";
 import {
   TrendingUp, Heart, Sparkles, Shield, Target, Scan, Plus, Check, Loader2, Settings2, X,
   ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity,
-  ImagePlus, Play
+  ImagePlus, Play, Calendar, RefreshCw, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -850,7 +850,7 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
 
   if (isLoading) {
     return (
-      <button onClick={onClick} className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full col-span-2 lg:col-span-4">
+      <button onClick={onClick} className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full">
         <div className="flex items-center gap-3">
           <Loader2 className="h-5 w-5 text-primary animate-spin" />
           <p className="text-sm font-body text-muted-foreground">Loading tumour response...</p>
@@ -867,47 +867,59 @@ function TumourResponseCompactTile({ userId, onClick }: { userId: number; onClic
     const latestArea = latest.sizeX * latest.sizeY;
     const isResolved = latest.sizeX === 0 && latest.sizeY === 0 && (!latest.suvMax || latest.suvMax === 0);
     const sizeReduction = baselineArea > 0 ? Math.round(((baselineArea - latestArea) / baselineArea) * 100) : 0;
-    return { label: tl, isResolved, sizeReduction };
-  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number }[];
+    const baselineSuv = baseline.suvMax || 0;
+    const latestSuv = latest.suvMax || 0;
+    const suvReduction = baselineSuv > 0 ? Math.round(((baselineSuv - latestSuv) / baselineSuv) * 100) : 0;
+    const maxDim = Math.max(baseline.sizeX, baseline.sizeY);
+    return { label: tl, isResolved, sizeReduction, suvReduction, baselineSize: `${baseline.sizeX}x${baseline.sizeY}`, latestSize: isResolved ? "Gone" : `${latest.sizeX}x${latest.sizeY}`, baselineR: maxDim, latestR: isResolved ? 0 : Math.max(latest.sizeX, latest.sizeY) };
+  }).filter(Boolean) as { label: string; isResolved: boolean; sizeReduction: number; suvReduction: number; baselineSize: string; latestSize: string; baselineR: number; latestR: number }[];
+
+  const maxR = Math.max(...tumourData.map(t => t.baselineR), 1);
 
   return (
     <button
       onClick={onClick}
-      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full col-span-2 lg:col-span-4"
+      className="group relative bg-white border border-border rounded-2xl p-4 text-left transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 active:translate-y-0 w-full"
     >
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium">Tumour Response</p>
         <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
       </div>
-      <div className="flex items-center gap-2 overflow-x-auto">
-        {tumourData.map((t) => (
-          <div key={t.label} className={`flex items-center gap-2 rounded-xl px-3 py-2 border flex-1 min-w-0 ${
-            t.isResolved
-              ? "bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200/60"
-              : "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/60"
-          }`}>
-            {t.isResolved ? (
-              <div className="relative w-9 h-9 flex-shrink-0">
-                <svg width={36} height={36} viewBox="0 0 36 36">
-                  <circle cx={18} cy={18} r={14} fill="#dbeafe" stroke="#93c5fd" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.7} />
-                  <line x1={6} y1={20} x2={30} y2={16} stroke="#3b82f6" strokeWidth={2.5} strokeLinecap="round" opacity={0.7} />
-                  <line x1={8} y1={16} x2={28} y2={20} stroke="#60a5fa" strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-sm">🪓</span>
+      <div className="grid grid-cols-2 gap-3">
+        {tumourData.map((t) => {
+          const baseCircle = Math.max(16, (t.baselineR / maxR) * 36);
+          const nowCircle = t.isResolved ? 0 : Math.max(6, (t.latestR / maxR) * 36);
+          return (
+            <div key={t.label} className={`rounded-xl p-3 border ${
+              t.isResolved ? "bg-gradient-to-br from-blue-50 to-sky-50/60 border-blue-200/50" : "bg-gradient-to-br from-green-50 to-emerald-50/60 border-green-200/50"
+            }`}>
+              <p className="text-[10px] font-body text-muted-foreground mb-2 truncate">{t.label}</p>
+              <div className="flex items-end gap-2 mb-1.5">
+                <div className="flex items-end gap-1">
+                  <div className="rounded-full border-2 border-red-300/60 bg-red-100/50 flex-shrink-0" style={{ width: baseCircle, height: baseCircle }} title={`Baseline: ${t.baselineSize}mm`} />
+                  {t.isResolved ? (
+                    <span className="text-base leading-none">🪓</span>
+                  ) : (
+                    <div className="rounded-full border-2 border-green-400/70 bg-green-200/60 flex-shrink-0" style={{ width: nowCircle, height: nowCircle }} title={`Now: ${t.latestSize}mm`} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className={`text-lg font-heading font-bold leading-none ${t.isResolved ? "text-blue-600" : "text-green-700"}`}>
+                    {t.isResolved ? "Gone" : `↓${t.sizeReduction}%`}
+                  </p>
+                  <p className="text-[9px] font-body text-muted-foreground mt-0.5">
+                    {t.isResolved ? "Resolved ❄️" : `SUV ↓${t.suvReduction}%`}
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <ArrowDown className="h-4 w-4 text-green-600" />
+              <div className="flex items-center gap-1 text-[9px] font-body text-muted-foreground/70">
+                <span>{t.baselineSize}mm</span>
+                <span>→</span>
+                <span className={t.isResolved ? "text-blue-500 font-medium" : "text-green-600 font-medium"}>{t.latestSize}{t.isResolved ? "" : "mm"}</span>
               </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-body text-muted-foreground truncate">{t.label}</p>
-              <p className={`text-sm font-heading font-bold ${t.isResolved ? "text-blue-600" : "text-green-700"}`}>
-                {t.isResolved ? "Axed! ❄️" : `↓${t.sizeReduction}%`}
-              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </button>
   );
@@ -1129,6 +1141,160 @@ function useDailyBrief(userId: number) {
   };
 
   return { brief, isLoading: mutation.isPending && !brief, refresh, isPending: mutation.isPending };
+}
+
+function DaySummaryDialog({ userId, open, onOpenChange }: { userId: number; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { data: appointments = [] } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/appointments?userId=${userId}`);
+      return res.json();
+    },
+    enabled: open,
+  });
+  const { data: meals = [] } = useQuery<Meal[]>({
+    queryKey: ["/api/meals", { userId, date: todayStr() }],
+    queryFn: async () => {
+      const res = await fetch(`/api/meals?userId=${userId}&dateFrom=${todayStr()}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+    enabled: open,
+  });
+  const { data: exercises = [] } = useQuery<Exercise[]>({
+    queryKey: ["/api/exercises", { userId, date: todayStr() }],
+    queryFn: async () => {
+      const res = await fetch(`/api/exercises?userId=${userId}&dateFrom=${todayStr()}&dateTo=${todayStr()}`);
+      return res.json();
+    },
+    enabled: open,
+  });
+
+  const today = todayStr();
+  const todaysAppts = appointments.filter(a => a.date === today).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  const upcomingAppts = appointments.filter(a => a.date > today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" /> Your Day
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          {appointments.length === 0 && !meals.length && !exercises.length && (
+            <div className="space-y-2">
+              <div className="h-12 bg-muted/40 rounded-xl animate-pulse" />
+              <div className="h-10 bg-muted/30 rounded-xl animate-pulse" />
+              <div className="h-10 bg-muted/20 rounded-xl animate-pulse" />
+            </div>
+          )}
+          {todaysAppts.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Today</p>
+              <div className="space-y-2">
+                {todaysAppts.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 bg-primary/5 rounded-xl px-3 py-2.5 border border-primary/10">
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-body text-foreground font-medium">{a.title}</p>
+                      {a.time && <p className="text-xs font-body text-muted-foreground">{a.time}{a.location ? ` · ${a.location}` : ""}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {todaysAppts.length === 0 && (
+            <div className="bg-muted/30 rounded-xl px-4 py-3 text-center">
+              <p className="text-sm font-body text-muted-foreground">No appointments today — enjoy your free time 🌿</p>
+            </div>
+          )}
+          {upcomingAppts.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Coming Up</p>
+              <div className="space-y-1.5">
+                {upcomingAppts.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted/30">
+                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-body text-foreground">{a.title}</p>
+                      <p className="text-[10px] font-body text-muted-foreground">{new Date(a.date + "T00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}{a.time ? ` · ${a.time}` : ""}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(meals.length > 0 || exercises.length > 0) && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-body font-medium mb-2">Logged Today</p>
+              <div className="flex flex-wrap gap-2">
+                {meals.map(m => (
+                  <span key={m.id} className="inline-flex items-center gap-1 text-xs font-body bg-amber-50 text-amber-700 rounded-full px-2.5 py-1 border border-amber-200/50">
+                    <Utensils className="h-3 w-3" /> {m.mealType}
+                  </span>
+                ))}
+                {exercises.map(e => (
+                  <span key={e.id} className="inline-flex items-center gap-1 text-xs font-body bg-green-50 text-green-700 rounded-full px-2.5 py-1 border border-green-200/50">
+                    <Dumbbell className="h-3 w-3" /> {e.exerciseType}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NanoBananaWidget({ userId }: { userId: number }) {
+  const [content, setContent] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/ai/nano-banana", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      setContent(data.content || "You're literally unstoppable 🍌");
+    } catch {
+      setContent("Keep going, champion 🍌");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  useEffect(() => { generate(); }, []);
+
+  return (
+    <button
+      onClick={generate}
+      disabled={generating}
+      className="group relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl p-4 text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 w-full overflow-hidden"
+    >
+      <div className="absolute top-2 right-3 text-lg opacity-30 group-hover:opacity-50 transition-opacity">🍌</div>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
+          {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-amber-600/70 font-body font-medium mb-0.5">Nano Banana</p>
+          {generating ? (
+            <div className="h-4 bg-amber-100 rounded-full w-3/4 animate-pulse" />
+          ) : (
+            <p className="text-sm font-heading text-foreground leading-snug">{content}</p>
+          )}
+        </div>
+        <RefreshCw className={`h-4 w-4 text-amber-400 flex-shrink-0 ${generating ? "animate-spin" : "group-hover:text-amber-600"} transition-colors`} />
+      </div>
+    </button>
+  );
 }
 
 function MotivationalWallWidget({ userId }: { userId: number }) {
@@ -1535,6 +1701,7 @@ export default function SimpleDashboard() {
   const { toast } = useToast();
   const [activeWidgets, setActiveWidgets] = useState<string[]>(loadWidgets());
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const [daySummaryOpen, setDaySummaryOpen] = useState(false);
   const dailyBrief = useDailyBrief(user?.id ?? 0);
 
   const handleWidgetChange = (ids: string[]) => {
@@ -1617,17 +1784,25 @@ export default function SimpleDashboard() {
         </div>
       </div>
 
-      {/* Today's Vibe — tight inline */}
+      {/* Today's Vibe — tap to see day summary */}
       {isActive("dailyBrief") && (
-        <button onClick={dailyBrief.refresh} disabled={dailyBrief.isPending} className="w-full mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/8 hover:bg-accent/15 transition-colors text-left">
-          {dailyBrief.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin flex-shrink-0" /> : <Sparkles className="h-3.5 w-3.5 text-accent flex-shrink-0" />}
-          {dailyBrief.isLoading ? (
-            <div className="h-4 bg-accent/10 rounded-full w-2/3 animate-pulse" />
-          ) : (
-            <span className="text-sm font-body text-foreground/80 truncate">{dailyBrief.brief}</span>
-          )}
-        </button>
+        <div className="mb-4 flex items-center gap-2">
+          <button onClick={() => setDaySummaryOpen(true)} className="flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white border border-border hover:shadow-md hover:-translate-y-0.5 transition-all text-left group">
+            <Sparkles className="h-4 w-4 text-accent flex-shrink-0" />
+            {dailyBrief.isLoading ? (
+              <div className="h-4 bg-accent/10 rounded-full w-2/3 animate-pulse" />
+            ) : (
+              <span className="text-sm font-body text-foreground leading-snug flex-1">{dailyBrief.brief}</span>
+            )}
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary flex-shrink-0 transition-colors" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); dailyBrief.refresh(); }} disabled={dailyBrief.isPending}
+            className="w-9 h-9 rounded-xl bg-accent/10 hover:bg-accent/20 flex items-center justify-center flex-shrink-0 transition-colors">
+            {dailyBrief.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-accent" />}
+          </button>
+        </div>
       )}
+      <DaySummaryDialog userId={user.id} open={daySummaryOpen} onOpenChange={setDaySummaryOpen} />
 
       {/* Quick Log + Today's Wellness (always visible) */}
       <TodayWellnessWidget userId={user.id} />
@@ -1661,6 +1836,11 @@ export default function SimpleDashboard() {
           <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
         </div>
       )}
+
+      {/* Nano Banana */}
+      <div className="mb-4">
+        <NanoBananaWidget userId={user.id} />
+      </div>
 
       {/* Worth Fighting For */}
       {isActive("motivationalWall") && (
