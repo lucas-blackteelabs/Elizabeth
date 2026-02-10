@@ -446,7 +446,9 @@ export async function getMealIdeas(userContext: string = "", dietaryPreferences:
     ];
 
     let mealTypeInstruction: string;
-    if (mealTypes === "breakfast") {
+    if (mealTypes === "starter") {
+      mealTypeInstruction = "Generate exactly 4 meals: 1 breakfast, 1 lunch, 1 snack, and 1 dinner. One of each type, no more.";
+    } else if (mealTypes === "breakfast") {
       mealTypeInstruction = "Generate exactly 4 BREAKFAST recipes (morning meals, smoothies, bowls).";
     } else if (mealTypes === "lunch") {
       mealTypeInstruction = "Generate exactly 4 LUNCH recipes (salads, bowls, soups, wraps).";

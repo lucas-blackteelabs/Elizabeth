@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -125,6 +125,7 @@ export default function Nutrition() {
   const [dismissedNames, setDismissedNames] = useState<string[]>(loadDismissed);
   const [dismissingCard, setDismissingCard] = useState<string | null>(null);
   const [activeMealFilter, setActiveMealFilter] = useState<string>("all");
+  const didAutoGenerate = useRef(false);
 
   const isMealShortlisted = (m: MealCard) =>
     shortlist.some((s) => s.name === m.name);
@@ -151,6 +152,34 @@ export default function Nutrition() {
       setDismissingCard(null);
     }, 250);
   };
+
+  const generateStarterMeals = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai/meal-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user?.id, excludeNames: dismissedNames.join(", "), mealTypes: "starter" }),
+      });
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+      setMeals(data.meals || []);
+      if (data.shoppingList) setShoppingList(data.shoppingList);
+      setHasGenerated(true);
+    } catch {
+      // Silent fail on auto-generate, user can still click to generate
+      setHasGenerated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!didAutoGenerate.current && !hasGenerated && meals.length === 0) {
+      didAutoGenerate.current = true;
+      generateStarterMeals();
+    }
+  }, []);
 
   const generateMeals = async (append = false, mealTypes: string = "all") => {
     if (append) {
@@ -270,14 +299,13 @@ export default function Nutrition() {
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><Heart className="h-5 w-5 text-emerald-500" /></div>
                 </div>
                 <p className="text-sm text-muted-foreground font-body leading-relaxed max-w-md mx-auto mb-6">
-                  Nourishing your body is one of the most powerful things you can do.
-                  Let us create personalised, cancer-fighting recipes with full ingredients, instructions, and shopping lists.
+                  Personalised cancer-fighting recipes — breakfast, lunch, snack, and dinner — tailored to your healing journey.
                 </p>
                 <Button
-                  onClick={() => generateMeals()}
+                  onClick={() => generateStarterMeals()}
                   className="bg-primary text-white hover:bg-primary/90 font-body font-medium gap-2 px-6 rounded-xl"
                 >
-                  <Sparkles className="h-4 w-4" /> Generate Meal Ideas
+                  <Sparkles className="h-4 w-4" /> Generate Meals
                 </Button>
               </CardContent>
             </Card>
