@@ -791,7 +791,7 @@ function getImageMimeType(filePath: string): string {
   return mimeMap[ext] || "image/jpeg";
 }
 
-export async function generateNanoBananaImage(userImagePaths: string[] = [], textDescriptions: string[] = []): Promise<{ imagePath: string; caption: string }> {
+export async function generateNanoBananaImage(userImagePaths: string[] = [], textDescriptions: string[] = [], creativity: number = 0.3): Promise<{ imagePath: string; caption: string }> {
   const outputDir = path.join(process.cwd(), "client", "public", "nano-banana");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -822,13 +822,31 @@ export async function generateNanoBananaImage(userImagePaths: string[] = [], tex
     ? `\n\nThe user also wrote these personal notes about what they're fighting for:\n${textDescriptions.join("\n")}`
     : "";
 
+  const clampedCreativity = Math.max(0, Math.min(1, creativity));
+
+  let styleGuide: string;
+  let captionTone: string;
+  if (clampedCreativity < 0.25) {
+    styleGuide = `Create a gentle, faithful enhancement of the user's personal photos. Stay very close to the original subjects and setting. Use soft, warm lighting and a clean photographic style. Keep it realistic, heartfelt, and grounded — like a beautifully edited version of a real moment.`;
+    captionTone = `Be warm, sincere, and heartfelt. Keep it grounded and real.`;
+  } else if (clampedCreativity < 0.5) {
+    styleGuide = `Create a beautiful, warm, uplifting image inspired by what you see in their personal photos. Make it feel personal, loving, and joyful — like a visual hug. The style should be whimsical and lightly artistic but still recognisable as the people and things in the photos.`;
+    captionTone = `Be warm and playful with a touch of humour.`;
+  } else if (clampedCreativity < 0.75) {
+    styleGuide = `Create an imaginative, playful image that remixes and mashes up elements from the user's photos in creative ways. Think whimsical illustration meets photo collage — blend the subjects together in fun, unexpected compositions. Use vibrant colours, dreamy textures, and a sense of magic and wonder.`;
+    captionTone = `Be playful, cheeky, and fun. Use Australian slang if it fits.`;
+  } else {
+    styleGuide = `Go wild! Create a totally bonkers, joyful, over-the-top mash-up of the user's photos. Smash all the subjects together into one chaotic, colourful, surreal celebration. Think pop art meets fever dream meets pure love. Crazy compositions, wild colour palettes, unexpected combinations — the more outrageous and fun the better. Make it a visual party that screams "LIFE IS WORTH LIVING!"`;
+    captionTone = `Be bold, badass, and absolutely unhinged with joy. Maximum hype energy. Australian slang encouraged.`;
+  }
+
   const imageGenPrompt = `Use the selection of images I have provided you to generate a motivational image for a user of an app called Elizabeth. The purpose of the image I want you to create is to use these "Worth Fighting For" images (which have been uploaded by the user to remind them why they are fighting so hard to beat cancer) to create a fun and playful way to remind them they have so much to live for and to keep going.${notesContext}
 
-Create a beautiful, warm, uplifting image inspired by what you see in their personal photos. Make it feel personal, loving, and joyful — like a visual hug. The style should be whimsical and artistic. DO NOT include any text or words in the generated image.`;
+${styleGuide} DO NOT include any text or words in the generated image.`;
 
   const captionPrompt = `Look at these personal "Worth Fighting For" photos from a cancer patient. They uploaded these to remind themselves why they're fighting.${notesContext}
 
-Generate ONE short punchy motivational caption (max 12 words) inspired by what you see in their photos. Reference specific things you notice — their family, pets, places, moments. Be warm, playful, or badass. Australian English. Include one emoji. Output ONLY the caption text.`;
+Generate ONE short punchy motivational caption (6-12 words, NEVER fewer than 5 words) inspired by what you see in their photos. Reference specific things you notice — their family, pets, places, moments. ${captionTone} Australian English. Include one emoji. Output ONLY the caption text, nothing else.`;
 
   const imageModels = ["gemini-2.5-flash-image", "nano-banana-pro-preview"];
   for (const model of imageModels) {

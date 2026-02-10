@@ -6,6 +6,7 @@ import {
   ImagePlus, Play, Calendar, RefreshCw, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -1462,6 +1463,7 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
   const [nanoBananaImage, setNanoBananaImage] = useState<string | null>("/nano-banana/default-1.png");
   const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>("You've got this, warrior 🍌");
   const [generating, setGenerating] = useState(false);
+  const [creativity, setCreativity] = useState(0.3);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -1476,13 +1478,16 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
 
   const mediaItems = items.filter(i => i.type === "image" || i.type === "video");
 
+  const creativityLabel = creativity < 0.25 ? "Gentle" : creativity < 0.5 ? "Warm" : creativity < 0.75 ? "Playful" : "Bananas!";
+  const creativityEmoji = creativity < 0.25 ? "🤍" : creativity < 0.5 ? "💛" : creativity < 0.75 ? "🎨" : "🍌";
+
   const generateNanoBanana = async () => {
     setGenerating(true);
     try {
       const res = await fetch("/api/ai/nano-banana", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, creativity }),
       });
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
@@ -1676,6 +1681,25 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
                   Nano 🍌
                 </button>
               )}
+            </div>
+
+            <div className="bg-gradient-to-r from-amber-50/80 to-yellow-50/60 rounded-xl p-3 border border-amber-200/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-amber-700/70 font-body font-medium">Creativity</span>
+                <span className="text-xs font-body font-semibold text-amber-700">{creativityEmoji} {creativityLabel}</span>
+              </div>
+              <Slider
+                value={[creativity]}
+                onValueChange={(v) => setCreativity(v[0])}
+                min={0}
+                max={1}
+                step={0.01}
+                className="w-full [&_[data-radix-slider-track]]:bg-amber-200/50 [&_[data-radix-slider-range]]:bg-gradient-to-r [&_[data-radix-slider-range]]:from-amber-400 [&_[data-radix-slider-range]]:to-yellow-400 [&_[data-radix-slider-thumb]]:border-amber-400 [&_[data-radix-slider-thumb]]:shadow-md"
+              />
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[9px] font-body text-amber-600/50">Conservative</span>
+                <span className="text-[9px] font-body text-amber-600/50">Go bananas</span>
+              </div>
             </div>
 
             <div className="flex gap-2">

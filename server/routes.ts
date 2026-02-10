@@ -1198,8 +1198,9 @@ HARD RULES:
         })
         .filter(Boolean) as string[];
 
+      const creativity = typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
       const { generateNanoBananaImage } = await import("./openai");
-      const result = await generateNanoBananaImage(imagePaths, textItems);
+      const result = await generateNanoBananaImage(imagePaths, textItems, creativity);
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);
