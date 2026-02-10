@@ -1294,37 +1294,60 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: '
 `;
 
       const { getHealthAdvice } = await import("./openai");
-      const briefPrompt = `Write a SHORT morning one-liner (under 12 words) for this cancer patient. Like a punchy text message from a best mate.
 
-Examples of the RIGHT length:
-- "Your tumours are basically running scared at this point"
-- "56 sessions deep — absolute weapon 💪"
-- "Hey, you're allowed to just vibe today"
-- "2 down, 2 to go — John Wick energy"
-- "Your immune system called, it says you're welcome"
+      const formatTypes = [
+        "a famous quote (with attribution) that resonates with resilience, healing, or courage",
+        "a short poem (2-4 lines) about strength, hope, or nature's resilience",
+        "a haiku about healing, perseverance, or the beauty of today",
+        "a song lyric (with song title and artist) that speaks to fighting spirit or hope",
+        "a punchy motivational one-liner personalised to their treatment journey",
+        "a line from a beloved book or film about courage, survival, or not giving up",
+        "a gentle, wise proverb or saying about endurance or inner strength",
+        "a brief poetic reflection (2-3 lines) on what it means to keep going",
+      ];
+      const todayFormat = formatTypes[Math.floor(Math.random() * formatTypes.length)];
 
-HARD RULES:
-- MAX 12 words. Shorter is better. Never a paragraph.
-- One sentence only. No second sentence. No explanation.
-- Sometimes funny, sometimes warm, sometimes badass
-- Reference their real data when it fits naturally
-- Max 1 emoji or none. Australian English.
-- Output ONLY the line, nothing else`;
+      const briefPrompt = `Write ${todayFormat} for this cancer patient. This appears at the top of their daily dashboard.
+
+STYLE EXAMPLES (vary the format each time):
+- "Though my soul may set in darkness, it will rise in perfect light; I have loved the stars too fondly to be fearful of the night." — Sarah Williams
+- 🎵 "I'm still standing, better than I ever did" — Elton John
+- petals fall softly / but the roots hold firm below / spring will come again
+- "Courage doesn't always roar. Sometimes courage is the quiet voice at the end of the day saying, 'I will try again tomorrow.'" — Mary Anne Radmacher
+- "After all this time?" "Always." — J.K. Rowling, Harry Potter
+- 56 sessions deep and your immune system is putting on a masterclass 💪
+- The wound is the place where the Light enters you. — Rumi
+- 🎵 "You gotta know that in the end, it's gonna be alright" — Weezer, Island in the Sun
+
+RULES:
+- Keep it under 40 words. Punchy but meaningful.
+- If it's a quote, include the author. If a song, include artist and song title.
+- Vary wildly between formats — never repeat the same style twice in a row.
+- Sometimes reference their real treatment data when it fits naturally.
+- Warm, genuine, never preachy. Occasional humour welcome.
+- Australian English. Max 1 emoji or none.
+- Output ONLY the quote/poem/lyric, nothing else. No preamble.`;
 
       let brief = await getHealthAdvice(briefPrompt, userContext);
       if (brief.includes("trouble connecting") || brief.includes("try again")) {
         const fallbacks = [
-          "Your body is doing incredible things right now 💪",
-          "Two tumours down, legend status unlocked",
-          "Today's a good day to be alive 🌿",
-          "Your immune system woke up and chose violence",
-          "Hey warrior, the hard part? You already did it",
-          "Scans shrinking, vibes thriving ✨",
+          "\"It is not the mountain we conquer, but ourselves.\" — Edmund Hillary",
+          "🎵 \"I'm still standing, better than I ever did\" — Elton John",
+          "petals fall softly / but the roots hold firm below / spring will come again",
+          "\"Courage doesn't always roar. Sometimes it's the quiet voice saying, 'I will try again tomorrow.'\" — Mary Anne Radmacher",
+          "\"The wound is the place where the Light enters you.\" — Rumi",
+          "🎵 \"Here comes the sun, and I say it's all right\" — The Beatles",
+          "\"You are braver than you believe, stronger than you seem, and smarter than you think.\" — A.A. Milne",
+          "storm clouds may gather / but you've weathered worse before / sunshine knows your name",
+          "\"She stood in the storm, and when the wind did not blow her way, she adjusted her sails.\" — Elizabeth Edwards",
+          "🎵 \"Ain't no mountain high enough\" — Marvin Gaye & Tammi Terrell",
+          "\"In the middle of difficulty lies opportunity.\" — Albert Einstein",
+          "the oak fought the wind / the willow simply bent low / both survived the storm",
         ];
         brief = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       }
-      brief = brief.replace(/^["']|["']$/g, "").split(/\.\s|\n/)[0].trim();
-      if (brief.length > 120) brief = brief.substring(0, 117) + "...";
+      brief = brief.replace(/^["'](.*)["']$/s, "$1").trim();
+      if (brief.length > 250) brief = brief.substring(0, 247) + "...";
       return res.json({ content: brief, generatedAt: new Date().toISOString() });
     } catch (error) {
       console.error("Error generating daily brief:", error);

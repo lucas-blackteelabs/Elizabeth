@@ -2354,19 +2354,28 @@ export default function SimpleDashboard() {
 
       {/* Today's Vibe — tap to see day summary */}
       {isActive("dailyBrief") && (
-        <div className="mb-4 flex items-center gap-2">
-          <button onClick={() => setDaySummaryOpen(true)} className="flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white border border-border hover:shadow-md hover:-translate-y-0.5 transition-all text-left group">
-            <Sparkles className="h-4 w-4 text-accent flex-shrink-0" />
-            {dailyBrief.isLoading ? (
-              <div className="h-4 bg-accent/10 rounded-full w-2/3 animate-pulse" />
-            ) : (
-              <span className="text-sm font-body text-foreground leading-snug flex-1">{dailyBrief.brief}</span>
-            )}
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary flex-shrink-0 transition-colors" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); dailyBrief.refresh(); }} disabled={dailyBrief.isPending}
-            className="w-9 h-9 rounded-xl bg-accent/10 hover:bg-accent/20 flex items-center justify-center flex-shrink-0 transition-colors">
-            {dailyBrief.isPending ? <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-accent" />}
+        <div className="mb-4">
+          <button onClick={() => setDaySummaryOpen(true)} className="w-full px-4 py-3 rounded-2xl bg-white border border-border hover:shadow-md hover:-translate-y-0.5 transition-all text-left group">
+            <div className="flex items-start gap-2.5">
+              <Sparkles className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                {dailyBrief.isLoading ? (
+                  <div className="space-y-1.5">
+                    <div className="h-3.5 bg-accent/10 rounded-full w-4/5 animate-pulse" />
+                    <div className="h-3.5 bg-accent/10 rounded-full w-3/5 animate-pulse" />
+                  </div>
+                ) : (
+                  <p className="text-sm font-body text-foreground leading-relaxed whitespace-pre-line">{dailyBrief.brief}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                <span onClick={(e) => { e.stopPropagation(); dailyBrief.refresh(); }}
+                  className="w-7 h-7 rounded-lg bg-accent/10 hover:bg-accent/20 flex items-center justify-center transition-colors cursor-pointer">
+                  {dailyBrief.isPending ? <Loader2 className="h-3 w-3 text-accent animate-spin" /> : <RefreshCw className="h-3 w-3 text-accent" />}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+              </div>
+            </div>
           </button>
         </div>
       )}
