@@ -27,6 +27,11 @@ import {
   type SurvivorTalkRsvp, type InsertSurvivorTalkRsvp,
   sleepEntries,
   type SleepEntry, type InsertSleepEntry,
+  communityGroups, communityGroupMembers, communityGroupPosts, communityGroupPostReplies,
+  type CommunityGroup, type InsertCommunityGroup,
+  type CommunityGroupMember, type InsertCommunityGroupMember,
+  type CommunityGroupPost, type InsertCommunityGroupPost,
+  type CommunityGroupPostReply, type InsertCommunityGroupPostReply,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
@@ -141,6 +146,24 @@ export interface IStorage {
   createSleepEntry(data: InsertSleepEntry): Promise<SleepEntry>;
   updateSleepEntry(id: number, data: Partial<SleepEntry>): Promise<SleepEntry>;
   deleteSleepEntry(id: number): Promise<void>;
+
+  listCommunityGroups(): Promise<CommunityGroup[]>;
+  getCommunityGroup(id: number): Promise<CommunityGroup | undefined>;
+  createCommunityGroup(data: InsertCommunityGroup): Promise<CommunityGroup>;
+
+  listGroupMembers(groupId: number): Promise<CommunityGroupMember[]>;
+  listUserGroupMemberships(userId: number): Promise<CommunityGroupMember[]>;
+  joinGroup(data: InsertCommunityGroupMember): Promise<CommunityGroupMember>;
+  leaveGroup(groupId: number, userId: number): Promise<void>;
+
+  listGroupPosts(groupId: number): Promise<CommunityGroupPost[]>;
+  createGroupPost(data: InsertCommunityGroupPost): Promise<CommunityGroupPost>;
+  updateGroupPost(id: number, data: Partial<CommunityGroupPost>): Promise<CommunityGroupPost>;
+  deleteGroupPost(id: number): Promise<void>;
+
+  listGroupPostReplies(postId: number): Promise<CommunityGroupPostReply[]>;
+  createGroupPostReply(data: InsertCommunityGroupPostReply): Promise<CommunityGroupPostReply>;
+  deleteGroupPostReply(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -619,6 +642,95 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSleepEntry(id: number): Promise<void> {
     await db.delete(sleepEntries).where(eq(sleepEntries.id, id));
+  }
+
+  async listCommunityGroups(): Promise<CommunityGroup[]> {
+    return db.select().from(communityGroups).orderBy(communityGroups.name);
+  }
+
+  async getCommunityGroup(id: number): Promise<CommunityGroup | undefined> {
+    const [group] = await db.select().from(communityGroups).where(eq(communityGroups.id, id));
+    return group;
+  }
+
+  async createCommunityGroup(data: InsertCommunityGroup): Promise<CommunityGroup> {
+    const [group] = await db.insert(communityGroups).values(data).returning();
+    return group;
+  }
+
+  async listGroupMembers(groupId: number): Promise<CommunityGroupMember[]> {
+    return db.select().from(communityGroupMembers).where(eq(communityGroupMembers.groupId, groupId));
+  }
+
+  async listUserGroupMemberships(userId: number): Promise<CommunityGroupMember[]> {
+    return db.select().from(communityGroupMembers).where(eq(communityGroupMembers.userId, userId));
+  }
+
+  async joinGroup(data: InsertCommunityGroupMember): Promise<CommunityGroupMember> {
+    const existing = await db.select().from(communityGroupMembers)
+      .where(and(eq(communityGroupMembers.groupId, data.groupId), eq(communityGroupMembers.userId, data.userId)));
+    if (existing.length > 0) return existing[0];
+    const [member] = await db.insert(communityGroupMembers).values(data).returning();
+    const members = await this.listGroupMembers(data.groupId);
+    await db.update(communityGroups).set({ memberCount: members.length }).where(eq(communityGroups.id, data.groupId));
+    return member;
+  }
+
+  async leaveGroup(groupId: number, userId: number): Promise<void> {
+    await db.delete(communityGroupMembers)
+      .where(and(eq(communityGroupMembers.groupId, groupId), eq(communityGroupMembers.userId, userId)));
+    const members = await this.listGroupMembers(groupId);
+    await db.update(communityGroups).set({ memberCount: members.length }).where(eq(communityGroups.id, groupId));
+  }
+
+  async listGroupPosts(groupId: number): Promise<CommunityGroupPost[]> {
+    return db.select().from(communityGroupPosts)
+      .where(eq(communityGroupPosts.groupId, groupId))
+      .orderBy(communityGroupPosts.createdAt);
+  }
+
+  async createGroupPost(data: InsertCommunityGroupPost): Promise<CommunityGroupPost> {
+    const [post] = await db.insert(communityGroupPosts).values(data).returning();
+    const posts = await this.listGroupPosts(data.groupId);
+    await db.update(communityGroups).set({ postCount: posts.length }).where(eq(communityGroups.id, data.groupId));
+    return post;
+  }
+
+  async updateGroupPost(id: number, data: Partial<CommunityGroupPost>): Promise<CommunityGroupPost> {
+    const [post] = await db.update(communityGroupPosts).set(data).where(eq(communityGroupPosts.id, id)).returning();
+    return post;
+  }
+
+  async deleteGroupPost(id: number): Promise<void> {
+    await db.delete(communityGroupPostReplies).where(eq(communityGroupPostReplies.postId, id));
+    const [post] = await db.select().from(communityGroupPosts).where(eq(communityGroupPosts.id, id));
+    await db.delete(communityGroupPosts).where(eq(communityGroupPosts.id, id));
+    if (post) {
+      const posts = await this.listGroupPosts(post.groupId);
+      await db.update(communityGroups).set({ postCount: posts.length }).where(eq(communityGroups.id, post.groupId));
+    }
+  }
+
+  async listGroupPostReplies(postId: number): Promise<CommunityGroupPostReply[]> {
+    return db.select().from(communityGroupPostReplies)
+      .where(eq(communityGroupPostReplies.postId, postId))
+      .orderBy(communityGroupPostReplies.createdAt);
+  }
+
+  async createGroupPostReply(data: InsertCommunityGroupPostReply): Promise<CommunityGroupPostReply> {
+    const [reply] = await db.insert(communityGroupPostReplies).values(data).returning();
+    const replies = await this.listGroupPostReplies(data.postId);
+    await db.update(communityGroupPosts).set({ repliesCount: replies.length }).where(eq(communityGroupPosts.id, data.postId));
+    return reply;
+  }
+
+  async deleteGroupPostReply(id: number): Promise<void> {
+    const [reply] = await db.select().from(communityGroupPostReplies).where(eq(communityGroupPostReplies.id, id));
+    await db.delete(communityGroupPostReplies).where(eq(communityGroupPostReplies.id, id));
+    if (reply) {
+      const replies = await this.listGroupPostReplies(reply.postId);
+      await db.update(communityGroupPosts).set({ repliesCount: replies.length }).where(eq(communityGroupPosts.id, reply.postId));
+    }
   }
 }
 

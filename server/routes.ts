@@ -336,6 +336,24 @@ async function seedDefaultAppointments(userId: number) {
   }
 }
 
+async function seedCommunityGroups() {
+  const existing = await storage.listCommunityGroups();
+  if (existing.length > 0) return;
+
+  const groups = [
+    { name: "Immunotherapy Warriors", description: "For those on immunotherapy — share experiences with Keytruda, Opdivo, Yervoy and other treatments. Side effects, tips, wins and everything in between.", icon: "shield", category: "treatment", coverColor: "#6366f1" },
+    { name: "Nutrition & Healing", description: "Anti-inflammatory recipes, supplements, juicing, fasting — share what's working for you and learn from others on the same path.", icon: "apple", category: "nutrition", coverColor: "#22c55e" },
+    { name: "Melanoma Support", description: "A safe space specifically for melanoma patients and survivors. Whether you're newly diagnosed or years into your journey.", icon: "sun", category: "cancer-specific", coverColor: "#f59e0b" },
+    { name: "Mindfulness & Mental Health", description: "Meditation, breathwork, therapy, journaling — tools for the emotional side of cancer. Because healing isn't just physical.", icon: "brain", category: "wellness", coverColor: "#8b5cf6" },
+    { name: "Caregivers Corner", description: "For the partners, family and friends walking alongside someone with cancer. Your journey matters too.", icon: "heart", category: "support", coverColor: "#ec4899" },
+    { name: "Exercise & Movement", description: "From gentle walks to gym sessions — share your approach to staying active during and after treatment.", icon: "dumbbell", category: "wellness", coverColor: "#14b8a6" },
+  ];
+
+  for (const g of groups) {
+    await storage.createCommunityGroup(g);
+  }
+}
+
 async function seedSurvivorData() {
   const existing = await storage.listSurvivors();
   if (existing.length > 0) return;
@@ -1915,7 +1933,142 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     }
   });
 
+  app.get("/api/community/groups", async (_req, res) => {
+    try {
+      const groups = await storage.listCommunityGroups();
+      return res.json(groups);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch groups" });
+    }
+  });
+
+  app.get("/api/community/groups/:id", async (req, res) => {
+    try {
+      const group = await storage.getCommunityGroup(parseInt(req.params.id));
+      if (!group) return res.status(404).json({ error: "Group not found" });
+      return res.json(group);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch group" });
+    }
+  });
+
+  app.post("/api/community/groups", async (req, res) => {
+    try {
+      const group = await storage.createCommunityGroup(req.body);
+      return res.json(group);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create group" });
+    }
+  });
+
+  app.get("/api/community/groups/:id/members", async (req, res) => {
+    try {
+      const members = await storage.listGroupMembers(parseInt(req.params.id));
+      return res.json(members);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch members" });
+    }
+  });
+
+  app.get("/api/community/group-memberships", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string) || 1;
+      const memberships = await storage.listUserGroupMemberships(userId);
+      return res.json(memberships);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch memberships" });
+    }
+  });
+
+  app.post("/api/community/groups/:id/join", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const userId = req.body.userId || 1;
+      const member = await storage.joinGroup({ groupId, userId });
+      return res.json(member);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to join group" });
+    }
+  });
+
+  app.post("/api/community/groups/:id/leave", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const userId = req.body.userId || 1;
+      await storage.leaveGroup(groupId, userId);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to leave group" });
+    }
+  });
+
+  app.get("/api/community/groups/:id/posts", async (req, res) => {
+    try {
+      const posts = await storage.listGroupPosts(parseInt(req.params.id));
+      return res.json(posts);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch posts" });
+    }
+  });
+
+  app.post("/api/community/groups/:id/posts", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const post = await storage.createGroupPost({ ...req.body, groupId });
+      return res.json(post);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  app.patch("/api/community/group-posts/:id", async (req, res) => {
+    try {
+      const post = await storage.updateGroupPost(parseInt(req.params.id), req.body);
+      return res.json(post);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update post" });
+    }
+  });
+
+  app.delete("/api/community/group-posts/:id", async (req, res) => {
+    try {
+      await storage.deleteGroupPost(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete post" });
+    }
+  });
+
+  app.get("/api/community/group-posts/:id/replies", async (req, res) => {
+    try {
+      const replies = await storage.listGroupPostReplies(parseInt(req.params.id));
+      return res.json(replies);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch replies" });
+    }
+  });
+
+  app.post("/api/community/group-posts/:id/replies", async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const reply = await storage.createGroupPostReply({ ...req.body, postId });
+      return res.json(reply);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create reply" });
+    }
+  });
+
+  app.delete("/api/community/group-post-replies/:id", async (req, res) => {
+    try {
+      await storage.deleteGroupPostReply(parseInt(req.params.id));
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete reply" });
+    }
+  });
+
   await seedSurvivorData();
+  await seedCommunityGroups();
 
   const httpServer = createServer(app);
   return httpServer;

@@ -605,3 +605,82 @@ export const insertSleepEntrySchema = createInsertSchema(sleepEntries).pick({
 
 export type SleepEntry = typeof sleepEntries.$inferSelect;
 export type InsertSleepEntry = z.infer<typeof insertSleepEntrySchema>;
+
+export const communityGroups = pgTable("community_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull().default("users"),
+  category: text("category").notNull().default("general"),
+  coverColor: text("cover_color").notNull().default("#7A9B76"),
+  memberCount: integer("member_count").default(0),
+  postCount: integer("post_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityGroupSchema = createInsertSchema(communityGroups).pick({
+  name: true,
+  description: true,
+  icon: true,
+  category: true,
+  coverColor: true,
+});
+
+export type CommunityGroup = typeof communityGroups.$inferSelect;
+export type InsertCommunityGroup = z.infer<typeof insertCommunityGroupSchema>;
+
+export const communityGroupMembers = pgTable("community_group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export const insertCommunityGroupMemberSchema = createInsertSchema(communityGroupMembers).pick({
+  groupId: true,
+  userId: true,
+});
+
+export type CommunityGroupMember = typeof communityGroupMembers.$inferSelect;
+export type InsertCommunityGroupMember = z.infer<typeof insertCommunityGroupMemberSchema>;
+
+export const communityGroupPosts = pgTable("community_group_posts", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0),
+  repliesCount: integer("replies_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityGroupPostSchema = createInsertSchema(communityGroupPosts).pick({
+  groupId: true,
+  userId: true,
+  authorName: true,
+  content: true,
+});
+
+export type CommunityGroupPost = typeof communityGroupPosts.$inferSelect;
+export type InsertCommunityGroupPost = z.infer<typeof insertCommunityGroupPostSchema>;
+
+export const communityGroupPostReplies = pgTable("community_group_post_replies", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityGroupPostReplySchema = createInsertSchema(communityGroupPostReplies).pick({
+  postId: true,
+  userId: true,
+  authorName: true,
+  content: true,
+});
+
+export type CommunityGroupPostReply = typeof communityGroupPostReplies.$inferSelect;
+export type InsertCommunityGroupPostReply = z.infer<typeof insertCommunityGroupPostReplySchema>;
