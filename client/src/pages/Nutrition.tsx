@@ -83,6 +83,57 @@ interface ShoppingList {
   spices: string[];
 }
 
+const fallbackStarterMeals: MealCard[] = [
+  {
+    name: "Golden Turmeric Porridge",
+    mealType: "breakfast",
+    description: "A warming anti-inflammatory breakfast packed with turmeric, cinnamon, and topped with fresh berries and walnuts. Supports immune function and gut health.",
+    prepTime: "10 mins",
+    servings: "1",
+    ingredients: ["1/2 cup rolled oats", "1 cup oat milk", "1 tsp turmeric powder", "1/2 tsp cinnamon", "1 tbsp maple syrup", "1/4 cup blueberries", "2 tbsp walnuts", "1 tbsp chia seeds"],
+    instructions: ["Combine oats, oat milk, turmeric, and cinnamon in a saucepan.", "Cook on medium heat for 5 minutes, stirring occasionally.", "Pour into a bowl and drizzle with maple syrup.", "Top with blueberries, walnuts, and chia seeds."],
+    healingBenefits: "Turmeric is a powerful anti-inflammatory that supports immune recovery. Blueberries provide antioxidants, while walnuts offer omega-3 fatty acids essential for healing.",
+    tags: ["anti-inflammatory", "immune-boost", "gut-health", "omega-3"],
+    imageCategory: "breakfast-bowl",
+  },
+  {
+    name: "Lemon Herb Salmon Bowl",
+    mealType: "lunch",
+    description: "A vibrant nourishing bowl with baked salmon, quinoa, roasted vegetables, and a zesty lemon-tahini dressing. Rich in omega-3 and antioxidants.",
+    prepTime: "25 mins",
+    servings: "1",
+    ingredients: ["120g salmon fillet", "1/2 cup quinoa", "1 cup mixed greens", "1/2 avocado", "1/2 cup roasted sweet potato", "1/4 cup cherry tomatoes", "1 tbsp tahini", "1 tbsp lemon juice", "Fresh dill"],
+    instructions: ["Cook quinoa according to packet directions and set aside.", "Season salmon with lemon, salt, and pepper. Bake at 200°C for 12 minutes.", "Arrange greens, quinoa, sweet potato, and tomatoes in a bowl.", "Place salmon on top, add sliced avocado.", "Drizzle with tahini mixed with lemon juice. Garnish with dill."],
+    healingBenefits: "Salmon provides omega-3 fatty acids that reduce inflammation. Quinoa is a complete protein supporting tissue repair. Avocado offers healthy fats for nutrient absorption.",
+    tags: ["omega-3", "protein", "anti-inflammatory", "antioxidant"],
+    imageCategory: "fish",
+  },
+  {
+    name: "Beetroot Hummus & Veggie Sticks",
+    mealType: "snack",
+    description: "A colourful immune-boosting snack with homemade beetroot hummus and crunchy vegetable sticks. Perfect for an afternoon pick-me-up.",
+    prepTime: "10 mins",
+    servings: "1",
+    ingredients: ["1 small cooked beetroot", "1/2 can chickpeas (drained)", "1 tbsp tahini", "1 tbsp lemon juice", "1 clove garlic", "Carrot sticks", "Cucumber sticks", "Celery sticks"],
+    instructions: ["Blend beetroot, chickpeas, tahini, lemon juice, and garlic until smooth.", "Season with salt and pepper to taste.", "Serve in a small bowl alongside fresh veggie sticks."],
+    healingBenefits: "Beetroot supports liver detoxification and blood health. Chickpeas provide plant protein and fibre. Raw vegetables offer digestive enzymes and vitamins.",
+    tags: ["liver-support", "fibre", "antioxidant", "gut-health"],
+    imageCategory: "snack",
+  },
+  {
+    name: "Ginger Chicken & Greens Stir-Fry",
+    mealType: "dinner",
+    description: "A light, aromatic stir-fry with organic chicken, fresh ginger, garlic, and seasonal Asian greens served over brown rice. Gentle on the stomach.",
+    prepTime: "20 mins",
+    servings: "2",
+    ingredients: ["200g organic chicken breast (sliced)", "2 cups Asian greens (bok choy, broccolini)", "1 tbsp fresh ginger (grated)", "2 cloves garlic (minced)", "1 tbsp tamari", "1 tsp sesame oil", "1 cup brown rice (cooked)", "1 tbsp sesame seeds", "Fresh coriander"],
+    instructions: ["Cook brown rice according to packet directions.", "Heat sesame oil in a wok or large pan over high heat.", "Stir-fry chicken for 4-5 minutes until cooked through.", "Add ginger, garlic, and greens. Stir-fry for 2-3 minutes.", "Add tamari and toss to coat.", "Serve over brown rice, topped with sesame seeds and coriander."],
+    healingBenefits: "Ginger is a natural anti-nausea remedy and anti-inflammatory. Asian greens are rich in folate and vitamins A, C, K. Organic chicken provides lean protein for muscle recovery.",
+    tags: ["anti-inflammatory", "protein", "immune-boost"],
+    imageCategory: "chicken",
+  },
+];
+
 const SHORTLIST_KEY = "elizabeth-meal-shortlist";
 const DISMISSED_KEY = "elizabeth-meal-dismissed";
 
@@ -153,6 +204,12 @@ export default function Nutrition() {
     }, 250);
   };
 
+  const loadFallbackMeals = () => {
+    const available = fallbackStarterMeals.filter(m => !dismissedNames.includes(m.name));
+    setMeals(available);
+    setHasGenerated(true);
+  };
+
   const generateStarterMeals = async () => {
     setLoading(true);
     try {
@@ -163,12 +220,16 @@ export default function Nutrition() {
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
-      setMeals(data.meals || []);
-      if (data.shoppingList) setShoppingList(data.shoppingList);
-      setHasGenerated(true);
+      const aiMeals = data.meals || [];
+      if (aiMeals.length > 0) {
+        setMeals(aiMeals);
+        if (data.shoppingList) setShoppingList(data.shoppingList);
+        setHasGenerated(true);
+      } else {
+        loadFallbackMeals();
+      }
     } catch {
-      // Silent fail on auto-generate, user can still click to generate
-      setHasGenerated(false);
+      loadFallbackMeals();
     } finally {
       setLoading(false);
     }
@@ -177,6 +238,7 @@ export default function Nutrition() {
   useEffect(() => {
     if (!didAutoGenerate.current && !hasGenerated && meals.length === 0) {
       didAutoGenerate.current = true;
+      loadFallbackMeals();
       generateStarterMeals();
     }
   }, []);
