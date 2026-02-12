@@ -16,6 +16,7 @@ import DateNight from "@/pages/DateNight";
 import Resources from "@/pages/Resources";
 import TreatmentPlus from "@/pages/TreatmentPlus";
 import Community from "@/pages/Community";
+import AdminPanel from "@/pages/AdminPanel";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import { UserProvider, useUser } from "@/contexts/UserContext";
@@ -135,6 +136,11 @@ function AppRouter() {
       <Route path="/date-night">
         <Layout>
           <ProtectedRoute component={DateNight} />
+        </Layout>
+      </Route>
+      <Route path="/admin">
+        <Layout>
+          <ProtectedRoute component={AdminPanel} />
         </Layout>
       </Route>
       <Route path="/profile">

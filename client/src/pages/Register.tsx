@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { apiRequest } from '@/lib/queryClient';
 import { Heart } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -18,6 +19,8 @@ const formSchema = z.object({
   confirmPassword: z.string(),
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
+  phoneNumber: z.string().optional(),
+  address: z.string().optional(),
   cancerType: z.string().optional(),
   cancerStage: z.string().optional(),
   bio: z.string().optional(),
@@ -41,6 +44,8 @@ export default function Register() {
       confirmPassword: '',
       displayName: '',
       email: '',
+      phoneNumber: '',
+      address: '',
       cancerType: '',
       cancerStage: '',
       bio: '',
@@ -50,16 +55,20 @@ export default function Register() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const userData = {
         username: values.username,
         password: values.password,
         confirmPassword: values.confirmPassword,
         displayName: values.displayName,
         email: values.email,
+        phoneNumber: values.phoneNumber || null,
+        address: values.address || null,
+        timezone: tz || null,
         cancerType: values.cancerType || null,
         cancerStage: values.cancerStage || null,
         bio: values.bio || null,
-        diagnosis_date: null
+        diagnosis_date: null,
       };
       
       await apiRequest('/api/auth/register', {
@@ -92,10 +101,10 @@ export default function Register() {
   const inputClasses = "bg-muted/50 border-border text-foreground placeholder:text-muted-foreground font-body focus:border-primary/40";
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background py-8">
+    <div className="flex items-center justify-center min-h-screen bg-background py-8 px-4">
       <Card className="w-full max-w-lg bg-white border-border">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto bg-primary text-white p-3 rounded mb-2 w-fit">
+          <div className="mx-auto bg-primary text-white p-3 rounded-2xl mb-2 w-fit">
             <Heart className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-heading font-bold text-accent tracking-wide">Create an account</CardTitle>
@@ -148,6 +157,20 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground font-body">Phone Number</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+61 400 000 000" {...field} className={inputClasses} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}
@@ -177,6 +200,20 @@ export default function Register() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground font-body">Address</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Your address (for timezone and location-based features)" {...field} className={inputClasses + " min-h-[60px] resize-none"} rows={2} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <div className="space-y-4">
                 <h3 className="text-lg font-heading text-accent tracking-wide">Health Information (Optional)</h3>
@@ -225,7 +262,7 @@ export default function Register() {
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-primary text-white hover:bg-primary/90 font-heading tracking-wide rounded-2xl" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>

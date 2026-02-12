@@ -490,12 +490,33 @@ async function seedSurvivorData() {
   console.log("Seeded survivor profiles, availability slots, and upcoming talks");
 }
 
+async function seedLucasAdmin() {
+  const existing = await storage.getUserByUsername("Lucas");
+  if (existing) {
+    if (existing.role !== "admin") {
+      await storage.updateUser(existing.id, { role: "admin" } as any);
+    }
+    return;
+  }
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash("Cookie", salt);
+  await storage.createUser({
+    username: "Lucas",
+    password: hashedPassword,
+    displayName: "Lucas",
+    email: "lucas@elizabeth.app",
+    role: "admin",
+  } as any);
+  console.log("Seeded Lucas admin account");
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   app.use('/uploads', express.static(uploadDir));
   app.use('/nano-banana', express.static(path.join(process.cwd(), 'client', 'public', 'nano-banana')));
 
   await seedLizAccount();
+  await seedLucasAdmin();
 
   app.post("/api/users/:id/photo", authenticateToken, upload.single("photo"), async (req: AuthRequest, res) => {
     try {
@@ -510,6 +531,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading photo:", error);
       return res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
+
+  app.get("/api/admin/users", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser || requestingUser.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const allUsers = await storage.listAllUsers();
+      const safeUsers = allUsers.map(({ password, ...u }) => u);
+      return res.json(safeUsers);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser || requestingUser.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const id = parseInt(req.params.id, 10);
+      const { role } = req.body;
+      if (role && (role === "admin" || role === "user")) {
+        await storage.updateUser(id, { role } as any);
+      }
+      const updated = await storage.getUser(id);
+      if (!updated) return res.status(404).json({ error: "User not found" });
+      const { password, ...safeUser } = updated;
+      return res.json(safeUser);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/threads/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser || requestingUser.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const id = parseInt(req.params.id, 10);
+      await storage.deleteCommunityThread(id);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete thread" });
+    }
+  });
+
+  app.delete("/api/admin/replies/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser || requestingUser.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const id = parseInt(req.params.id, 10);
+      await storage.deleteCommunityReply(id);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete reply" });
+    }
+  });
+
+  app.delete("/api/admin/group-posts/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser || requestingUser.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const id = parseInt(req.params.id, 10);
+      await storage.deleteGroupPost(id);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete group post" });
     }
   });
 

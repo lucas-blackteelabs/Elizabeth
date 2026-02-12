@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   displayName: text("display_name").notNull(),
   email: text("email").notNull().unique(),
+  role: text("role").notNull().default("user"),
   cancerType: text("cancer_type"),
   cancerStage: text("cancer_stage"),
   bio: text("bio"),
@@ -23,6 +24,8 @@ export const users = pgTable("users", {
   nextScanDate: date("next_scan_date"),
   dietaryPreferences: text("dietary_preferences"),
   phoneNumber: text("phone_number"),
+  address: text("address"),
+  timezone: text("timezone"),
   profilePhoto: text("profile_photo"),
   nanoBananaImage: text("nano_banana_image"),
   nanoBananaCaption: text("nano_banana_caption"),
@@ -50,6 +53,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   nextScanDate: true,
   dietaryPreferences: true,
   phoneNumber: true,
+  address: true,
+  timezone: true,
   profilePhoto: true,
 });
 

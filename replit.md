@@ -20,10 +20,11 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Design Elements:** Soft rounded corners (0.75rem), gentle shadows, consistent theming across components.
 
 **Technical Implementations:**
-- **Authentication:** JWT-based persistent login with a 90-day session.
-- **PWA Support:** Configured for Progressive Web App installation with offline caching via a service worker.
+- **Authentication:** JWT-based persistent login with a 90-day session. Role-based access: "user" (default) and "admin" roles.
+- **Admin Panel:** Admin users (role=admin) can view all registered users (with email, phone, address, timezone), moderate community threads/replies/group posts. Lucas/Cookie is the seeded admin account.
+- **PWA Support:** Configured for Progressive Web App installation with offline caching via a service worker. App store ready manifest with categories and orientation.
 - **Dashboard:** Features a streamlined dashboard with core widgets (Scan Countdown, Treatment Journey, Tumour Response, Today's Vibe, Worth Fighting For), customizable via a widget picker.
-- **Medical Tracking:** Comprehensive system including AI-generated medical summaries, document management (scans, blood tests, pathology), visual tumour cards with SVG graphics and progress bars, and scan comparison tables.
+- **Medical Tracking:** Comprehensive system including AI-generated medical summaries, document management (scans, blood tests, pathology), visual tumour cards with SVG graphics and progress bars, and scan comparison tables. Users can manually add new scan entries and edit existing tumour data.
 - **Nutrition:** AI-generated personalized meal plans, structured meal cards with recipes, a "Discover" tab for new meal ideas, a "Saved" tab for shortlisted recipes, and an auto-generated shopping list.
 - **Treatment+:** Visual management of treatment programs (immunotherapy, complementary therapies), progress tracking, side effect logging, and AI-powered treatment suggestions.
 - **Community:** A Reddit-style discussion forum with thread creation, replies, categories, and live data synchronization. Community Groups feature (Facebook/LinkedIn-style) with browse, join/leave, group-specific feeds, posts and replies. Membership enforcement on posting/replying. 6 seeded groups.

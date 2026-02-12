@@ -9,11 +9,13 @@ import { z } from 'zod';
 const registerSchema = insertUserSchema.extend({
   password: z.string().min(1, "Password is required"),
   confirmPassword: z.string().min(1, "Confirm password is required"),
-  // Make sure optional fields are properly handled
   cancerType: z.string().nullable().optional(),
   cancerStage: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
-  diagnosis_date: z.string().nullable().optional()
+  diagnosis_date: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  timezone: z.string().nullable().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

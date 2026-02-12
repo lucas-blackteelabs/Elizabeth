@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, UserRound, Wine, BookOpen, Sparkles, Pill, Users } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, UserRound, Wine, BookOpen, Sparkles, Pill, Users, Shield } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,6 +25,10 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
     { href: "/date-night", label: "Date Night", icon: <Wine className="w-[18px] h-[18px]" /> },
     { href: "/ai-assistant", label: "AI Assistant", icon: <Bot className="w-[18px] h-[18px]" /> },
   ];
+
+  if (user?.role === "admin") {
+    sidebarLinks.push({ href: "/admin", label: "Admin Panel", icon: <Shield className="w-[18px] h-[18px]" /> });
+  }
 
   const sidebarClasses = cn(
     "w-64 h-full flex-shrink-0 z-30 transition-all duration-300",

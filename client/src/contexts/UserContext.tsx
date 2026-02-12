@@ -6,6 +6,7 @@ interface User {
   username: string;
   displayName: string;
   email: string;
+  role: string;
   cancerType: string | null;
   cancerStage: string | null;
   bio: string | null;
@@ -15,6 +16,9 @@ interface User {
   currentMedications: string | null;
   adverseEventHistory: string | null;
   dietaryPreferences: string | null;
+  phoneNumber: string | null;
+  address: string | null;
+  timezone: string | null;
   oncologist: string | null;
   goals: string | null;
   medicalNotes: string | null;

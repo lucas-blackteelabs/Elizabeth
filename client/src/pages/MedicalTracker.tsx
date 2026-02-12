@@ -89,7 +89,240 @@ function AISummaryCard({ userId }: { userId: number }) {
   );
 }
 
-function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanResult[] }) {
+function AddScanEntryDialog({ open, onClose, userId, existingLabels }: { open: boolean; onClose: () => void; userId: number; existingLabels: string[] }) {
+  const { toast } = useToast();
+  const [tumourLabel, setTumourLabel] = useState("");
+  const [customLabel, setCustomLabel] = useState("");
+  const [scanDate, setScanDate] = useState(new Date().toISOString().split("T")[0]);
+  const [scanLabel, setScanLabel] = useState("");
+  const [sizeX, setSizeX] = useState("");
+  const [sizeY, setSizeY] = useState("");
+  const [suvMax, setSuvMax] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const label = tumourLabel === "__custom__" ? customLabel : tumourLabel;
+      return apiRequest("/api/scan-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          tumourLabel: label,
+          scanDate,
+          scanLabel,
+          sizeX: parseFloat(sizeX) || 0,
+          sizeY: parseFloat(sizeY) || 0,
+          suvMax: suvMax && !isNaN(parseFloat(suvMax)) ? parseFloat(suvMax) : null,
+          notes: notes || null,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+      toast({ title: "Scan entry added" });
+      setTumourLabel(""); setCustomLabel(""); setScanLabel(""); setSizeX(""); setSizeY(""); setSuvMax(""); setNotes("");
+      onClose();
+    },
+  });
+
+  const resolvedLabel = tumourLabel === "__custom__" ? customLabel : tumourLabel;
+  const canSubmit = resolvedLabel && scanDate && scanLabel && sizeX && sizeY && !isNaN(parseFloat(sizeX)) && !isNaN(parseFloat(sizeY));
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-white border-border max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Add Scan Entry</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-body text-muted-foreground">Tumour</label>
+            <Select value={tumourLabel} onValueChange={setTumourLabel}>
+              <SelectTrigger className="font-body rounded-xl"><SelectValue placeholder="Select tumour..." /></SelectTrigger>
+              <SelectContent>
+                {existingLabels.map(l => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+                <SelectItem value="__custom__">+ New tumour label</SelectItem>
+              </SelectContent>
+            </Select>
+            {tumourLabel === "__custom__" && (
+              <Input value={customLabel} onChange={e => setCustomLabel(e.target.value)} placeholder="e.g. Tumour 5 (Lung)"
+                className="font-body rounded-xl mt-2" />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-body text-muted-foreground">Scan Date</label>
+              <Input type="date" value={scanDate} onChange={e => setScanDate(e.target.value)} className="font-body rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs font-body text-muted-foreground">Scan Label</label>
+              <Input value={scanLabel} onChange={e => setScanLabel(e.target.value)} placeholder="e.g. PET/CT May 2026"
+                className="font-body rounded-xl" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-body text-muted-foreground">Size X (mm)</label>
+              <Input type="number" step="0.1" value={sizeX} onChange={e => setSizeX(e.target.value)} placeholder="0"
+                className="font-body rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs font-body text-muted-foreground">Size Y (mm)</label>
+              <Input type="number" step="0.1" value={sizeY} onChange={e => setSizeY(e.target.value)} placeholder="0"
+                className="font-body rounded-xl" />
+            </div>
+            <div>
+              <label className="text-xs font-body text-muted-foreground">SUV Max</label>
+              <Input type="number" step="0.1" value={suvMax} onChange={e => setSuvMax(e.target.value)} placeholder="Optional"
+                className="font-body rounded-xl" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-body text-muted-foreground">Notes (optional)</label>
+            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes about this entry..."
+              className="font-body rounded-xl" />
+          </div>
+          <Button onClick={() => createMutation.mutate()} disabled={!canSubmit || createMutation.isPending}
+            className="w-full bg-primary text-white hover:bg-primary/90 font-body rounded-xl">
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+            Add Scan Entry
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditTumourDialog({ open, onClose, tumourLabel, scans }: { open: boolean; onClose: () => void; tumourLabel: string; scans: ScanResult[] }) {
+  const { toast } = useToast();
+  const sorted = [...scans].sort((a, b) => new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime());
+  const [edits, setEdits] = useState<Record<number, { sizeX: string; sizeY: string; suvMax: string; notes: string }>>({});
+
+  const getEdit = (scan: ScanResult) => edits[scan.id] || {
+    sizeX: String(scan.sizeX),
+    sizeY: String(scan.sizeY),
+    suvMax: scan.suvMax !== null ? String(scan.suvMax) : "",
+    notes: scan.notes || "",
+  };
+
+  const setField = (id: number, scan: ScanResult, field: string, value: string) => {
+    setEdits(prev => ({
+      ...prev,
+      [id]: { ...getEdit(scan), [field]: value },
+    }));
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return apiRequest(`/api/scan-results/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+      toast({ title: "Entry updated" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/scan-results/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scan-results'] });
+      toast({ title: "Entry deleted" });
+    },
+  });
+
+  const handleSave = (scan: ScanResult) => {
+    const e = getEdit(scan);
+    updateMutation.mutate({
+      id: scan.id,
+      data: {
+        sizeX: parseFloat(e.sizeX) || 0,
+        sizeY: parseFloat(e.sizeY) || 0,
+        suvMax: e.suvMax && !isNaN(parseFloat(e.suvMax)) ? parseFloat(e.suvMax) : null,
+        notes: e.notes || null,
+      },
+    });
+  };
+
+  const hasChanges = (scan: ScanResult) => {
+    const e = edits[scan.id];
+    if (!e) return false;
+    return String(scan.sizeX) !== e.sizeX || String(scan.sizeY) !== e.sizeY ||
+      (scan.suvMax !== null ? String(scan.suvMax) : "") !== e.suvMax ||
+      (scan.notes || "") !== e.notes;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-white border-border max-w-lg rounded-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">{tumourLabel}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {sorted.map(scan => {
+            const e = getEdit(scan);
+            return (
+              <div key={scan.id} className="bg-muted/30 border border-border/50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-body font-medium text-foreground">
+                      {new Date(scan.scanDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                    <p className="text-[10px] font-body text-muted-foreground">{scan.scanLabel}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(scan.id)}
+                    disabled={deleteMutation.isPending}
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground">Size X</label>
+                    <Input type="number" step="0.1" value={e.sizeX} onChange={ev => setField(scan.id, scan, "sizeX", ev.target.value)}
+                      className="font-body rounded-xl h-8 text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground">Size Y</label>
+                    <Input type="number" step="0.1" value={e.sizeY} onChange={ev => setField(scan.id, scan, "sizeY", ev.target.value)}
+                      className="font-body rounded-xl h-8 text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-body text-muted-foreground">SUV Max</label>
+                    <Input type="number" step="0.1" value={e.suvMax} onChange={ev => setField(scan.id, scan, "suvMax", ev.target.value)}
+                      className="font-body rounded-xl h-8 text-xs" placeholder="—" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-body text-muted-foreground">Notes</label>
+                  <Input value={e.notes} onChange={ev => setField(scan.id, scan, "notes", ev.target.value)}
+                    className="font-body rounded-xl h-8 text-xs" placeholder="Optional notes..." />
+                </div>
+                {hasChanges(scan) && (
+                  <Button onClick={() => handleSave(scan)} disabled={updateMutation.isPending} size="sm"
+                    className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-7 px-3">
+                    {updateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                    Save Changes
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TumourCard({ tumourLabel, scans, onEdit }: { tumourLabel: string; scans: ScanResult[]; onEdit: () => void }) {
   const sorted = [...scans].sort((a, b) => new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime());
   const baseline = sorted[0];
   const latest = sorted[sorted.length - 1];
@@ -120,6 +353,11 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
               {sorted.length} scans tracked
             </p>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" size="sm" onClick={onEdit}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
           {isResolved ? (
             <Badge className="bg-primary/15 text-primary text-[10px] font-body border-0">
               <Sparkles className="h-3 w-3 mr-1" /> Resolved
@@ -127,6 +365,7 @@ function TumourCard({ tumourLabel, scans }: { tumourLabel: string; scans: ScanRe
           ) : suvLatest === null ? (
             <Badge className="bg-primary/15 text-primary text-[10px] font-body border-0">No Uptake</Badge>
           ) : null}
+          </div>
         </div>
 
         <div className="flex items-center gap-4 mb-3">
@@ -436,6 +675,8 @@ export default function MedicalTracker() {
   const { user } = useUser();
   const { toast } = useToast();
   const [showAddDoc, setShowAddDoc] = useState(false);
+  const [showAddScan, setShowAddScan] = useState(false);
+  const [editTumour, setEditTumour] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<"overview" | "documents" | "timeline" | "status">("overview");
 
   const { data: scanResults = [], isLoading } = useQuery<ScanResult[]>({
@@ -518,17 +759,30 @@ export default function MedicalTracker() {
 
           {scanResults.length > 0 && (
             <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingDown className="h-4 w-4 text-primary flex-shrink-0" />
-                <p className="text-sm font-body font-medium text-foreground">
-                  All {Object.keys(tumourGroups).length} tumours responding
-                  {resolvedCount > 0 && ` — ${resolvedCount} resolved`}
-                </p>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-primary flex-shrink-0" />
+                  <p className="text-sm font-body font-medium text-foreground">
+                    All {Object.keys(tumourGroups).length} tumours responding
+                    {resolvedCount > 0 && ` — ${resolvedCount} resolved`}
+                  </p>
+                </div>
+                <Button onClick={() => setShowAddScan(true)}
+                  className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-8 px-3">
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Scan Entry
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground font-body">
                 {scanDates.length} scans from {new Date(scanDates[0]).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })} to {new Date(scanDates[scanDates.length - 1]).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}
               </p>
             </div>
+          )}
+
+          {scanResults.length === 0 && !isLoading && (
+            <Button onClick={() => setShowAddScan(true)}
+              className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9">
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Scan Entry
+            </Button>
           )}
 
           {isLoading ? (
@@ -538,7 +792,7 @@ export default function MedicalTracker() {
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {Object.entries(tumourGroups).map(([label, scans]) => (
-                <TumourCard key={label} tumourLabel={label} scans={scans} />
+                <TumourCard key={label} tumourLabel={label} scans={scans} onEdit={() => setEditTumour(label)} />
               ))}
             </div>
           )}
@@ -635,6 +889,10 @@ export default function MedicalTracker() {
       {activeSection === "status" && <StatusCards user={user} />}
 
       <AddDocumentDialog open={showAddDoc} onClose={() => setShowAddDoc(false)} userId={user?.id || 1} />
+      <AddScanEntryDialog open={showAddScan} onClose={() => setShowAddScan(false)} userId={user?.id || 1} existingLabels={Object.keys(tumourGroups)} />
+      {editTumour && tumourGroups[editTumour] && (
+        <EditTumourDialog open={true} onClose={() => setEditTumour(null)} tumourLabel={editTumour} scans={tumourGroups[editTumour]} />
+      )}
     </div>
   );
 }
