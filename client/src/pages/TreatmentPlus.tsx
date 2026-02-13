@@ -620,9 +620,9 @@ interface AiSuggestion {
 }
 
 export default function TreatmentPlus() {
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   const { toast } = useToast();
-  const userId = user?.id || 1;
+  const userId = dataUserId;
 
   const [selectedProgram, setSelectedProgram] = useState<TreatmentProgram | null>(null);
   const [addOpen, setAddOpen] = useState(false);

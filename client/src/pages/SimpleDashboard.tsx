@@ -1695,7 +1695,7 @@ function getTodayDateString() {
   return new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' }).split('/').reverse().join('-');
 }
 
-function WorthFightingForWidget({ userId }: { userId: number }) {
+function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; savedCreativity?: number }) {
   const [wallOpen, setWallOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newContent, setNewContent] = useState("");
@@ -1705,11 +1705,18 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
   const [nanoBananaImage, setNanoBananaImage] = useState<string | null>(null);
   const [nanoBananaCaption, setNanoBananaCaption] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [creativity, setCreativity] = useState(0.3);
+  const [creativity, setCreativity] = useState(savedCreativity ?? 0.3);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const creativityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (savedCreativity !== undefined && savedCreativity !== null) {
+      setCreativity(savedCreativity);
+    }
+  }, [savedCreativity]);
 
   useEffect(() => {
     async function loadLatestBanana() {
@@ -1982,7 +1989,18 @@ function WorthFightingForWidget({ userId }: { userId: number }) {
               </div>
               <Slider
                 value={[creativity]}
-                onValueChange={(v) => setCreativity(v[0])}
+                onValueChange={(v) => {
+                  setCreativity(v[0]);
+                  if (creativityDebounceRef.current) clearTimeout(creativityDebounceRef.current);
+                  creativityDebounceRef.current = setTimeout(() => {
+                    fetch(`/api/users/${userId}/creativity`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({ creativity: v[0] }),
+                    }).catch(() => {});
+                  }, 500);
+                }}
                 min={0}
                 max={1}
                 step={0.01}
@@ -2556,12 +2574,23 @@ function ExpandableWidget({ title, icon, children, open, onOpenChange }: {
 }
 
 export default function SimpleDashboard() {
-  const { user, setUser } = useUser();
+  const { user, setUser, dataUserId } = useUser();
   const { toast } = useToast();
   const [activeWidgets, setActiveWidgets] = useState<string[]>(loadWidgets());
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
   const [daySummaryOpen, setDaySummaryOpen] = useState(false);
-  const dailyBrief = useDailyBrief(user?.id ?? 0);
+  const dailyBrief = useDailyBrief(dataUserId);
+  const isMirroring = user?.mirrorUserId && user.mirrorUserId !== user.id;
+  const { data: mirroredUser } = useQuery<any>({
+    queryKey: ["/api/users", dataUserId, "public-profile"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${dataUserId}/public-profile`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: !!isMirroring,
+  });
+  const displayUser = isMirroring && mirroredUser ? { ...user!, ...mirroredUser, id: user!.id, role: user!.role, username: user!.username } : user;
 
   const handleWidgetChange = (ids: string[]) => {
     setActiveWidgets(ids);
@@ -2583,9 +2612,11 @@ export default function SimpleDashboard() {
 
   const isActive = (id: string) => activeWidgets.includes(id);
 
-  const scanDate = user.nextScanDate ? new Date(user.nextScanDate) : null;
+  const profileData = displayUser || user;
+  const scanDate = profileData?.nextScanDate ? new Date(profileData.nextScanDate) : null;
   const daysUntilScan = scanDate ? Math.ceil((scanDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
-  const treatmentStartDate = new Date("2025-04-22");
+  const diagDate = profileData?.diagnosis_date || "2025-04-22";
+  const treatmentStartDate = new Date(diagDate);
   const daysSinceTreatmentStart = Math.floor((new Date().getTime() - treatmentStartDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -2670,10 +2701,10 @@ export default function SimpleDashboard() {
           </button>
         </div>
       )}
-      <DaySummaryDialog userId={user.id} open={daySummaryOpen} onOpenChange={setDaySummaryOpen} />
+      <DaySummaryDialog userId={dataUserId} open={daySummaryOpen} onOpenChange={setDaySummaryOpen} />
 
       {/* Quick Log + Today's Wellness (always visible) */}
-      <TodayWellnessWidget userId={user.id} />
+      <TodayWellnessWidget userId={dataUserId} />
 
       {/* Key Stats */}
       <div className="grid grid-cols-2 gap-3 mt-4 mb-4">
@@ -2701,36 +2732,36 @@ export default function SimpleDashboard() {
       {/* Tumour Response */}
       {isActive("tumourResponse") && (
         <div className="mb-4">
-          <TumourResponseCompactTile userId={user.id} onClick={() => setExpandedWidget("tumourResponse")} />
+          <TumourResponseCompactTile userId={dataUserId} onClick={() => setExpandedWidget("tumourResponse")} />
         </div>
       )}
 
       {/* Worth Fighting For + Nano Banana */}
       {isActive("motivationalWall") && (
         <div className="mb-4">
-          <WorthFightingForWidget userId={user.id} />
+          <WorthFightingForWidget userId={dataUserId} savedCreativity={profileData?.nanoBananaCreativity ?? user?.nanoBananaCreativity ?? 0.3} />
         </div>
       )}
 
       {/* Sleep Tracker */}
       {isActive("sleepTracker") && (
         <div className="mb-4">
-          <SleepTrackerWidget userId={user.id} />
+          <SleepTrackerWidget userId={dataUserId} />
         </div>
       )}
 
       {/* Expanded dialogs */}
       <ExpandableWidget title="Next Scan Countdown" icon={<Scan className="h-5 w-5 text-primary" />}
         open={expandedWidget === "scanCountdown"} onOpenChange={(open) => setExpandedWidget(open ? "scanCountdown" : null)}>
-        <ScanCountdownExpanded nextScanDate={user.nextScanDate} />
+        <ScanCountdownExpanded nextScanDate={profileData?.nextScanDate || null} />
       </ExpandableWidget>
       <ExpandableWidget title="Your Treatment Journey" icon={<Shield className="h-5 w-5 text-primary" />}
         open={expandedWidget === "treatmentJourney"} onOpenChange={(open) => setExpandedWidget(open ? "treatmentJourney" : null)}>
-        <TreatmentJourneyExpanded user={user} />
+        <TreatmentJourneyExpanded user={profileData} />
       </ExpandableWidget>
       <ExpandableWidget title="Tumour Response" icon={<TrendingUp className="h-5 w-5 text-primary" />}
         open={expandedWidget === "tumourResponse"} onOpenChange={(open) => setExpandedWidget(open ? "tumourResponse" : null)}>
-        <TumourResponseExpanded userId={user.id} />
+        <TumourResponseExpanded userId={dataUserId} />
       </ExpandableWidget>
     </div>
   );

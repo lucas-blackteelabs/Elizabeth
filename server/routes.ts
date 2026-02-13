@@ -506,10 +506,15 @@ async function seedSurvivorData() {
 }
 
 async function seedLucasAdmin() {
+  const liz = await storage.getUserByUsername("Liz");
+  const lizId = liz?.id || 1;
   const existing = await storage.getUserByUsername("Lucas");
   if (existing) {
-    if (existing.role !== "admin") {
-      await storage.updateUser(existing.id, { role: "admin" } as any);
+    const updates: any = {};
+    if (existing.role !== "admin") updates.role = "admin";
+    if (existing.mirrorUserId !== lizId) updates.mirrorUserId = lizId;
+    if (Object.keys(updates).length > 0) {
+      await storage.updateUser(existing.id, updates);
     }
     return;
   }
@@ -521,8 +526,9 @@ async function seedLucasAdmin() {
     displayName: "Lucas",
     email: "lucas@elizabeth.app",
     role: "admin",
+    mirrorUserId: lizId,
   } as any);
-  console.log("Seeded Lucas admin account");
+  console.log("Seeded Lucas admin account (mirroring Liz)");
 }
 
 async function seedTestAccount() {
@@ -1625,12 +1631,30 @@ RULES:
         nanoBananaImage: result.imagePath,
         nanoBananaCaption: result.caption,
         nanoBananaDate: todayStr,
+        nanoBananaCreativity: creativity,
       });
 
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);
       return res.status(503).json({ error: error?.message || "Image generation unavailable" });
+    }
+  });
+
+  app.patch("/api/users/:id/creativity", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
+      const requestingUser = await storage.getUser(req.user!.id);
+      if (!requestingUser) return res.status(401).json({ error: "Not authenticated" });
+      const isOwner = req.user!.id === id;
+      const isMirror = requestingUser.role === "admin" && requestingUser.mirrorUserId === id;
+      if (!isOwner && !isMirror) return res.status(403).json({ error: "Not authorized" });
+      const creativity = typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
+      await storage.updateUser(id, { nanoBananaCreativity: creativity });
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to save creativity" });
     }
   });
 
@@ -2221,7 +2245,9 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     try {
       const user = await storage.getUser(parseInt(req.params.id));
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json({
+      const requestingUser = await storage.getUser(req.user!.id);
+      const isAdmin = requestingUser?.role === "admin";
+      const baseProfile: any = {
         id: user.id,
         displayName: user.displayName,
         cancerType: user.cancerType,
@@ -2230,7 +2256,21 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
         bio: user.bio,
         diagnosis_date: user.diagnosis_date,
         role: user.role,
-      });
+      };
+      if (isAdmin) {
+        baseProfile.treatmentHistory = user.treatmentHistory;
+        baseProfile.currentMedications = user.currentMedications;
+        baseProfile.adverseEventHistory = user.adverseEventHistory;
+        baseProfile.oncologist = user.oncologist;
+        baseProfile.goals = user.goals;
+        baseProfile.medicalNotes = user.medicalNotes;
+        baseProfile.scanSummary = user.scanSummary;
+        baseProfile.nextScanDate = user.nextScanDate;
+        baseProfile.dietaryPreferences = user.dietaryPreferences;
+        baseProfile.profilePhoto = user.profilePhoto;
+        baseProfile.nanoBananaCreativity = user.nanoBananaCreativity;
+      }
+      return res.json(baseProfile);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch user profile" });
     }

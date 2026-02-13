@@ -25,6 +25,8 @@ interface User {
   scanSummary: string | null;
   nextScanDate: string | null;
   profilePhoto: string | null;
+  nanoBananaCreativity: number | null;
+  mirrorUserId: number | null;
 }
 
 interface UserContextType {
@@ -32,6 +34,7 @@ interface UserContextType {
   setUser: (user: User) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+  dataUserId: number;
   login: (username: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -42,6 +45,7 @@ const initialContextValue: UserContextType = {
   setUser: () => {},
   isAuthenticated: false,
   isLoading: true,
+  dataUserId: 1,
   login: async () => {},
   register: async () => {},
   logout: async () => {}
@@ -118,11 +122,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  const dataUserId = user?.mirrorUserId || user?.id || 1;
+
   const value = {
     user,
     setUser,
     isAuthenticated: !!user,
     isLoading,
+    dataUserId,
     login,
     register,
     logout

@@ -30,6 +30,8 @@ export const users = pgTable("users", {
   nanoBananaImage: text("nano_banana_image"),
   nanoBananaCaption: text("nano_banana_caption"),
   nanoBananaDate: text("nano_banana_date"),
+  nanoBananaCreativity: real("nano_banana_creativity").default(0.3),
+  mirrorUserId: integer("mirror_user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

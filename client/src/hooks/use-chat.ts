@@ -12,7 +12,7 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   
   // Load messages from localStorage on initial load
   useEffect(() => {
@@ -48,7 +48,7 @@ export function useChat() {
     setMessages(prev => [...prev, userMessage]);
     
     try {
-      const response = await sendMessageToApi(message, user?.id);
+      const response = await sendMessageToApi(message, dataUserId);
       setMessages(prev => [...prev, response]);
     } catch (error) {
       console.error("Error sending message:", error);

@@ -672,7 +672,7 @@ function StatusCards({ user }: { user: any }) {
 }
 
 export default function MedicalTracker() {
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   const { toast } = useToast();
   const [showAddDoc, setShowAddDoc] = useState(false);
   const [showAddScan, setShowAddScan] = useState(false);
@@ -680,9 +680,9 @@ export default function MedicalTracker() {
   const [activeSection, setActiveSection] = useState<"overview" | "documents" | "timeline" | "status">("overview");
 
   const { data: scanResults = [], isLoading } = useQuery<ScanResult[]>({
-    queryKey: ['/api/scan-results', { userId: user?.id }],
+    queryKey: ['/api/scan-results', { userId: dataUserId }],
     queryFn: async () => {
-      const res = await fetch(`/api/scan-results?userId=${user?.id || 1}`);
+      const res = await fetch(`/api/scan-results?userId=${dataUserId}`);
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
@@ -690,9 +690,9 @@ export default function MedicalTracker() {
   });
 
   const { data: documents = [] } = useQuery<MedicalDocument[]>({
-    queryKey: ["/api/medical-documents", { userId: user?.id }],
+    queryKey: ["/api/medical-documents", { userId: dataUserId }],
     queryFn: async () => {
-      const res = await fetch(`/api/medical-documents?userId=${user?.id || 1}`);
+      const res = await fetch(`/api/medical-documents?userId=${dataUserId}`);
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -755,7 +755,7 @@ export default function MedicalTracker() {
 
       {activeSection === "overview" && (
         <div className="space-y-5">
-          {user && <AISummaryCard userId={user.id} />}
+          {user && <AISummaryCard userId={dataUserId} />}
 
           {scanResults.length > 0 && (
             <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4">
@@ -888,8 +888,8 @@ export default function MedicalTracker() {
       {activeSection === "timeline" && <TimelineSection user={user} />}
       {activeSection === "status" && <StatusCards user={user} />}
 
-      <AddDocumentDialog open={showAddDoc} onClose={() => setShowAddDoc(false)} userId={user?.id || 1} />
-      <AddScanEntryDialog open={showAddScan} onClose={() => setShowAddScan(false)} userId={user?.id || 1} existingLabels={Object.keys(tumourGroups)} />
+      <AddDocumentDialog open={showAddDoc} onClose={() => setShowAddDoc(false)} userId={dataUserId} />
+      <AddScanEntryDialog open={showAddScan} onClose={() => setShowAddScan(false)} userId={dataUserId} existingLabels={Object.keys(tumourGroups)} />
       {editTumour && tumourGroups[editTumour] && (
         <EditTumourDialog open={true} onClose={() => setEditTumour(null)} tumourLabel={editTumour} scans={tumourGroups[editTumour]} />
       )}

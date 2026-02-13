@@ -119,7 +119,7 @@ function saveDismissed(names: string[]) {
 }
 
 export default function DateNight() {
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   const { toast } = useToast();
   const [restaurants, setRestaurants] = useState<RestaurantCard[]>([]);
   const [activities, setActivities] = useState<ActivityCard[]>([]);
@@ -201,7 +201,7 @@ export default function DateNight() {
   };
 
   const { data: dateNightHistory = [], isLoading: historyLoading } = useQuery<DateNightType[]>({
-    queryKey: [`/api/date-nights?userId=${user?.id || 1}`],
+    queryKey: [`/api/date-nights?userId=${dataUserId}`],
     enabled: !!user,
   });
 
@@ -210,7 +210,7 @@ export default function DateNight() {
       return apiRequest("/api/date-nights", { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/date-nights?userId=${user?.id || 1}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/date-nights?userId=${dataUserId}`] });
       toast({ title: "Date night saved!", description: "Added to your calendar." });
       setShowSaveDialog(false);
       setSaveDate("");
@@ -224,7 +224,7 @@ export default function DateNight() {
       return apiRequest(`/api/date-nights/${id}`, { method: "PATCH", body: JSON.stringify({ rating, review, status: "completed" }), headers: { "Content-Type": "application/json" } });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/date-nights?userId=${user?.id || 1}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/date-nights?userId=${dataUserId}`] });
       toast({ title: "Review saved!", description: "Your feedback has been recorded." });
       setReviewingId(null);
       setReviewRating(0);
@@ -253,7 +253,7 @@ export default function DateNight() {
       const res = await fetch("/api/ai/date-night", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id, excludeNames: existingNames, type }),
+        body: JSON.stringify({ userId: dataUserId, excludeNames: existingNames, type }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -292,7 +292,7 @@ export default function DateNight() {
       const res = await fetch("/api/ai/restaurant-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery.trim(), userId: user?.id }),
+        body: JSON.stringify({ query: searchQuery.trim(), userId: dataUserId }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -375,7 +375,7 @@ export default function DateNight() {
   const handleSave = () => {
     if (!savingRestaurant || !saveDate || !user) return;
     saveMutation.mutate({
-      userId: user.id,
+      userId: dataUserId,
       date: saveDate,
       restaurantName: savingRestaurant.name,
       restaurantSuburb: savingRestaurant.suburb,

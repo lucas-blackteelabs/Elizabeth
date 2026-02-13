@@ -71,9 +71,9 @@ const emptyForm: AppointmentFormData = {
 };
 
 export default function Calendar() {
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   const { toast } = useToast();
-  const userId = user?.id || 1;
+  const userId = dataUserId;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

@@ -162,7 +162,7 @@ function saveDismissed(names: string[]) {
 }
 
 export default function Nutrition() {
-  const { user } = useUser();
+  const { user, dataUserId } = useUser();
   const { toast } = useToast();
   const [meals, setMeals] = useState<MealCard[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
@@ -216,7 +216,7 @@ export default function Nutrition() {
       const res = await fetch("/api/ai/meal-ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id, excludeNames: dismissedNames.join(", "), mealTypes: "starter" }),
+        body: JSON.stringify({ userId: dataUserId, excludeNames: dismissedNames.join(", "), mealTypes: "starter" }),
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
@@ -255,7 +255,7 @@ export default function Nutrition() {
       const res = await fetch("/api/ai/meal-ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user?.id, excludeNames: existingNames, mealTypes }),
+        body: JSON.stringify({ userId: dataUserId, excludeNames: existingNames, mealTypes }),
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
