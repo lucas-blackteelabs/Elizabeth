@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface User {
   id: number;
@@ -112,6 +112,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
       
       setUser(null);
+      queryClient.clear();
     } finally {
       setIsLoading(false);
     }

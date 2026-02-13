@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, UserRound, Wine, BookOpen, Sparkles, Pill, Users, Shield } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, Wine, BookOpen, Sparkles, Pill, Users, Shield } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -106,18 +106,13 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
         </div>
         
         <div className="absolute bottom-0 w-full p-3 border-t border-border">
-          <div className="flex items-center justify-between text-muted-foreground text-sm px-3">
-            <Link href="/profile" onClick={onClose} className="hover:text-primary transition-colors">
-              <UserRound className="h-5 w-5" />
-            </Link>
-            <button 
-              onClick={handleLogout}
-              className="hover:text-primary transition-colors"
-              title="Log out"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-sm font-body text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+          >
+            <LogOut className="w-[18px] h-[18px]" />
+            <span>Log out</span>
+          </button>
         </div>
       </aside>
     </>
