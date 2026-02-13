@@ -3,9 +3,10 @@ import Sidebar from "./Sidebar";
 import Disclaimer from "./Disclaimer";
 import MobileBottomNav from "./MobileBottomNav";
 import { useLocation } from "wouter";
-import { Menu } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile as useMobile } from "@/hooks/use-mobile";
+import { useUser } from "@/contexts/UserContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useMobile();
   const [location] = useLocation();
+  const { user, logout } = useUser();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -23,6 +25,15 @@ export default function Layout({ children }: LayoutProps) {
   const closeSidebarIfMobile = () => {
     if (isMobile) {
       setSidebarOpen(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 
@@ -46,9 +57,15 @@ export default function Layout({ children }: LayoutProps) {
               <Menu className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-heading text-foreground">Elizabeth</h1>
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-sm font-body font-semibold text-primary">L</span>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl"
+              title="Log out"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
         )}
 
