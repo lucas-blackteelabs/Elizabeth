@@ -5,7 +5,7 @@ import { useUser } from "@/contexts/UserContext";
 
 const INITIAL_MESSAGE: ChatMessage = {
   role: "assistant",
-  content: "Hello! I'm here to support your healing journey. How are you feeling today? I can help with nutrition, supplements, mind-body practices, scan preparation, and more."
+  content: "Hey there! I'm Elizabeth, your personal AI assistant. Ask me absolutely anything — health questions, recipe ideas, planning help, creative brainstorming, or just a chat. I also know your health profile, so I can give personalised advice when you need it."
 };
 
 export function useChat() {

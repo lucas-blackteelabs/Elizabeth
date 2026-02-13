@@ -3,7 +3,7 @@ import { useUser } from "@/contexts/UserContext";
 import {
   TrendingUp, Heart, Sparkles, Shield, Target, Scan, Plus, Check, Loader2, Settings2, X,
   ArrowDown, ChevronRight, Camera, Pencil, Trash2, Utensils, Dumbbell, Brain, Apple, Activity,
-  ImagePlus, Play, Calendar, RefreshCw, Zap, Moon, Star, CloudMoon
+  ImagePlus, Play, Calendar, RefreshCw, Zap, Moon, Star, CloudMoon, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -947,12 +947,244 @@ function ActivityRing({ cx, cy, radius, remainingPct }: { cx: number; cy: number
   );
 }
 
+function AddTumourDialog({ userId }: { userId: number }) {
+  const [open, setOpen] = useState(false);
+  const [tumourLabel, setTumourLabel] = useState("");
+  const [location, setLocation] = useState("");
+  const [scanDate, setScanDate] = useState(todayStr());
+  const [scanLabel, setScanLabel] = useState("");
+  const [sizeX, setSizeX] = useState("");
+  const [sizeY, setSizeY] = useState("");
+  const [suvMax, setSuvMax] = useState("");
+  const [notes, setNotes] = useState("");
+  const { toast } = useToast();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/scan-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          tumourLabel: tumourLabel.trim(),
+          scanDate,
+          scanLabel: scanLabel.trim(),
+          sizeX: parseFloat(sizeX) || 0,
+          sizeY: parseFloat(sizeY) || 0,
+          suvMax: suvMax.trim() ? parseFloat(suvMax) || 0 : null,
+          notes: notes.trim() || null,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/scan-results"] });
+      setOpen(false);
+      setTumourLabel("");
+      setLocation("");
+      setScanDate(todayStr());
+      setScanLabel("");
+      setSizeX("");
+      setSizeY("");
+      setSuvMax("");
+      setNotes("");
+      toast({ title: "Tumour added", description: "Scan result saved successfully." });
+    },
+    onError: () => {
+      toast({ title: "Failed to add tumour", variant: "destructive" });
+    },
+  });
+
+  const canSubmit = tumourLabel.trim() && scanDate && scanLabel.trim() && sizeX && sizeY;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 font-body gap-1.5 rounded-2xl">
+          <Plus className="h-3.5 w-3.5" /> Add Tumour
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Add Tumour</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-body text-muted-foreground block mb-1">Tumour Label *</label>
+            <Input placeholder='e.g. Tumour 5 (Lung)' value={tumourLabel} onChange={(e) => setTumourLabel(e.target.value)} className="bg-muted/50 border-border font-body" />
+          </div>
+          <div>
+            <label className="text-[10px] font-body text-muted-foreground block mb-1">Location</label>
+            <Input placeholder='e.g. Liver, Lung, Lymph Node' value={location} onChange={(e) => setLocation(e.target.value)} className="bg-muted/50 border-border font-body" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-body text-muted-foreground block mb-1">Scan Date *</label>
+              <Input type="date" value={scanDate} onChange={(e) => setScanDate(e.target.value)} className="bg-muted/50 border-border font-body" />
+            </div>
+            <div>
+              <label className="text-[10px] font-body text-muted-foreground block mb-1">Scan Label *</label>
+              <Input placeholder='e.g. Baseline' value={scanLabel} onChange={(e) => setScanLabel(e.target.value)} className="bg-muted/50 border-border font-body" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] font-body text-muted-foreground block mb-1">Size X (mm) *</label>
+              <Input type="number" step="0.1" placeholder="0" value={sizeX} onChange={(e) => setSizeX(e.target.value)} className="bg-muted/50 border-border font-body" />
+            </div>
+            <div>
+              <label className="text-[10px] font-body text-muted-foreground block mb-1">Size Y (mm) *</label>
+              <Input type="number" step="0.1" placeholder="0" value={sizeY} onChange={(e) => setSizeY(e.target.value)} className="bg-muted/50 border-border font-body" />
+            </div>
+            <div>
+              <label className="text-[10px] font-body text-muted-foreground block mb-1">SUV Max</label>
+              <Input type="number" step="0.1" placeholder="—" value={suvMax} onChange={(e) => setSuvMax(e.target.value)} className="bg-muted/50 border-border font-body" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-body text-muted-foreground block mb-1">Notes</label>
+            <Textarea placeholder="Optional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-muted/50 border-border font-body text-sm min-h-[60px]" />
+          </div>
+          <Button onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending} className="w-full bg-primary text-white hover:bg-primary/90 font-body font-medium rounded-2xl">
+            {mutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving...</> : "Add Tumour"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UploadScanReportDialog({ userId }: { userId: number }) {
+  const [open, setOpen] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extracted, setExtracted] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExtracting(true);
+    setExtracted([]);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("userId", String(userId));
+      const res = await fetch("/api/ai/extract-tumours", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Extraction failed");
+      const data = await res.json();
+      setExtracted(data.tumours || []);
+      if (!data.tumours || data.tumours.length === 0) {
+        toast({ title: "No tumour data found", description: "AI could not extract measurements from this document." });
+      }
+    } catch {
+      toast({ title: "Extraction failed", description: "Could not process the document.", variant: "destructive" });
+    } finally {
+      setExtracting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    try {
+      for (const t of extracted) {
+        await apiRequest("/api/scan-results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            tumourLabel: t.tumourLabel || "Unknown",
+            scanDate: t.scanDate || todayStr(),
+            scanLabel: t.scanLabel || "Imported",
+            sizeX: parseFloat(t.sizeX) || 0,
+            sizeY: parseFloat(t.sizeY) || 0,
+            suvMax: t.suvMax != null ? parseFloat(t.suvMax) || 0 : null,
+            notes: t.notes || null,
+          }),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/scan-results"] });
+      toast({ title: "Scan data imported", description: `${extracted.length} tumour record(s) saved.` });
+      setExtracted([]);
+      setOpen(false);
+    } catch {
+      toast({ title: "Failed to save some records", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeItem = (idx: number) => {
+    setExtracted(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setExtracted([]); setExtracting(false); } }}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-xs border-border text-foreground hover:bg-accent/10 hover:text-accent hover:border-accent/30 font-body gap-1.5 rounded-2xl">
+          <Upload className="h-3.5 w-3.5" /> Upload Scan Report
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white border-border max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Upload Scan Report</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-xs font-body text-muted-foreground">Upload a scan report (PDF or image) and AI will extract tumour measurements for you to review.</p>
+          <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" onChange={handleFileChange} className="hidden" />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={extracting} className="w-full font-body gap-2 rounded-2xl border-dashed border-2 py-6">
+            {extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing document...</> : <><Upload className="h-4 w-4" /> Choose File</>}
+          </Button>
+
+          {extracted.length > 0 && (
+            <>
+              <p className="text-xs font-heading font-semibold text-foreground">Extracted Data — Review & Confirm</p>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {extracted.map((t, i) => (
+                  <div key={i} className="border border-border rounded-xl p-3 space-y-1 relative">
+                    <button onClick={() => removeItem(i)} className="absolute top-2 right-2 text-muted-foreground hover:text-red-500 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                    <p className="text-sm font-heading font-semibold pr-6">{t.tumourLabel}</p>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-body text-muted-foreground">
+                      <span>{t.scanDate}</span>
+                      <span>·</span>
+                      <span>{t.scanLabel}</span>
+                      <span>·</span>
+                      <span>{t.sizeX}×{t.sizeY}mm</span>
+                      {t.suvMax != null && <><span>·</span><span>SUV {t.suvMax}</span></>}
+                    </div>
+                    {t.notes && <p className="text-[10px] font-body text-muted-foreground/70 italic">{t.notes}</p>}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 font-body rounded-2xl" onClick={() => setExtracted([])}>Clear</Button>
+                <Button className="flex-1 font-body bg-primary hover:bg-primary/90 rounded-2xl" onClick={handleConfirm} disabled={saving}>
+                  {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving...</> : `Confirm & Save (${extracted.length})`}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TumourResponseExpanded({ userId }: { userId: number }) {
   const { scanResults, tumourLabels, baselineScan, latestScan, avgSizeReduction, avgActivityReduction, maxBaselineArea } = useTumourStats(userId);
   const { getNickname } = useTumourNicknames(userId);
 
   if (scanResults.length === 0) {
-    return <p className="text-sm text-muted-foreground font-body text-center py-4">No scan data available yet.</p>;
+    return (
+      <div className="text-center py-4 space-y-3">
+        <p className="text-sm text-muted-foreground font-body">No scan data available yet.</p>
+        <div className="flex justify-center gap-2">
+          <AddTumourDialog userId={userId} />
+          <UploadScanReportDialog userId={userId} />
+        </div>
+      </div>
+    );
   }
 
   const showCelebration = avgSizeReduction > 30 || avgActivityReduction > 30;
@@ -1135,6 +1367,11 @@ function TumourResponseExpanded({ userId }: { userId: number }) {
         <span className="flex items-center gap-1.5"><div className="w-3 h-1.5 rounded-full border border-gray-300" style={{ borderStyle: "dashed" }} /> Baseline size</span>
         <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(142, 71%, 85%)", border: "1px solid hsl(142, 71%, 45%)" }} /> Current size</span>
         <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(38, 92%, 50%)" }} /> Activity remaining</span>
+      </div>
+
+      <div className="flex justify-center gap-2 pt-2">
+        <AddTumourDialog userId={userId} />
+        <UploadScanReportDialog userId={userId} />
       </div>
     </div>
   );

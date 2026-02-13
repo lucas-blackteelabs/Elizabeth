@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,115 @@ function SurvivorBadge() {
       <ShieldCheck className="h-3 w-3" />
       Verified Survivor
     </span>
+  );
+}
+
+function AdminBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-yellow-50 border border-amber-200/60 text-amber-700 text-[10px] font-body font-semibold">
+      <Shield className="h-3 w-3" />
+      Admin
+    </span>
+  );
+}
+
+function UserProfilePopup({ userId, open, onClose }: {
+  userId: number;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data: profile, isLoading } = useQuery<{
+    id: number; displayName: string; cancerType: string | null; cancerStage: string | null;
+    treatmentStatus: string | null; bio: string | null; diagnosis_date: string | null; role: string;
+  }>({
+    queryKey: ["/api/users", userId, "public-profile"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${userId}/public-profile`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    enabled: open,
+  });
+
+  const daysSinceDiagnosis = profile?.diagnosis_date
+    ? Math.floor((Date.now() - new Date(profile.diagnosis_date + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-white border-border max-w-sm rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-foreground">Member Profile</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="space-y-3 py-4">
+            <Skeleton className="h-16 w-16 rounded-full mx-auto" />
+            <Skeleton className="h-5 w-32 mx-auto rounded-xl" />
+            <Skeleton className="h-4 w-48 mx-auto rounded-xl" />
+          </div>
+        ) : profile ? (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-2xl">
+                {profile.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-base font-heading font-semibold text-foreground">{profile.displayName}</span>
+                  {profile.role === "admin" && <AdminBadge />}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2.5 bg-muted/30 rounded-xl p-3.5">
+              {profile.cancerType && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-body text-muted-foreground">Cancer Type</span>
+                  <span className="text-xs font-body font-medium text-foreground">{profile.cancerType}</span>
+                </div>
+              )}
+              {profile.cancerStage && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-body text-muted-foreground">Stage</span>
+                  <span className="text-xs font-body font-medium text-foreground">{profile.cancerStage}</span>
+                </div>
+              )}
+              {profile.treatmentStatus && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-body text-muted-foreground">Treatment</span>
+                  <span className="text-xs font-body font-medium text-foreground">{profile.treatmentStatus}</span>
+                </div>
+              )}
+              {daysSinceDiagnosis !== null && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-body text-muted-foreground">Days Since Diagnosis</span>
+                  <span className="text-xs font-body font-medium text-primary">{daysSinceDiagnosis} days</span>
+                </div>
+              )}
+            </div>
+            {profile.bio && (
+              <div>
+                <p className="text-xs font-body text-muted-foreground mb-1">About</p>
+                <p className="text-sm font-body text-foreground/80 leading-relaxed">{profile.bio}</p>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClickableAuthor({ name, userId, onClick, isAdmin }: {
+  name: string; userId: number; onClick: (userId: number) => void; isAdmin?: boolean;
+}) {
+  return (
+    <button
+      onClick={(e: MouseEvent) => { e.stopPropagation(); onClick(userId); }}
+      className="text-xs font-body font-medium text-foreground hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1.5"
+    >
+      {name}
+      {isAdmin && <AdminBadge />}
+    </button>
   );
 }
 
@@ -372,7 +481,7 @@ function TalkCard({ talk, survivor, isRsvpd, onRsvp, onCancelRsvp, isPending }: 
   );
 }
 
-function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () => void }) {
+function ThreadCard({ thread, onClick, onAuthorClick }: { thread: CommunityThread; onClick: () => void; onAuthorClick: (userId: number) => void }) {
   const cat = getCat(thread.category);
   const CatIcon = cat.icon;
 
@@ -386,7 +495,7 @@ function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () 
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-xs font-body text-muted-foreground">{thread.authorName}</span>
+              <ClickableAuthor name={thread.authorName} userId={thread.userId} onClick={onAuthorClick} isAdmin={(thread as any).authorRole === "admin"} />
               <span className="text-[10px] font-body text-muted-foreground/60">&middot;</span>
               <span className="text-[10px] font-body text-muted-foreground/60">{timeAgo(thread.createdAt)}</span>
               {thread.pinned && <Pin className="h-3 w-3 text-accent" />}
@@ -416,11 +525,12 @@ function ThreadCard({ thread, onClick }: { thread: CommunityThread; onClick: () 
   );
 }
 
-function ThreadDetailView({ thread: initialThread, onBack, userId, userName }: {
+function ThreadDetailView({ thread: initialThread, onBack, userId, userName, onAuthorClick }: {
   thread: CommunityThread;
   onBack: () => void;
   userId: number;
   userName: string;
+  onAuthorClick: (userId: number) => void;
 }) {
   const { toast } = useToast();
   const [replyText, setReplyText] = useState("");
@@ -501,7 +611,7 @@ function ThreadDetailView({ thread: initialThread, onBack, userId, userName }: {
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-xs">
               {thread.authorName.charAt(0).toUpperCase()}
             </div>
-            <span className="text-sm font-body font-medium text-foreground">{thread.authorName}</span>
+            <ClickableAuthor name={thread.authorName} userId={thread.userId} onClick={onAuthorClick} isAdmin={(thread as any).authorRole === "admin"} />
             <span className="text-[10px] font-body text-muted-foreground">{timeAgo(thread.createdAt)}</span>
             <Badge className={`text-[9px] font-body ${cat.bg} ${cat.color} border-0`}>
               <CatIcon className="h-2.5 w-2.5 mr-1" /> {cat.label}
@@ -541,7 +651,7 @@ function ThreadDetailView({ thread: initialThread, onBack, userId, userName }: {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-body font-medium text-foreground">{reply.authorName}</span>
+                      <ClickableAuthor name={reply.authorName} userId={reply.userId} onClick={onAuthorClick} isAdmin={(reply as any).authorRole === "admin"} />
                       <span className="text-[10px] font-body text-muted-foreground">{timeAgo(reply.createdAt)}</span>
                     </div>
                     <p className="text-xs font-body text-foreground/80 mt-1 leading-relaxed">{reply.content}</p>
@@ -712,11 +822,13 @@ function GroupCard({ group, isMember, onJoin, onLeave, onOpen, isPending }: {
   );
 }
 
-function GroupFeedView({ group, userId, userName, onBack }: {
+function GroupFeedView({ group, userId, userName, onBack, onAuthorClick, userRole }: {
   group: CommunityGroup;
   userId: number;
   userName: string;
   onBack: () => void;
+  onAuthorClick: (userId: number) => void;
+  userRole?: string;
 }) {
   const { toast } = useToast();
   const [newPostContent, setNewPostContent] = useState("");
@@ -828,6 +940,7 @@ function GroupFeedView({ group, userId, userName, onBack }: {
               onReplyTextChange={(text) => setReplyTexts(prev => ({ ...prev, [post.id]: text }))}
               onReplySent={() => setReplyTexts(prev => ({ ...prev, [post.id]: "" }))}
               groupId={group.id}
+              onAuthorClick={onAuthorClick}
             />
           ))}
         </div>
@@ -836,8 +949,8 @@ function GroupFeedView({ group, userId, userName, onBack }: {
   );
 }
 
-function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onDelete, replyText, onReplyTextChange, onReplySent, groupId }: {
-  post: CommunityGroupPost;
+function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onDelete, replyText, onReplyTextChange, onReplySent, groupId, onAuthorClick }: {
+  post: CommunityGroupPost & { authorRole?: string };
   userId: number;
   userName: string;
   isExpanded: boolean;
@@ -847,6 +960,7 @@ function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onD
   onReplyTextChange: (text: string) => void;
   onReplySent: () => void;
   groupId: number;
+  onAuthorClick: (userId: number) => void;
 }) {
   const { toast } = useToast();
 
@@ -897,7 +1011,7 @@ function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onD
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-body font-semibold text-foreground">{post.authorName}</span>
+              <ClickableAuthor name={post.authorName} userId={post.userId} onClick={onAuthorClick} isAdmin={post.authorRole === "admin"} />
               <span className="text-[10px] font-body text-muted-foreground">{timeAgo(post.createdAt)}</span>
             </div>
             <p className="text-sm font-body text-foreground/90 mt-1.5 whitespace-pre-wrap">{post.content}</p>
@@ -931,7 +1045,7 @@ function GroupPostCard({ post, userId, userName, isExpanded, onToggleExpand, onD
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-body font-semibold text-foreground">{reply.authorName}</span>
+                          <ClickableAuthor name={reply.authorName} userId={reply.userId} onClick={onAuthorClick} isAdmin={(reply as any).authorRole === "admin"} />
                           <span className="text-[9px] font-body text-muted-foreground">{timeAgo(reply.createdAt)}</span>
                           {reply.userId === userId && (
                             <button onClick={() => deleteReplyMut.mutate(reply.id)}
@@ -980,6 +1094,7 @@ export default function Community() {
   const [selectedGroup, setSelectedGroup] = useState<CommunityGroup | null>(null);
   const [showNewThread, setShowNewThread] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const userId = user?.id || 1;
 
   const { data: threads = [], isLoading: threadsLoading } = useQuery<CommunityThread[]>({
@@ -1109,7 +1224,10 @@ export default function Community() {
           userId={userId}
           userName={user?.displayName || "Anonymous"}
           onBack={() => setSelectedGroup(null)}
+          onAuthorClick={setProfileUserId}
+          userRole={user?.role}
         />
+        <UserProfilePopup userId={profileUserId || 0} open={profileUserId !== null} onClose={() => setProfileUserId(null)} />
       </div>
     );
   }
@@ -1122,7 +1240,9 @@ export default function Community() {
           onBack={() => setSelectedThread(null)}
           userId={userId}
           userName={user?.displayName || "Anonymous"}
+          onAuthorClick={setProfileUserId}
         />
+        <UserProfilePopup userId={profileUserId || 0} open={profileUserId !== null} onClose={() => setProfileUserId(null)} />
       </div>
     );
   }
@@ -1243,7 +1363,7 @@ export default function Community() {
           ) : (
             <div className="space-y-3">
               {sortedThreads.map(thread => (
-                <ThreadCard key={thread.id} thread={thread} onClick={() => setSelectedThread(thread)} />
+                <ThreadCard key={thread.id} thread={thread} onClick={() => setSelectedThread(thread)} onAuthorClick={setProfileUserId} />
               ))}
             </div>
           )}
@@ -1409,6 +1529,8 @@ export default function Community() {
         userId={userId}
         userName={user?.displayName || "Anonymous"}
       />
+
+      <UserProfilePopup userId={profileUserId || 0} open={profileUserId !== null} onClose={() => setProfileUserId(null)} />
     </div>
   );
 }

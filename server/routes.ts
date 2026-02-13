@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas, searchRestaurant } from "./openai";
+import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas, searchRestaurant, genAI } from "./openai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -42,6 +42,21 @@ const wallUpload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = /\.(jpg|jpeg|png|webp|gif|mp4|mov|webm|heic|heif)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  },
+});
+
+const scanDocUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `scandoc-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|webp|gif|pdf|heic|heif)$/i;
     cb(null, allowed.test(path.extname(file.originalname)));
   },
 });
@@ -876,6 +891,62 @@ PATIENT CONTEXT:
     } catch (error) {
       console.error("Error deleting scan result:", error);
       return res.status(500).json({ error: "Failed to delete scan result" });
+    }
+  });
+
+  app.post("/api/ai/extract-tumours", scanDocUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const ext = path.extname(file.originalname).toLowerCase();
+      const isImage = /\.(jpg|jpeg|png|webp|gif|heic|heif)$/i.test(ext);
+
+      let parts: any[];
+      if (isImage) {
+        const fileBuffer = fs.readFileSync(file.path);
+        const base64Data = fileBuffer.toString("base64");
+        const mimeType = file.mimetype || "image/jpeg";
+        parts = [
+          { inlineData: { mimeType, data: base64Data } },
+          { text: `Extract ALL tumour/lesion measurements from this medical scan report image. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].` },
+        ];
+      } else {
+        const textContent = fs.readFileSync(file.path, "utf-8");
+        parts = [
+          { text: `Extract ALL tumour/lesion measurements from this medical scan report. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].\n\nDocument content:\n${textContent}` },
+        ];
+      }
+
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+      let result;
+      let lastError: any;
+      for (const modelName of modelsToTry) {
+        try {
+          const m = genAI.getGenerativeModel({ model: modelName });
+          result = await m.generateContent({
+            contents: [{ role: "user", parts }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: "application/json" },
+          });
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (err?.status === 429) { console.log(`Extract tumours: model ${modelName} rate-limited`); continue; }
+          throw err;
+        }
+      }
+      if (!result) throw lastError || new Error("All AI models unavailable");
+
+      const text = result.response.text() || "[]";
+      const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+      const tumours = JSON.parse(cleaned);
+
+      try { fs.unlinkSync(file.path); } catch {}
+
+      return res.json({ tumours: Array.isArray(tumours) ? tumours : [] });
+    } catch (error: any) {
+      console.error("Error extracting tumours from document:", error);
+      return res.status(500).json({ error: "Failed to extract tumour data from document" });
     }
   });
 
@@ -1818,7 +1889,13 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
   app.get("/api/community/threads", async (req, res) => {
     try {
       const threads = await storage.listCommunityThreads();
-      return res.json(threads);
+      const uniqueUserIds = [...new Set(threads.map(t => t.userId))];
+      const userRoles: Record<number, string> = {};
+      for (const uid of uniqueUserIds) {
+        const u = await storage.getUser(uid);
+        if (u) userRoles[uid] = u.role || "user";
+      }
+      return res.json(threads.map(t => ({ ...t, authorRole: userRoles[t.userId] || "user" })));
     } catch (error) {
       console.error("Error fetching threads:", error);
       return res.status(500).json({ error: "Failed to fetch threads" });
@@ -1867,7 +1944,13 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
   app.get("/api/community/threads/:id/replies", async (req, res) => {
     try {
       const replies = await storage.listCommunityReplies(parseInt(req.params.id));
-      return res.json(replies);
+      const uniqueUserIds = [...new Set(replies.map(r => r.userId))];
+      const userRoles: Record<number, string> = {};
+      for (const uid of uniqueUserIds) {
+        const u = await storage.getUser(uid);
+        if (u) userRoles[uid] = u.role || "user";
+      }
+      return res.json(replies.map(r => ({ ...r, authorRole: userRoles[r.userId] || "user" })));
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch replies" });
     }
@@ -2134,6 +2217,25 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     }
   });
 
+  app.get("/api/users/:id/public-profile", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const user = await storage.getUser(parseInt(req.params.id));
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json({
+        id: user.id,
+        displayName: user.displayName,
+        cancerType: user.cancerType,
+        cancerStage: user.cancerStage,
+        treatmentStatus: user.treatmentStatus,
+        bio: user.bio,
+        diagnosis_date: user.diagnosis_date,
+        role: user.role,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch user profile" });
+    }
+  });
+
   app.get("/api/community/groups", async (_req, res) => {
     try {
       const groups = await storage.listCommunityGroups();
@@ -2206,7 +2308,14 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.get("/api/community/groups/:id/posts", async (req, res) => {
     try {
       const posts = await storage.listGroupPosts(parseInt(req.params.id));
-      return res.json(posts);
+      const userIds = [...new Set(posts.map(p => p.userId))];
+      const userRoles: Record<number, string> = {};
+      for (const uid of userIds) {
+        const u = await storage.getUser(uid);
+        if (u) userRoles[uid] = u.role;
+      }
+      const postsWithRole = posts.map(p => ({ ...p, authorRole: userRoles[p.userId] || "user" }));
+      return res.json(postsWithRole);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch posts" });
     }
@@ -2216,12 +2325,16 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     try {
       const groupId = parseInt(req.params.id);
       const userId = req.body.userId || 1;
-      const members = await storage.listGroupMembers(groupId);
-      if (!members.some(m => m.userId === userId)) {
-        return res.status(403).json({ error: "You must be a member to post in this group" });
+      const postUser = await storage.getUser(userId);
+      const isAdmin = postUser?.role === "admin";
+      if (!isAdmin) {
+        const members = await storage.listGroupMembers(groupId);
+        if (!members.some(m => m.userId === userId)) {
+          return res.status(403).json({ error: "You must be a member to post in this group" });
+        }
       }
       const post = await storage.createGroupPost({ ...req.body, groupId });
-      return res.json(post);
+      return res.json({ ...post, authorRole: postUser?.role || "user" });
     } catch (error) {
       return res.status(500).json({ error: "Failed to create post" });
     }
@@ -2248,7 +2361,14 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.get("/api/community/group-posts/:id/replies", async (req, res) => {
     try {
       const replies = await storage.listGroupPostReplies(parseInt(req.params.id));
-      return res.json(replies);
+      const userIds = [...new Set(replies.map(r => r.userId))];
+      const userRoles: Record<number, string> = {};
+      for (const uid of userIds) {
+        const u = await storage.getUser(uid);
+        if (u) userRoles[uid] = u.role;
+      }
+      const repliesWithRole = replies.map(r => ({ ...r, authorRole: userRoles[r.userId] || "user" }));
+      return res.json(repliesWithRole);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch replies" });
     }
@@ -2257,16 +2377,20 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.post("/api/community/group-posts/:id/replies", async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const [post] = await db.select().from(communityGroupPosts).where(eq(communityGroupPosts.id, postId));
-      if (post) {
-        const userId = req.body.userId || 1;
-        const members = await storage.listGroupMembers(post.groupId);
-        if (!members.some(m => m.userId === userId)) {
-          return res.status(403).json({ error: "You must be a member to reply in this group" });
+      const userId = req.body.userId || 1;
+      const replyUser = await storage.getUser(userId);
+      const isAdmin = replyUser?.role === "admin";
+      if (!isAdmin) {
+        const [post] = await db.select().from(communityGroupPosts).where(eq(communityGroupPosts.id, postId));
+        if (post) {
+          const members = await storage.listGroupMembers(post.groupId);
+          if (!members.some(m => m.userId === userId)) {
+            return res.status(403).json({ error: "You must be a member to reply in this group" });
+          }
         }
       }
       const reply = await storage.createGroupPostReply({ ...req.body, postId });
-      return res.json(reply);
+      return res.json({ ...reply, authorRole: replyUser?.role || "user" });
     } catch (error) {
       return res.status(500).json({ error: "Failed to create reply" });
     }

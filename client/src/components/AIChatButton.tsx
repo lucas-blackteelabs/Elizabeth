@@ -143,7 +143,7 @@ export default function AIChatButton({ isMobileNavEmbedded = false }: { isMobile
               </div>
               <div>
                 <h3 className="font-heading text-sm text-accent tracking-wide">Elizabeth AI</h3>
-                <p className="text-[10px] text-muted-foreground font-body">Ask me anything about your health journey</p>
+                <p className="text-[10px] text-muted-foreground font-body">Ask me anything — health, life, ideas, or just chat</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center transition-colors">
