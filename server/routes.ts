@@ -510,6 +510,60 @@ async function seedLucasAdmin() {
   console.log("Seeded Lucas admin account");
 }
 
+async function seedTestAccount() {
+  const existing = await storage.getUserByUsername("Test");
+  if (existing) {
+    await storage.updateUser(existing.id, {
+      cancerType: "Stage IV Melanoma",
+      cancerStage: "Stage IV",
+      treatmentStatus: "Active Surveillance",
+      treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+      currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+      adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+      oncologist: "Melanoma Oncology Team",
+      goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+      medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+      scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+      nextScanDate: "2026-05-15",
+      diagnosis_date: "2025-04-22",
+      dietaryPreferences: "Sugar-free, dairy-free, fish or organic chicken",
+      bio: "Test account mirroring Liz's profile. On a healing journey with Stage IV melanoma.",
+    });
+    const scans = await storage.listScanResults(existing.id);
+    if (scans.length === 0) {
+      await seedScanData(existing.id);
+    }
+    await seedDefaultAppointments(existing.id);
+    await seedTreatmentPrograms(existing.id);
+    return;
+  }
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash("Test", salt);
+  const user = await storage.createUser({
+    username: "Test",
+    password: hashedPassword,
+    displayName: "Test",
+    email: "test@elizabeth.app",
+    cancerType: "Stage IV Melanoma",
+    cancerStage: "Stage IV",
+    bio: "Test account mirroring Liz's profile. On a healing journey with Stage IV melanoma.",
+    diagnosis_date: "2025-04-22",
+    treatmentStatus: "Active Surveillance",
+    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    oncologist: "Melanoma Oncology Team",
+    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+    nextScanDate: "2026-05-15",
+  });
+  await seedScanData(user.id);
+  await seedDefaultAppointments(user.id);
+  await seedTreatmentPrograms(user.id);
+  console.log("Seeded Test account (mirrors Liz's profile)");
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRoutes);
   app.use('/uploads', express.static(uploadDir));
@@ -517,6 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   await seedLizAccount();
   await seedLucasAdmin();
+  await seedTestAccount();
 
   app.post("/api/users/:id/photo", authenticateToken, upload.single("photo"), async (req: AuthRequest, res) => {
     try {
