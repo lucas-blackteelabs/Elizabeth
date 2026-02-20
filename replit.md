@@ -33,7 +33,7 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Nano Banana:** Utilizes multimodal AI to generate personalized motivational captions from user-uploaded images and personal notes.
 - **Community - Verified Survivors:** Tabbed community section (Threads, Survivors, Talks). Verified survivors have distinct visual treatment (amber badges, gradient avatars). Users can book 1-on-1 video sessions via available time slots. Survivors host periodic talks/events with RSVP system. Includes double-booking prevention and duplicate RSVP guards.
 - **Sleep Tracker:** Dashboard widget for tracking sleep hours and quality (1-5 stars). Manual entry with hours slider, quality picker, and optional notes. 7-day bar chart visualization, today's sleep stats, and weekly averages. Future-proofed with `source` field for wearable integrations (Whoop, etc.).
-- **Stripe Subscription:** New users must subscribe to access the app. Two plans: Monthly ($9.95/month) and Annual ($7.99/month, billed $95.88/year). Registration flow: Register -> auto-login -> redirect to /subscribe pricing page -> Stripe Checkout -> verify session -> access granted. Grandfathered users (Liz, Lucas) and admins bypass subscription requirement. Webhook handler syncs subscription status (active/canceled/past_due) from Stripe events to users table. Stripe integration uses stripe-replit-sync for schema management and data sync, with webhook route registered before express.json() middleware.
+- **Subscriptions:** Billing handled through app stores (Apple/Google). No in-app subscription gating — all registered users have full access. Stripe integration remains in backend for future use but subscription checks are disabled in the frontend.
 - **In-App Notifications:** Notification system with bell icon (unread badge), dropdown panel, mark read/all-read. Types: mention (from @username in community replies), broadcast (admin-sent to all users), event (future use). Optimized with SQL count aggregation and composite index on (user_id, read_at, created_at). Mention detection uses single-query user lookup with lowercase map. 30-second polling for unread count.
 - **Admin Broadcast:** Admin panel includes Broadcast tab for sending notifications to all users with title, body, and optional link.
 - **Calendar Invites:** RSVP for survivor talks generates downloadable ICS files with UTC timestamps, RFC 5545 escaping, meeting links, and 15-minute reminder alarms.
@@ -42,7 +42,7 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Database:** PostgreSQL (Neon)
 - **AI:** Google Gemini API (gemini-2.5-flash)
 - **Image Generation:** Google Imagen (for AI-generated images, when billing is available)
-- **Payments:** Stripe (via stripe-replit-sync connector) - subscription billing for membership plans
+- **Payments:** Subscriptions handled via app stores; Stripe backend integration retained for future use
 - **Frontend Libraries:** React, Vite, Tailwind CSS, shadcn/ui, TanStack React Query, wouter
 - **Backend Libraries:** Express.js, Drizzle ORM, stripe, stripe-replit-sync
 - **Other Services:** Google Fonts (via CDN)

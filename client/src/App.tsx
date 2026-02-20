@@ -19,14 +19,12 @@ import Community from "@/pages/Community";
 import AdminPanel from "@/pages/AdminPanel";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
-import Subscribe from "@/pages/Subscribe";
-import SubscribeSuccess from "@/pages/SubscribeSuccess";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Redirect } from "wouter";
 import AIChatButton from "@/components/AIChatButton";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading, hasActiveSubscription } = useUser();
+  const { isAuthenticated, isLoading } = useUser();
   
   if (isLoading) {
     return (
@@ -42,16 +40,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
   }
-
-  if (!hasActiveSubscription) {
-    return <Redirect to="/subscribe" />;
-  }
   
   return <Component />;
 }
 
 function AuthRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading, hasActiveSubscription } = useUser();
+  const { isAuthenticated, isLoading } = useUser();
   
   if (isLoading) {
     return (
@@ -64,33 +58,6 @@ function AuthRoute({ component: Component }: { component: React.ComponentType })
   }
   
   if (isAuthenticated) {
-    if (!hasActiveSubscription) {
-      return <Redirect to="/subscribe" />;
-    }
-    return <Redirect to="/dashboard" />;
-  }
-  
-  return <Component />;
-}
-
-function SubscribeRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, isLoading, hasActiveSubscription } = useUser();
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-center">
-          <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        </div>
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated) {
-    return <Redirect to="/register" />;
-  }
-
-  if (hasActiveSubscription) {
     return <Redirect to="/dashboard" />;
   }
   
@@ -105,12 +72,6 @@ function AppRouter() {
       </Route>
       <Route path="/register">
         <AuthRoute component={Register} />
-      </Route>
-      <Route path="/subscribe">
-        <SubscribeRoute component={Subscribe} />
-      </Route>
-      <Route path="/subscribe/success">
-        <SubscribeSuccess />
       </Route>
       <Route path="/">
         <Layout>

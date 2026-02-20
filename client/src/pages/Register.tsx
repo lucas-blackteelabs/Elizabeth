@@ -81,11 +81,11 @@ export default function Register() {
       
       toast({
         title: 'Account created',
-        description: 'Now choose a membership plan to get started.',
+        description: 'Welcome to Elizabeth!',
         variant: 'default',
       });
       
-      setLocation('/subscribe');
+      setLocation('/dashboard');
     } catch (error) {
       console.error('Registration error:', error);
       toast({
