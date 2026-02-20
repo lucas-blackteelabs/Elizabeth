@@ -1709,6 +1709,7 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const creativityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -1938,7 +1939,7 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
                       </div>
                     </div>
                   ) : (
-                    <img src={item.imageUrl!} alt="" className="w-full h-full object-cover" />
+                    <img src={item.imageUrl!} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23f3f4f6' width='64' height='64'/%3E%3Ctext x='32' y='36' text-anchor='middle' fill='%239ca3af' font-size='10'%3E🖼%3C/text%3E%3C/svg%3E"; }} />
                   )}
                 </button>
               ))}
@@ -2037,8 +2038,10 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
               </div>
             </div>
 
+            <input ref={dialogFileInputRef} type="file" accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
+
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+              <Button variant="outline" size="sm" onClick={() => dialogFileInputRef.current?.click()} disabled={uploading}
                 className="flex-1 rounded-xl font-body text-xs h-9 border-dashed">
                 {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <ImagePlus className="h-3.5 w-3.5 mr-1.5" />}
                 {uploading ? "Uploading..." : "Add Photo / Video"}
@@ -2050,7 +2053,7 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
             </div>
 
             {items.length === 0 ? (
-              <button onClick={() => fileInputRef.current?.click()} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-8 text-center transition-colors">
+              <button onClick={() => dialogFileInputRef.current?.click()} className="w-full bg-muted/30 hover:bg-muted/50 border-2 border-dashed border-border rounded-xl p-8 text-center transition-colors">
                 <ImagePlus className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-sm font-body text-muted-foreground">Add photos, videos & reasons to keep fighting</p>
                 <p className="text-xs font-body text-muted-foreground/60 mt-1">People, moments, dreams, places...</p>
@@ -2063,7 +2066,7 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
                       item.type === "text" ? `bg-gradient-to-br ${colorMap[item.color || "amber"] || colorMap.amber} border p-3 flex items-center justify-center` : ""
                     }`}>
                     {item.type === "image" && item.imageUrl && (
-                      <img src={item.imageUrl} alt={item.content || ""} className="w-full h-full object-cover absolute inset-0" />
+                      <img src={item.imageUrl} alt={item.content || ""} className="w-full h-full object-cover absolute inset-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     )}
                     {item.type === "video" && item.imageUrl && (
                       <>

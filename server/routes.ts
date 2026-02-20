@@ -1987,6 +1987,28 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
     return res.json({ success: true });
   });
 
+  // Clean up wall items with broken local image URLs (post-redeploy fix)
+  app.post("/api/motivational-wall/cleanup", async (req, res) => {
+    try {
+      const items1 = await storage.listMotivationalWallItems(1);
+      const items3 = await storage.listMotivationalWallItems(3);
+      const items = [...items1, ...items3];
+      let cleaned = 0;
+      for (const item of items) {
+        if (item.imageUrl && (item.imageUrl.startsWith("/uploads/") || item.imageUrl.startsWith("/nano-banana/"))) {
+          const localPath = path.join(process.cwd(), item.imageUrl.startsWith("/") ? item.imageUrl.slice(1) : item.imageUrl);
+          if (!fs.existsSync(localPath)) {
+            await storage.deleteMotivationalWallItem(item.id);
+            cleaned++;
+          }
+        }
+      }
+      return res.json({ success: true, cleaned, message: `Removed ${cleaned} items with broken local images` });
+    } catch (error) {
+      return res.status(500).json({ error: "Cleanup failed" });
+    }
+  });
+
   // Bulk session import (for backdating)
   app.post("/api/treatment-sessions/bulk", async (req, res) => {
     try {
