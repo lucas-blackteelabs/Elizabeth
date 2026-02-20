@@ -1808,31 +1808,28 @@ RULES:
 
       const programs = await storage.listTreatmentPrograms(userId);
 
-      const { getHealthAdvice } = await import("./ai");
-      const prompt = `Based on this patient's profile, suggest 4-6 complementary therapy programs they could consider adding to their healing journey. For each suggestion, provide:
-- name: therapy name
-- type: category (e.g., "physical", "mind-body", "nutrition", "integrative")
-- description: brief 1-2 sentence description of benefits specifically for their condition
-- frequency: suggested frequency (e.g., "weekly", "twice weekly")
-- evidence: brief note on evidence base for cancer patients
+      const prompt = `Suggest 5 complementary therapies for a ${user.cancerType || "cancer"} patient (${user.cancerStage || ""}). Already doing: ${programs.map((p) => p.name).join(", ") || "None"}. Return JSON array. Each object: {"name":"therapy name","type":"physical or mind-body or nutrition or integrative","description":"under 15 words","frequency":"e.g. weekly","evidence":"under 12 words"}`;
 
-Current programs: ${programs.map((p) => p.name).join(", ") || "None"}
-
-Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"...", "description":"...", "frequency":"...", "evidence":"..."}]`;
-
-      const userContext = `Patient: ${user.cancerType}, ${user.cancerStage}. Status: ${user.treatmentStatus}. History: ${user.treatmentHistory}. Adverse events: ${user.adverseEventHistory}`;
-      const response = await getHealthAdvice(prompt, userContext);
-
-      try {
-        const cleaned = response
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-        const suggestions = JSON.parse(cleaned);
-        return res.json({ suggestions });
-      } catch {
-        return res.json({ suggestions: [], raw: response });
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+      let suggestions: any[] = [];
+      for (const modelName of modelsToTry) {
+        try {
+          const m = genAI.getGenerativeModel({ model: modelName });
+          const result = await m.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 4096, responseMimeType: "application/json" },
+          });
+          const text = result.response.text() || "[]";
+          const parsed = JSON.parse(text);
+          suggestions = Array.isArray(parsed) ? parsed : [];
+          break;
+        } catch (err: any) {
+          if (err?.status === 429) continue;
+          console.error(`Treatment suggestions model ${modelName} error:`, err?.message);
+          continue;
+        }
       }
+      return res.json({ suggestions });
     } catch (error) {
       console.error("Error generating treatment suggestions:", error);
       return res.status(500).json({ error: "Failed to generate suggestions" });
