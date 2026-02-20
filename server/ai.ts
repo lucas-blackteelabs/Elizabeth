@@ -1,3 +1,4 @@
+import { uploadToR2, isR2Configured } from "./r2";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
@@ -880,7 +881,7 @@ Generate ONE short punchy motivational caption (6-12 words, NEVER fewer than 5 w
               const filepath = path.join(outputDir, filename);
               fs.writeFileSync(filepath, Buffer.from(part.inlineData.data, "base64"));
               cleanupOldImages(outputDir, 10);
-              imagePath = `/nano-banana/${filename}`;
+              if (isR2Configured()) { try { imagePath = await uploadToR2(filepath, `nano-banana/${filename}`, "image/png"); } catch(e) { console.error("R2 upload failed:", e); imagePath = `/nano-banana/${filename}`; } } else { imagePath = `/nano-banana/${filename}`; }
               console.log(`Nano Banana: successfully generated image with ${model}`);
               break;
             }

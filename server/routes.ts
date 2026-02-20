@@ -1,7 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { getHealthAdvice, addToKnowledgeBase, generateMealPlan, getMealSuggestion, getDateNightIdeas, getMealIdeas, searchRestaurant, genAI } from "./openai";
+import {
+  getHealthAdvice,
+  addToKnowledgeBase,
+  generateMealPlan,
+  getMealSuggestion,
+  getDateNightIdeas,
+  getMealIdeas,
+  searchRestaurant,
+  genAI,
+} from "./ai";
 import authRoutes from "./routes/auth.routes";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -12,6 +21,7 @@ import path from "path";
 import express from "express";
 import fs from "fs";
 import { authenticateToken, type AuthRequest } from "./middleware/auth";
+import { uploadToR2, isR2Configured } from "./r2";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,7 +46,10 @@ const wallUpload = multer({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname);
-      cb(null, `wall-${Date.now()}-${Math.random().toString(36).slice(2, 6)}${ext}`);
+      cb(
+        null,
+        `wall-${Date.now()}-${Math.random().toString(36).slice(2, 6)}${ext}`,
+      );
     },
   }),
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -66,13 +79,19 @@ async function seedLizAccount() {
     cancerType: "Stage IV Melanoma",
     cancerStage: "Stage IV",
     treatmentStatus: "Active Surveillance",
-    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
-    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
-    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    treatmentHistory:
+      "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications:
+      "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory:
+      "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
     oncologist: "Melanoma Oncology Team",
-    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+    goals:
+      "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes:
+      "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary:
+      "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
     diagnosis_date: "2025-04-22",
     dietaryPreferences: "Sugar-free, dairy-free, fish or organic chicken",
@@ -88,13 +107,18 @@ async function seedLizAccount() {
     if (!validPassword) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash("Cookie", salt);
-      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, existingUser.id));
+      await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, existingUser.id));
     }
     const scans = await storage.listScanResults(existingUser.id);
     if (scans.length === 0) {
       await seedScanData(existingUser.id);
     } else {
-      const hasTumour4 = scans.some(s => s.tumourLabel === "Tumour 4 (Small Bowel)");
+      const hasTumour4 = scans.some(
+        (s) => s.tumourLabel === "Tumour 4 (Small Bowel)",
+      );
       if (!hasTumour4) {
         await seedTumour4(existingUser.id);
       }
@@ -107,7 +131,10 @@ async function seedLizAccount() {
   if (oldUser) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash("Cookie", salt);
-    await db.update(users).set({ ...lizProfile, username: "Liz", password: hashedPassword }).where(eq(users.id, oldUser.id));
+    await db
+      .update(users)
+      .set({ ...lizProfile, username: "Liz", password: hashedPassword })
+      .where(eq(users.id, oldUser.id));
     const scans = await storage.listScanResults(oldUser.id);
     if (scans.length === 0) {
       await seedScanData(oldUser.id);
@@ -131,13 +158,19 @@ async function seedLizAccount() {
     bio: "On a healing journey with Stage IV melanoma. After immunotherapy, my tumours are responding beautifully. Focused on reaching NED through holistic wellness and the power of my immune system.",
     diagnosis_date: "2025-04-22",
     treatmentStatus: "Active Surveillance",
-    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
-    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
-    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    treatmentHistory:
+      "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications:
+      "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory:
+      "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
     oncologist: "Melanoma Oncology Team",
-    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+    goals:
+      "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes:
+      "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary:
+      "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
   });
 
@@ -149,35 +182,73 @@ async function seedLizAccount() {
 
 async function seedTumour4(userId: number) {
   const tumour4Data = [
-    { scanDate: "2025-04-22", scanLabel: "Baseline (before treatment)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 18, sizeY: 15, suvMax: 4.2 },
-    { scanDate: "2025-08-05", scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 8, sizeY: 6, suvMax: 1.1 },
-    { scanDate: "2026-02-03", scanLabel: "Surveillance (no treatment since Jul 2025)", tumourLabel: "Tumour 4 (Small Bowel)", sizeX: 0, sizeY: 0, suvMax: null },
+    {
+      scanDate: "2025-04-22",
+      scanLabel: "Baseline (before treatment)",
+      tumourLabel: "Tumour 4 (Small Bowel)",
+      sizeX: 18,
+      sizeY: 15,
+      suvMax: 4.2,
+    },
+    {
+      scanDate: "2025-08-05",
+      scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)",
+      tumourLabel: "Tumour 4 (Small Bowel)",
+      sizeX: 8,
+      sizeY: 6,
+      suvMax: 1.1,
+    },
+    {
+      scanDate: "2026-02-03",
+      scanLabel: "Surveillance (no treatment since Jul 2025)",
+      tumourLabel: "Tumour 4 (Small Bowel)",
+      sizeX: 0,
+      sizeY: 0,
+      suvMax: null,
+    },
   ];
   for (const t of tumour4Data) {
-    await storage.createScanResult({ userId, ...t, notes: t.suvMax === null ? "Resolved — no longer visible on imaging" : null });
+    await storage.createScanResult({
+      userId,
+      ...t,
+      notes:
+        t.suvMax === null ? "Resolved — no longer visible on imaging" : null,
+    });
   }
 }
 
 async function seedScanData(userId: number) {
   const scanData = [
-    { scanDate: "2025-04-22", scanLabel: "Baseline (before treatment)", tumours: [
-      { label: "Tumour 1 (Liver)", sizeX: 82, sizeY: 57, suvMax: 7.6 },
-      { label: "Tumour 2 (Liver)", sizeX: 67, sizeY: 58, suvMax: 9.8 },
-      { label: "Tumour 3 (Liver)", sizeX: 49, sizeY: 49, suvMax: 9.8 },
-      { label: "Tumour 4 (Small Bowel)", sizeX: 18, sizeY: 15, suvMax: 4.2 },
-    ]},
-    { scanDate: "2025-08-05", scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)", tumours: [
-      { label: "Tumour 1 (Liver)", sizeX: 65, sizeY: 54, suvMax: 4.3 },
-      { label: "Tumour 2 (Liver)", sizeX: 60, sizeY: 49, suvMax: 3.5 },
-      { label: "Tumour 3 (Liver)", sizeX: 45, sizeY: 36, suvMax: 4.3 },
-      { label: "Tumour 4 (Small Bowel)", sizeX: 8, sizeY: 6, suvMax: 1.1 },
-    ]},
-    { scanDate: "2026-02-03", scanLabel: "Surveillance (no treatment since Jul 2025)", tumours: [
-      { label: "Tumour 1 (Liver)", sizeX: 60, sizeY: 51, suvMax: 3.2 },
-      { label: "Tumour 2 (Liver)", sizeX: 51, sizeY: 42, suvMax: null },
-      { label: "Tumour 3 (Liver)", sizeX: 42, sizeY: 35, suvMax: 3.1 },
-      { label: "Tumour 4 (Small Bowel)", sizeX: 0, sizeY: 0, suvMax: null },
-    ]},
+    {
+      scanDate: "2025-04-22",
+      scanLabel: "Baseline (before treatment)",
+      tumours: [
+        { label: "Tumour 1 (Liver)", sizeX: 82, sizeY: 57, suvMax: 7.6 },
+        { label: "Tumour 2 (Liver)", sizeX: 67, sizeY: 58, suvMax: 9.8 },
+        { label: "Tumour 3 (Liver)", sizeX: 49, sizeY: 49, suvMax: 9.8 },
+        { label: "Tumour 4 (Small Bowel)", sizeX: 18, sizeY: 15, suvMax: 4.2 },
+      ],
+    },
+    {
+      scanDate: "2025-08-05",
+      scanLabel: "Post-immunotherapy (4 cycles ipi/nivo)",
+      tumours: [
+        { label: "Tumour 1 (Liver)", sizeX: 65, sizeY: 54, suvMax: 4.3 },
+        { label: "Tumour 2 (Liver)", sizeX: 60, sizeY: 49, suvMax: 3.5 },
+        { label: "Tumour 3 (Liver)", sizeX: 45, sizeY: 36, suvMax: 4.3 },
+        { label: "Tumour 4 (Small Bowel)", sizeX: 8, sizeY: 6, suvMax: 1.1 },
+      ],
+    },
+    {
+      scanDate: "2026-02-03",
+      scanLabel: "Surveillance (no treatment since Jul 2025)",
+      tumours: [
+        { label: "Tumour 1 (Liver)", sizeX: 60, sizeY: 51, suvMax: 3.2 },
+        { label: "Tumour 2 (Liver)", sizeX: 51, sizeY: 42, suvMax: null },
+        { label: "Tumour 3 (Liver)", sizeX: 42, sizeY: 35, suvMax: 3.1 },
+        { label: "Tumour 4 (Small Bowel)", sizeX: 0, sizeY: 0, suvMax: null },
+      ],
+    },
   ];
 
   for (const scan of scanData) {
@@ -190,7 +261,10 @@ async function seedScanData(userId: number) {
         sizeX: tumour.sizeX,
         sizeY: tumour.sizeY,
         suvMax: tumour.suvMax,
-        notes: tumour.suvMax === null && tumour.sizeX === 0 ? "Resolved — no longer visible on imaging" : null,
+        notes:
+          tumour.suvMax === null && tumour.sizeX === 0
+            ? "Resolved — no longer visible on imaging"
+            : null,
       });
     }
   }
@@ -212,16 +286,43 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "Every 3 weeks",
     provider: "Melanoma Oncology Team",
     location: "Cancer Centre",
-    notes: "Double-agent immunotherapy (ipilimumab + nivolumab). All 4 cycles completed. Treatment ceased after cycle 4 due to severe immune-related adverse events.",
-    sideEffects: "Cycle 4 caused Grade 4 hepatitis (ALT ~750) and severe colitis. Required high-dose steroids and ~5 months mycophenolate immunosuppression.",
+    notes:
+      "Double-agent immunotherapy (ipilimumab + nivolumab). All 4 cycles completed. Treatment ceased after cycle 4 due to severe immune-related adverse events.",
+    sideEffects:
+      "Cycle 4 caused Grade 4 hepatitis (ALT ~750) and severe colitis. Required high-dose steroids and ~5 months mycophenolate immunosuppression.",
     status: "completed",
   });
 
   const sessions = [
-    { sessionNumber: 1, date: "2025-04-28", status: "completed", notes: "Cycle 1 - tolerated well", sideEffects: null },
-    { sessionNumber: 2, date: "2025-05-19", status: "completed", notes: "Cycle 2 - mild fatigue", sideEffects: "Mild fatigue" },
-    { sessionNumber: 3, date: "2025-06-09", status: "completed", notes: "Cycle 3 - good tolerance", sideEffects: "Mild fatigue, slight nausea" },
-    { sessionNumber: 4, date: "2025-07-01", status: "completed", notes: "Cycle 4 - severe adverse events developed post-infusion", sideEffects: "Grade 4 hepatitis (ALT ~750), severe colitis. Required hospitalisation, high-dose steroids, and 5 months mycophenolate." },
+    {
+      sessionNumber: 1,
+      date: "2025-04-28",
+      status: "completed",
+      notes: "Cycle 1 - tolerated well",
+      sideEffects: null,
+    },
+    {
+      sessionNumber: 2,
+      date: "2025-05-19",
+      status: "completed",
+      notes: "Cycle 2 - mild fatigue",
+      sideEffects: "Mild fatigue",
+    },
+    {
+      sessionNumber: 3,
+      date: "2025-06-09",
+      status: "completed",
+      notes: "Cycle 3 - good tolerance",
+      sideEffects: "Mild fatigue, slight nausea",
+    },
+    {
+      sessionNumber: 4,
+      date: "2025-07-01",
+      status: "completed",
+      notes: "Cycle 4 - severe adverse events developed post-infusion",
+      sideEffects:
+        "Grade 4 hepatitis (ALT ~750), severe colitis. Required hospitalisation, high-dose steroids, and 5 months mycophenolate.",
+    },
   ];
 
   for (const s of sessions) {
@@ -249,7 +350,8 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "5 days per week",
     provider: "Integrative Health Centre",
     location: "Hyperbaric Centre, Sydney",
-    notes: "100 sessions completed since diagnosis. Supporting immune recovery, tissue healing, and oxygen saturation. Ongoing maintenance.",
+    notes:
+      "100 sessions completed since diagnosis. Supporting immune recovery, tissue healing, and oxygen saturation. Ongoing maintenance.",
     status: "active",
   });
 
@@ -266,7 +368,14 @@ async function seedTreatmentPrograms(userId: number) {
       date: sessionDate.toISOString().split("T")[0],
       time: "7:00 AM",
       status: "completed",
-      notes: i === 1 ? "First session" : i === 50 ? "Halfway milestone!" : i === 100 ? "100 sessions - incredible commitment!" : null,
+      notes:
+        i === 1
+          ? "First session"
+          : i === 50
+            ? "Halfway milestone!"
+            : i === 100
+              ? "100 sessions - incredible commitment!"
+              : null,
       sideEffects: null,
     });
   }
@@ -283,7 +392,8 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "Weekly",
     provider: "Dr. Sarah Chen",
     location: "Integrative Wellness Clinic",
-    notes: "Supporting immune system recovery, managing fatigue, and promoting overall wellbeing.",
+    notes:
+      "Supporting immune system recovery, managing fatigue, and promoting overall wellbeing.",
     status: "active",
   });
 
@@ -299,7 +409,8 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "Twice weekly",
     provider: "Cancer Support Centre",
     location: "Community Wellness Hub",
-    notes: "Gentle restorative yoga specifically designed for cancer patients. Focus on breathing, gentle stretching, and meditation.",
+    notes:
+      "Gentle restorative yoga specifically designed for cancer patients. Focus on breathing, gentle stretching, and meditation.",
     status: "active",
   });
 
@@ -315,7 +426,8 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "Monthly",
     provider: "Dr. James Mitchell",
     location: "Integrative Oncology Clinic",
-    notes: "Monthly reviews covering supplement protocols, nutrition guidance, and holistic treatment planning alongside conventional care.",
+    notes:
+      "Monthly reviews covering supplement protocols, nutrition guidance, and holistic treatment planning alongside conventional care.",
     status: "active",
   });
 
@@ -331,7 +443,8 @@ async function seedTreatmentPrograms(userId: number) {
     frequency: "Fortnightly",
     provider: "Dr. Emma Walsh",
     location: "Cancer Psychology Centre",
-    notes: "Psycho-oncology support for processing diagnosis, managing scanxiety, and building resilience.",
+    notes:
+      "Psycho-oncology support for processing diagnosis, managing scanxiety, and building resilience.",
     status: "active",
   });
 }
@@ -339,13 +452,34 @@ async function seedTreatmentPrograms(userId: number) {
 async function seedDefaultAppointments(userId: number) {
   const existing = await storage.listAppointments(userId);
   if (existing.length > 0) return;
-  
+
   const defaultAppointments = [
-    { userId, title: "PET/CT Scan", description: "Follow-up PET/CT scan to assess treatment response", date: "2026-05-15", time: "9:00 AM", location: "Radiology Department" },
-    { userId, title: "Oncology Review", description: "Review scan results and discuss next steps", date: "2026-05-22", time: "10:30 AM", location: "Oncology Clinic" },
-    { userId, title: "Nutrition Consultation", description: "Liver-supportive and immune-boosting nutrition planning", date: "2026-03-10", time: "2:00 PM", location: "Integrative Health Centre" },
+    {
+      userId,
+      title: "PET/CT Scan",
+      description: "Follow-up PET/CT scan to assess treatment response",
+      date: "2026-05-15",
+      time: "9:00 AM",
+      location: "Radiology Department",
+    },
+    {
+      userId,
+      title: "Oncology Review",
+      description: "Review scan results and discuss next steps",
+      date: "2026-05-22",
+      time: "10:30 AM",
+      location: "Oncology Clinic",
+    },
+    {
+      userId,
+      title: "Nutrition Consultation",
+      description: "Liver-supportive and immune-boosting nutrition planning",
+      date: "2026-03-10",
+      time: "2:00 PM",
+      location: "Integrative Health Centre",
+    },
   ];
-  
+
   for (const appt of defaultAppointments) {
     await storage.createAppointment(appt);
   }
@@ -356,12 +490,54 @@ async function seedCommunityGroups() {
   if (existing.length > 0) return;
 
   const groups = [
-    { name: "Immunotherapy Warriors", description: "For those on immunotherapy — share experiences with Keytruda, Opdivo, Yervoy and other treatments. Side effects, tips, wins and everything in between.", icon: "shield", category: "treatment", coverColor: "#6366f1" },
-    { name: "Nutrition & Healing", description: "Anti-inflammatory recipes, supplements, juicing, fasting — share what's working for you and learn from others on the same path.", icon: "apple", category: "nutrition", coverColor: "#22c55e" },
-    { name: "Melanoma Support", description: "A safe space specifically for melanoma patients and survivors. Whether you're newly diagnosed or years into your journey.", icon: "sun", category: "cancer-specific", coverColor: "#f59e0b" },
-    { name: "Mindfulness & Mental Health", description: "Meditation, breathwork, therapy, journaling — tools for the emotional side of cancer. Because healing isn't just physical.", icon: "brain", category: "wellness", coverColor: "#8b5cf6" },
-    { name: "Caregivers Corner", description: "For the partners, family and friends walking alongside someone with cancer. Your journey matters too.", icon: "heart", category: "support", coverColor: "#ec4899" },
-    { name: "Exercise & Movement", description: "From gentle walks to gym sessions — share your approach to staying active during and after treatment.", icon: "dumbbell", category: "wellness", coverColor: "#14b8a6" },
+    {
+      name: "Immunotherapy Warriors",
+      description:
+        "For those on immunotherapy — share experiences with Keytruda, Opdivo, Yervoy and other treatments. Side effects, tips, wins and everything in between.",
+      icon: "shield",
+      category: "treatment",
+      coverColor: "#6366f1",
+    },
+    {
+      name: "Nutrition & Healing",
+      description:
+        "Anti-inflammatory recipes, supplements, juicing, fasting — share what's working for you and learn from others on the same path.",
+      icon: "apple",
+      category: "nutrition",
+      coverColor: "#22c55e",
+    },
+    {
+      name: "Melanoma Support",
+      description:
+        "A safe space specifically for melanoma patients and survivors. Whether you're newly diagnosed or years into your journey.",
+      icon: "sun",
+      category: "cancer-specific",
+      coverColor: "#f59e0b",
+    },
+    {
+      name: "Mindfulness & Mental Health",
+      description:
+        "Meditation, breathwork, therapy, journaling — tools for the emotional side of cancer. Because healing isn't just physical.",
+      icon: "brain",
+      category: "wellness",
+      coverColor: "#8b5cf6",
+    },
+    {
+      name: "Caregivers Corner",
+      description:
+        "For the partners, family and friends walking alongside someone with cancer. Your journey matters too.",
+      icon: "heart",
+      category: "support",
+      coverColor: "#ec4899",
+    },
+    {
+      name: "Exercise & Movement",
+      description:
+        "From gentle walks to gym sessions — share your approach to staying active during and after treatment.",
+      icon: "dumbbell",
+      category: "wellness",
+      coverColor: "#14b8a6",
+    },
   ];
 
   for (const g of groups) {
@@ -378,7 +554,12 @@ async function seedSurvivorData() {
     bio: "Diagnosed with Stage III melanoma in 2019. After surgery and immunotherapy, I've been NED since 2021. Now I volunteer to support others through their journey — because nobody should walk this road feeling alone.",
     cancerType: "Stage III Melanoma",
     yearsSurvivor: 5,
-    expertise: ["Immunotherapy", "Managing Side Effects", "Returning to Work", "Scanxiety"],
+    expertise: [
+      "Immunotherapy",
+      "Managing Side Effects",
+      "Returning to Work",
+      "Scanxiety",
+    ],
     verified: true,
     featured: true,
     sessionMode: "video",
@@ -389,7 +570,12 @@ async function seedSurvivorData() {
     bio: "Bowel cancer survivor — diagnosed 2018, NED since 2020. I know how isolating treatment can feel. Happy to chat about nutrition during chemo, keeping active, and the mental game of recovery.",
     cancerType: "Stage III Bowel Cancer",
     yearsSurvivor: 6,
-    expertise: ["Nutrition", "Exercise During Treatment", "Mental Health", "Caregiver Support"],
+    expertise: [
+      "Nutrition",
+      "Exercise During Treatment",
+      "Mental Health",
+      "Caregiver Support",
+    ],
     verified: true,
     featured: false,
     sessionMode: "video",
@@ -400,7 +586,12 @@ async function seedSurvivorData() {
     bio: "Breast cancer survivor and oncology nurse. I bring both personal and professional perspectives. Passionate about helping patients understand their treatment options and advocating for themselves.",
     cancerType: "Stage II Breast Cancer",
     yearsSurvivor: 8,
-    expertise: ["Treatment Options", "Self-Advocacy", "Complementary Therapies", "Body Image"],
+    expertise: [
+      "Treatment Options",
+      "Self-Advocacy",
+      "Complementary Therapies",
+      "Body Image",
+    ],
     verified: true,
     featured: true,
     sessionMode: "video",
@@ -411,7 +602,12 @@ async function seedSurvivorData() {
     bio: "Living with Stage IV lung cancer as a chronic condition since 2020. On targeted therapy. I'm proof that Stage IV doesn't mean giving up — it means adapting and thriving.",
     cancerType: "Stage IV Lung Cancer",
     yearsSurvivor: 4,
-    expertise: ["Living with Stage IV", "Targeted Therapy", "Mindfulness", "Family Conversations"],
+    expertise: [
+      "Living with Stage IV",
+      "Targeted Therapy",
+      "Mindfulness",
+      "Family Conversations",
+    ],
     verified: true,
     featured: false,
     sessionMode: "video",
@@ -419,13 +615,57 @@ async function seedSurvivorData() {
 
   const now = new Date();
   const slots = [
-    { survivorId: sarah.id, daysAhead: 3, times: [["10:00", "10:30"], ["10:30", "11:00"], ["14:00", "14:30"]] },
-    { survivorId: sarah.id, daysAhead: 5, times: [["9:00", "9:30"], ["9:30", "10:00"]] },
-    { survivorId: james.id, daysAhead: 2, times: [["15:00", "15:30"], ["15:30", "16:00"]] },
+    {
+      survivorId: sarah.id,
+      daysAhead: 3,
+      times: [
+        ["10:00", "10:30"],
+        ["10:30", "11:00"],
+        ["14:00", "14:30"],
+      ],
+    },
+    {
+      survivorId: sarah.id,
+      daysAhead: 5,
+      times: [
+        ["9:00", "9:30"],
+        ["9:30", "10:00"],
+      ],
+    },
+    {
+      survivorId: james.id,
+      daysAhead: 2,
+      times: [
+        ["15:00", "15:30"],
+        ["15:30", "16:00"],
+      ],
+    },
     { survivorId: james.id, daysAhead: 4, times: [["11:00", "11:30"]] },
-    { survivorId: mei.id, daysAhead: 3, times: [["13:00", "13:30"], ["13:30", "14:00"], ["14:00", "14:30"]] },
-    { survivorId: mei.id, daysAhead: 6, times: [["10:00", "10:30"], ["10:30", "11:00"]] },
-    { survivorId: david.id, daysAhead: 4, times: [["16:00", "16:30"], ["16:30", "17:00"]] },
+    {
+      survivorId: mei.id,
+      daysAhead: 3,
+      times: [
+        ["13:00", "13:30"],
+        ["13:30", "14:00"],
+        ["14:00", "14:30"],
+      ],
+    },
+    {
+      survivorId: mei.id,
+      daysAhead: 6,
+      times: [
+        ["10:00", "10:30"],
+        ["10:30", "11:00"],
+      ],
+    },
+    {
+      survivorId: david.id,
+      daysAhead: 4,
+      times: [
+        ["16:00", "16:30"],
+        ["16:30", "17:00"],
+      ],
+    },
   ];
 
   for (const group of slots) {
@@ -446,7 +686,8 @@ async function seedSurvivorData() {
     {
       survivorId: sarah.id,
       title: "Living Beyond Scanxiety",
-      description: "How to manage the anxiety between scans and build confidence in your body's healing. Sarah shares practical tools she uses to stay grounded during surveillance.",
+      description:
+        "How to manage the anxiety between scans and build confidence in your body's healing. Sarah shares practical tools she uses to stay grounded during surveillance.",
       daysAhead: 7,
       hour: 18,
       durationMinutes: 45,
@@ -456,7 +697,8 @@ async function seedSurvivorData() {
     {
       survivorId: mei.id,
       title: "Becoming Your Own Best Advocate",
-      description: "Understanding your treatment plan, asking the right questions, and feeling empowered in medical appointments. Practical tips from both patient and nurse perspectives.",
+      description:
+        "Understanding your treatment plan, asking the right questions, and feeling empowered in medical appointments. Practical tips from both patient and nurse perspectives.",
       daysAhead: 10,
       hour: 12,
       durationMinutes: 60,
@@ -466,7 +708,8 @@ async function seedSurvivorData() {
     {
       survivorId: james.id,
       title: "Nutrition That Nourishes: Eating Well During & After Treatment",
-      description: "Practical, evidence-based nutrition advice for cancer patients. What actually helps, what's a myth, and how to enjoy food again when treatment makes eating hard.",
+      description:
+        "Practical, evidence-based nutrition advice for cancer patients. What actually helps, what's a myth, and how to enjoy food again when treatment makes eating hard.",
       daysAhead: 14,
       hour: 19,
       durationMinutes: 50,
@@ -476,7 +719,8 @@ async function seedSurvivorData() {
     {
       survivorId: david.id,
       title: "Thriving with Stage IV: A Fireside Chat",
-      description: "An honest conversation about living with advanced cancer as a chronic condition. David shares how he found joy, purpose, and peace alongside uncertainty.",
+      description:
+        "An honest conversation about living with advanced cancer as a chronic condition. David shares how he found joy, purpose, and peace alongside uncertainty.",
       daysAhead: 12,
       hour: 17,
       durationMinutes: 60,
@@ -502,7 +746,9 @@ async function seedSurvivorData() {
     });
   }
 
-  console.log("Seeded survivor profiles, availability slots, and upcoming talks");
+  console.log(
+    "Seeded survivor profiles, availability slots, and upcoming talks",
+  );
 }
 
 async function seedLucasAdmin() {
@@ -538,13 +784,19 @@ async function seedTestAccount() {
       cancerType: "Stage IV Melanoma",
       cancerStage: "Stage IV",
       treatmentStatus: "Active Surveillance",
-      treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
-      currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
-      adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+      treatmentHistory:
+        "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+      currentMedications:
+        "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+      adverseEventHistory:
+        "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
       oncologist: "Melanoma Oncology Team",
-      goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-      medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-      scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+      goals:
+        "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+      medicalNotes:
+        "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+      scanSummary:
+        "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
       nextScanDate: "2026-05-15",
       diagnosis_date: "2025-04-22",
       dietaryPreferences: "Sugar-free, dairy-free, fish or organic chicken",
@@ -570,13 +822,19 @@ async function seedTestAccount() {
     bio: "Test account mirroring Liz's profile. On a healing journey with Stage IV melanoma.",
     diagnosis_date: "2025-04-22",
     treatmentStatus: "Active Surveillance",
-    treatmentHistory: "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
-    currentMedications: "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
-    adverseEventHistory: "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
+    treatmentHistory:
+      "4 cycles ipilimumab + nivolumab (ipi/nivo) completed Apr-Jul 2025. Immunotherapy stopped July 2025 due to severe immune-related toxicity. Required high-dose steroids and ~5 months of mycophenolate immunosuppression (ceased early December 2025).",
+    currentMedications:
+      "No active cancer treatment. Immunosuppression ceased December 2025. Currently on surveillance protocol with regular PET/CT scans.",
+    adverseEventHistory:
+      "Grade 4 hepatitis (ALT ~750), severe colitis from immunotherapy. Required high-dose steroids and approximately 5 months of mycophenolate/immunosuppression.",
     oncologist: "Melanoma Oncology Team",
-    goals: "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
-    medicalNotes: "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
-    scanSummary: "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
+    goals:
+      "Achieve NED (No Evidence of Disease) during 2026, ideally confirmed by May 2026 scan. Continue supporting immune system recovery and overall wellbeing through holistic practices.",
+    medicalNotes:
+      "Deep, durable immunotherapy response demonstrated. Continued tumour improvement without treatment is a strong favourable prognostic sign. Patient exhibits all major favourable indicators for long-term remission.",
+    scanSummary:
+      "Feb 2026 PET/CT: Continued improvement off therapy. Tumour 1 (Liver): 60x51mm SUV 3.2 (was 82x57 SUV 7.6). Tumour 2 (Liver): 51x42mm no focal uptake (was 67x58 SUV 9.8). Tumour 3 (Liver): 42x35mm SUV 3.1 (was 49x49 SUV 9.8). Tumour 4 (Small Bowel): Resolved — no longer visible (was 18x15mm SUV 4.2 at baseline). No new disease — brain, lungs, bones, nodes all clear.",
     nextScanDate: "2026-05-15",
   });
   await seedScanData(user.id);
@@ -586,113 +844,150 @@ async function seedTestAccount() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use('/api/auth', authRoutes);
-  app.use('/uploads', express.static(uploadDir));
-  app.use('/nano-banana', express.static(path.join(process.cwd(), 'client', 'public', 'nano-banana')));
+  app.use("/api/auth", authRoutes);
+  app.use("/uploads", express.static(uploadDir));
+  app.use(
+    "/nano-banana",
+    express.static(path.join(process.cwd(), "client", "public", "nano-banana")),
+  );
 
   await seedLizAccount();
   await seedLucasAdmin();
   await seedTestAccount();
 
-  app.post("/api/users/:id/photo", authenticateToken, upload.single("photo"), async (req: AuthRequest, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
-      if (req.user?.id !== id) return res.status(403).json({ error: "Not authorized" });
-      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
-      const photoUrl = `/uploads/${req.file.filename}`;
-      const updated = await storage.updateUser(id, { profilePhoto: photoUrl });
-      if (!updated) return res.status(404).json({ error: "User not found" });
-      return res.json(updated);
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      return res.status(500).json({ error: "Failed to upload photo" });
-    }
-  });
+  app.post(
+    "/api/users/:id/photo",
+    authenticateToken,
+    upload.single("photo"),
+    async (req: AuthRequest, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id))
+          return res.status(400).json({ error: "Invalid user ID" });
+        if (req.user?.id !== id)
+          return res.status(403).json({ error: "Not authorized" });
+        if (!req.file)
+          return res.status(400).json({ error: "No photo uploaded" });
+        const photoUrl = await uploadToR2(
+          req.file.path,
+          `profiles/${req.file.filename}`,
+          req.file.mimetype || "image/jpeg",
+        );
+        const updated = await storage.updateUser(id, {
+          profilePhoto: photoUrl,
+        });
+        if (!updated) return res.status(404).json({ error: "User not found" });
+        return res.json(updated);
+      } catch (error) {
+        console.error("Error uploading photo:", error);
+        return res.status(500).json({ error: "Failed to upload photo" });
+      }
+    },
+  );
 
-  app.get("/api/admin/users", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser || requestingUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+  app.get(
+    "/api/admin/users",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser || requestingUser.role !== "admin") {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        const allUsers = await storage.listAllUsers();
+        const safeUsers = allUsers.map(({ password, ...u }) => u);
+        return res.json(safeUsers);
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to fetch users" });
       }
-      const allUsers = await storage.listAllUsers();
-      const safeUsers = allUsers.map(({ password, ...u }) => u);
-      return res.json(safeUsers);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to fetch users" });
-    }
-  });
+    },
+  );
 
-  app.patch("/api/admin/users/:id", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser || requestingUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+  app.patch(
+    "/api/admin/users/:id",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser || requestingUser.role !== "admin") {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        const id = parseInt(req.params.id, 10);
+        const { role } = req.body;
+        if (role && (role === "admin" || role === "user")) {
+          await storage.updateUser(id, { role } as any);
+        }
+        const updated = await storage.getUser(id);
+        if (!updated) return res.status(404).json({ error: "User not found" });
+        const { password, ...safeUser } = updated;
+        return res.json(safeUser);
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to update user" });
       }
-      const id = parseInt(req.params.id, 10);
-      const { role } = req.body;
-      if (role && (role === "admin" || role === "user")) {
-        await storage.updateUser(id, { role } as any);
-      }
-      const updated = await storage.getUser(id);
-      if (!updated) return res.status(404).json({ error: "User not found" });
-      const { password, ...safeUser } = updated;
-      return res.json(safeUser);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to update user" });
-    }
-  });
+    },
+  );
 
-  app.delete("/api/admin/threads/:id", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser || requestingUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+  app.delete(
+    "/api/admin/threads/:id",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser || requestingUser.role !== "admin") {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        const id = parseInt(req.params.id, 10);
+        await storage.deleteCommunityThread(id);
+        return res.json({ success: true });
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to delete thread" });
       }
-      const id = parseInt(req.params.id, 10);
-      await storage.deleteCommunityThread(id);
-      return res.json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to delete thread" });
-    }
-  });
+    },
+  );
 
-  app.delete("/api/admin/replies/:id", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser || requestingUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+  app.delete(
+    "/api/admin/replies/:id",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser || requestingUser.role !== "admin") {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        const id = parseInt(req.params.id, 10);
+        await storage.deleteCommunityReply(id);
+        return res.json({ success: true });
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to delete reply" });
       }
-      const id = parseInt(req.params.id, 10);
-      await storage.deleteCommunityReply(id);
-      return res.json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to delete reply" });
-    }
-  });
+    },
+  );
 
-  app.delete("/api/admin/group-posts/:id", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser || requestingUser.role !== "admin") {
-        return res.status(403).json({ error: "Admin access required" });
+  app.delete(
+    "/api/admin/group-posts/:id",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser || requestingUser.role !== "admin") {
+          return res.status(403).json({ error: "Admin access required" });
+        }
+        const id = parseInt(req.params.id, 10);
+        await storage.deleteGroupPost(id);
+        return res.json({ success: true });
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to delete group post" });
       }
-      const id = parseInt(req.params.id, 10);
-      await storage.deleteGroupPost(id);
-      return res.json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to delete group post" });
-    }
-  });
+    },
+  );
 
   app.post("/api/ai/chat", async (req, res) => {
     try {
       const { message, userId } = req.body;
-      
+
       if (!message || typeof message !== "string") {
-        return res.status(400).json({ 
-          error: "Invalid request. Message must be a string." 
+        return res.status(400).json({
+          error: "Invalid request. Message must be a string.",
         });
       }
 
@@ -716,25 +1011,25 @@ PATIENT CONTEXT (use this to personalize your response):
 `;
         }
       }
-      
+
       const response = await getHealthAdvice(message, userContext);
-      
+
       const uid = userId || 1;
       await storage.addChatMessage(uid, "user", message);
       await storage.addChatMessage(uid, "assistant", response);
-      
-      return res.json({ 
-        role: "assistant", 
-        content: response 
+
+      return res.json({
+        role: "assistant",
+        content: response,
       });
     } catch (error) {
       console.error("Error in AI chat:", error);
-      return res.status(500).json({ 
-        error: "Failed to process your request" 
+      return res.status(500).json({
+        error: "Failed to process your request",
       });
     }
   });
-  
+
   app.post("/api/ai/meal-plan", async (req, res) => {
     try {
       const { userId } = req.body;
@@ -799,9 +1094,16 @@ PATIENT CONTEXT:
       let dietaryPreferences = "";
       if (user) {
         userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Focus: anti-inflammatory, liver-supportive, immune-boosting nutrition.`;
-        dietaryPreferences = user.dietaryPreferences || "sugar-free, dairy-free, fish or organic chicken";
+        dietaryPreferences =
+          user.dietaryPreferences ||
+          "sugar-free, dairy-free, fish or organic chicken";
       }
-      const suggestions = await getMealIdeas(userContext, dietaryPreferences, excludeNames, mealTypes);
+      const suggestions = await getMealIdeas(
+        userContext,
+        dietaryPreferences,
+        excludeNames,
+        mealTypes,
+      );
       return res.json(suggestions);
     } catch (error: any) {
       console.error("Error generating meal ideas:", error);
@@ -814,20 +1116,26 @@ PATIENT CONTEXT:
   app.post("/api/ai/knowledge", async (req, res) => {
     try {
       const { category, content } = req.body;
-      
-      if (!category || !content || typeof category !== "string" || typeof content !== "string") {
-        return res.status(400).json({ 
-          error: "Invalid request. Both category and content must be provided as strings." 
+
+      if (
+        !category ||
+        !content ||
+        typeof category !== "string" ||
+        typeof content !== "string"
+      ) {
+        return res.status(400).json({
+          error:
+            "Invalid request. Both category and content must be provided as strings.",
         });
       }
-      
+
       const result = addToKnowledgeBase(category, content);
-      
+
       return res.json(result);
     } catch (error) {
       console.error("Error adding to knowledge base:", error);
-      return res.status(500).json({ 
-        error: "Failed to add to knowledge base" 
+      return res.status(500).json({
+        error: "Failed to add to knowledge base",
       });
     }
   });
@@ -836,16 +1144,16 @@ PATIENT CONTEXT:
     try {
       const { id } = req.params;
       const userId = parseInt(id, 10);
-      
+
       if (isNaN(userId)) {
         return res.status(400).json({ error: "Invalid user ID" });
       }
-      
+
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ error: "User not found" });
       }
-      
+
       const updatedUser = await storage.updateUser(userId, req.body);
       return res.json(updatedUser);
     } catch (error) {
@@ -900,61 +1208,87 @@ PATIENT CONTEXT:
     }
   });
 
-  app.post("/api/ai/extract-tumours", scanDocUpload.single("file"), async (req, res) => {
-    try {
-      const file = req.file;
-      if (!file) return res.status(400).json({ error: "No file uploaded" });
+  app.post(
+    "/api/ai/extract-tumours",
+    scanDocUpload.single("file"),
+    async (req, res) => {
+      try {
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-      const ext = path.extname(file.originalname).toLowerCase();
-      const isImage = /\.(jpg|jpeg|png|webp|gif|heic|heif)$/i.test(ext);
+        const ext = path.extname(file.originalname).toLowerCase();
+        const isImage = /\.(jpg|jpeg|png|webp|gif|heic|heif)$/i.test(ext);
 
-      let parts: any[];
-      if (isImage) {
-        const fileBuffer = fs.readFileSync(file.path);
-        const base64Data = fileBuffer.toString("base64");
-        const mimeType = file.mimetype || "image/jpeg";
-        parts = [
-          { inlineData: { mimeType, data: base64Data } },
-          { text: `Extract ALL tumour/lesion measurements from this medical scan report image. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].` },
-        ];
-      } else {
-        const textContent = fs.readFileSync(file.path, "utf-8");
-        parts = [
-          { text: `Extract ALL tumour/lesion measurements from this medical scan report. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].\n\nDocument content:\n${textContent}` },
-        ];
-      }
-
-      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
-      let result;
-      let lastError: any;
-      for (const modelName of modelsToTry) {
-        try {
-          const m = genAI.getGenerativeModel({ model: modelName });
-          result = await m.generateContent({
-            contents: [{ role: "user", parts }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: "application/json" },
-          });
-          break;
-        } catch (err: any) {
-          lastError = err;
-          if (err?.status === 429) { console.log(`Extract tumours: model ${modelName} rate-limited`); continue; }
-          throw err;
+        let parts: any[];
+        if (isImage) {
+          const fileBuffer = fs.readFileSync(file.path);
+          const base64Data = fileBuffer.toString("base64");
+          const mimeType = file.mimetype || "image/jpeg";
+          parts = [
+            { inlineData: { mimeType, data: base64Data } },
+            {
+              text: `Extract ALL tumour/lesion measurements from this medical scan report image. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].`,
+            },
+          ];
+        } else {
+          const textContent = fs.readFileSync(file.path, "utf-8");
+          parts = [
+            {
+              text: `Extract ALL tumour/lesion measurements from this medical scan report. Return ONLY a valid JSON array (no markdown, no backticks). Each entry should have: tumourLabel (e.g. "Tumour 1 (Liver)"), scanDate (YYYY-MM-DD format), scanLabel (e.g. "Baseline", "Post-treatment"), sizeX (number in mm), sizeY (number in mm), suvMax (number or null), notes (string or null). If you cannot find measurements, return an empty array [].\n\nDocument content:\n${textContent}`,
+            },
+          ];
         }
+
+        const modelsToTry = [
+          "gemini-2.5-flash",
+          "gemini-2.0-flash",
+          "gemini-2.0-flash-lite",
+        ];
+        let result;
+        let lastError: any;
+        for (const modelName of modelsToTry) {
+          try {
+            const m = genAI.getGenerativeModel({ model: modelName });
+            result = await m.generateContent({
+              contents: [{ role: "user", parts }],
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 4096,
+                responseMimeType: "application/json",
+              },
+            });
+            break;
+          } catch (err: any) {
+            lastError = err;
+            if (err?.status === 429) {
+              console.log(`Extract tumours: model ${modelName} rate-limited`);
+              continue;
+            }
+            throw err;
+          }
+        }
+        if (!result) throw lastError || new Error("All AI models unavailable");
+
+        const text = result.response.text() || "[]";
+        const cleaned = text
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "")
+          .trim();
+        const tumours = JSON.parse(cleaned);
+
+        try {
+          fs.unlinkSync(file.path);
+        } catch {}
+
+        return res.json({ tumours: Array.isArray(tumours) ? tumours : [] });
+      } catch (error: any) {
+        console.error("Error extracting tumours from document:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to extract tumour data from document" });
       }
-      if (!result) throw lastError || new Error("All AI models unavailable");
-
-      const text = result.response.text() || "[]";
-      const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      const tumours = JSON.parse(cleaned);
-
-      try { fs.unlinkSync(file.path); } catch {}
-
-      return res.json({ tumours: Array.isArray(tumours) ? tumours : [] });
-    } catch (error: any) {
-      console.error("Error extracting tumours from document:", error);
-      return res.status(500).json({ error: "Failed to extract tumour data from document" });
-    }
-  });
+    },
+  );
 
   // Meals
   app.get("/api/meals", async (req, res) => {
@@ -1010,7 +1344,11 @@ PATIENT CONTEXT:
       const userId = parseInt(req.query.userId as string, 10) || 1;
       const dateFrom = req.query.dateFrom as string | undefined;
       const dateTo = req.query.dateTo as string | undefined;
-      const results = await storage.listMindBodyActivities(userId, dateFrom, dateTo);
+      const results = await storage.listMindBodyActivities(
+        userId,
+        dateFrom,
+        dateTo,
+      );
       return res.json(results);
     } catch (error) {
       console.error("Error fetching mind-body activities:", error);
@@ -1135,7 +1473,12 @@ PATIENT CONTEXT:
         userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
         dietaryPreferences = user.dietaryPreferences || "";
       }
-      const suggestions = await getDateNightIdeas(userContext, dietaryPreferences, excludeNames, type);
+      const suggestions = await getDateNightIdeas(
+        userContext,
+        dietaryPreferences,
+        excludeNames,
+        type,
+      );
       return res.json(suggestions);
     } catch (error: any) {
       console.error("Error generating date night ideas:", error);
@@ -1150,7 +1493,9 @@ PATIENT CONTEXT:
     try {
       const { query, userId } = req.body;
       if (!query || typeof query !== "string" || query.trim().length < 2) {
-        return res.status(400).json({ error: "Please enter a restaurant name or search term." });
+        return res
+          .status(400)
+          .json({ error: "Please enter a restaurant name or search term." });
       }
       const user = userId ? await storage.getUser(userId) : null;
       let userContext = "";
@@ -1159,7 +1504,11 @@ PATIENT CONTEXT:
         userContext = `Patient context: ${user.cancerType || "Cancer"} patient, ${user.treatmentStatus || "in treatment"}. ${user.adverseEventHistory ? "Adverse events: " + user.adverseEventHistory : ""} Diet focus: anti-inflammatory, liver-supportive, immune-boosting foods.`;
         dietaryPreferences = user.dietaryPreferences || "";
       }
-      const results = await searchRestaurant(query.trim(), dietaryPreferences, userContext);
+      const results = await searchRestaurant(
+        query.trim(),
+        dietaryPreferences,
+        userContext,
+      );
       return res.json({ restaurants: results });
     } catch (error: any) {
       console.error("Error searching restaurants:", error);
@@ -1196,7 +1545,8 @@ PATIENT CONTEXT:
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
       const existing = await storage.getDateNight(id);
-      if (!existing) return res.status(404).json({ error: "Date night not found" });
+      if (!existing)
+        return res.status(404).json({ error: "Date night not found" });
       const updated = await storage.updateDateNight(id, req.body);
       return res.json(updated);
     } catch (error) {
@@ -1306,7 +1656,9 @@ PATIENT CONTEXT:
       return res.json(programs);
     } catch (error) {
       console.error("Error fetching treatment programs:", error);
-      return res.status(500).json({ error: "Failed to fetch treatment programs" });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch treatment programs" });
     }
   });
 
@@ -1316,7 +1668,9 @@ PATIENT CONTEXT:
       return res.json(program);
     } catch (error) {
       console.error("Error creating treatment program:", error);
-      return res.status(500).json({ error: "Failed to create treatment program" });
+      return res
+        .status(500)
+        .json({ error: "Failed to create treatment program" });
     }
   });
 
@@ -1328,7 +1682,9 @@ PATIENT CONTEXT:
       return res.json(program);
     } catch (error) {
       console.error("Error updating treatment program:", error);
-      return res.status(500).json({ error: "Failed to update treatment program" });
+      return res
+        .status(500)
+        .json({ error: "Failed to update treatment program" });
     }
   });
 
@@ -1340,14 +1696,18 @@ PATIENT CONTEXT:
       return res.json({ success: true });
     } catch (error) {
       console.error("Error deleting treatment program:", error);
-      return res.status(500).json({ error: "Failed to delete treatment program" });
+      return res
+        .status(500)
+        .json({ error: "Failed to delete treatment program" });
     }
   });
 
   // Treatment Sessions
   app.get("/api/treatment-sessions", async (req, res) => {
     try {
-      const programId = req.query.programId ? parseInt(req.query.programId as string, 10) : null;
+      const programId = req.query.programId
+        ? parseInt(req.query.programId as string, 10)
+        : null;
       const userId = parseInt(req.query.userId as string, 10) || 1;
       if (programId) {
         const sessions = await storage.listTreatmentSessions(programId);
@@ -1357,7 +1717,9 @@ PATIENT CONTEXT:
       return res.json(sessions);
     } catch (error) {
       console.error("Error fetching treatment sessions:", error);
-      return res.status(500).json({ error: "Failed to fetch treatment sessions" });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch treatment sessions" });
     }
   });
 
@@ -1367,7 +1729,9 @@ PATIENT CONTEXT:
       return res.json(session);
     } catch (error) {
       console.error("Error creating treatment session:", error);
-      return res.status(500).json({ error: "Failed to create treatment session" });
+      return res
+        .status(500)
+        .json({ error: "Failed to create treatment session" });
     }
   });
 
@@ -1379,7 +1743,9 @@ PATIENT CONTEXT:
       return res.json(session);
     } catch (error) {
       console.error("Error updating treatment session:", error);
-      return res.status(500).json({ error: "Failed to update treatment session" });
+      return res
+        .status(500)
+        .json({ error: "Failed to update treatment session" });
     }
   });
 
@@ -1391,7 +1757,9 @@ PATIENT CONTEXT:
       return res.json({ success: true });
     } catch (error) {
       console.error("Error deleting treatment session:", error);
-      return res.status(500).json({ error: "Failed to delete treatment session" });
+      return res
+        .status(500)
+        .json({ error: "Failed to delete treatment session" });
     }
   });
 
@@ -1401,10 +1769,11 @@ PATIENT CONTEXT:
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
       const appointments_list = await storage.listAppointments(1);
-      const appt = appointments_list.find(a => a.id === id);
-      if (!appt) return res.status(404).json({ error: "Appointment not found" });
+      const appt = appointments_list.find((a) => a.id === id);
+      if (!appt)
+        return res.status(404).json({ error: "Appointment not found" });
 
-      const startDate = appt.date.replace(/-/g, '');
+      const startDate = appt.date.replace(/-/g, "");
 
       const parseTimeToHHMM = (timeStr: string): string | null => {
         if (!timeStr) return null;
@@ -1415,7 +1784,7 @@ PATIENT CONTEXT:
         const ampm = match[3]?.toUpperCase();
         if (ampm === "PM" && hours < 12) hours += 12;
         if (ampm === "AM" && hours === 12) hours = 0;
-        return `${String(hours).padStart(2, '0')}${minutes}`;
+        return `${String(hours).padStart(2, "0")}${minutes}`;
       };
 
       const timeParsed = parseTimeToHHMM(appt.time);
@@ -1426,66 +1795,84 @@ PATIENT CONTEXT:
         const startHour = parseInt(timeParsed.substring(0, 2), 10);
         const endHour = startHour + 1;
         if (endHour < 24) {
-          dtEnd = `DTEND;TZID=Australia/Sydney:${startDate}T${String(endHour).padStart(2, '0')}${timeParsed.substring(2)}00`;
+          dtEnd = `DTEND;TZID=Australia/Sydney:${startDate}T${String(endHour).padStart(2, "0")}${timeParsed.substring(2)}00`;
         } else {
           const nextDay = new Date(appt.date);
           nextDay.setDate(nextDay.getDate() + 1);
-          const nextDateStr = nextDay.toISOString().split('T')[0].replace(/-/g, '');
-          dtEnd = `DTEND;TZID=Australia/Sydney:${nextDateStr}T${String(endHour % 24).padStart(2, '0')}${timeParsed.substring(2)}00`;
+          const nextDateStr = nextDay
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, "");
+          dtEnd = `DTEND;TZID=Australia/Sydney:${nextDateStr}T${String(endHour % 24).padStart(2, "0")}${timeParsed.substring(2)}00`;
         }
       } else {
         const nextDay = new Date(appt.date);
         nextDay.setDate(nextDay.getDate() + 1);
-        const nextDateStr = nextDay.toISOString().split('T')[0].replace(/-/g, '');
+        const nextDateStr = nextDay
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "");
         dtStart = `DTSTART;VALUE=DATE:${startDate}`;
         dtEnd = `DTEND;VALUE=DATE:${nextDateStr}`;
       }
 
       const ics = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Elizabeth//Cancer Support//EN',
-        'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH',
-        'BEGIN:VTIMEZONE',
-        'TZID:Australia/Sydney',
-        'BEGIN:STANDARD',
-        'DTSTART:19700405T030000',
-        'RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU',
-        'TZOFFSETFROM:+1100',
-        'TZOFFSETTO:+1000',
-        'END:STANDARD',
-        'BEGIN:DAYLIGHT',
-        'DTSTART:19701004T020000',
-        'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU',
-        'TZOFFSETFROM:+1000',
-        'TZOFFSETTO:+1100',
-        'END:DAYLIGHT',
-        'END:VTIMEZONE',
-        'BEGIN:VEVENT',
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Elizabeth//Cancer Support//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VTIMEZONE",
+        "TZID:Australia/Sydney",
+        "BEGIN:STANDARD",
+        "DTSTART:19700405T030000",
+        "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU",
+        "TZOFFSETFROM:+1100",
+        "TZOFFSETTO:+1000",
+        "END:STANDARD",
+        "BEGIN:DAYLIGHT",
+        "DTSTART:19701004T020000",
+        "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU",
+        "TZOFFSETFROM:+1000",
+        "TZOFFSETTO:+1100",
+        "END:DAYLIGHT",
+        "END:VTIMEZONE",
+        "BEGIN:VEVENT",
         dtStart,
         dtEnd,
         `SUMMARY:${appt.title}`,
-        appt.description ? `DESCRIPTION:${appt.description.replace(/\n/g, '\\n')}` : '',
-        appt.location ? `LOCATION:${appt.location}` : '',
+        appt.description
+          ? `DESCRIPTION:${appt.description.replace(/\n/g, "\\n")}`
+          : "",
+        appt.location ? `LOCATION:${appt.location}` : "",
         `UID:elizabeth-appt-${appt.id}@elizabeth.app`,
-        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
-        'STATUS:CONFIRMED',
-        'BEGIN:VALARM',
-        'TRIGGER:-PT30M',
-        'ACTION:DISPLAY',
-        'DESCRIPTION:Reminder',
-        'END:VALARM',
-        'END:VEVENT',
-        'END:VCALENDAR',
-      ].filter(Boolean).join('\r\n');
+        `DTSTAMP:${new Date()
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, "")}`,
+        "STATUS:CONFIRMED",
+        "BEGIN:VALARM",
+        "TRIGGER:-PT30M",
+        "ACTION:DISPLAY",
+        "DESCRIPTION:Reminder",
+        "END:VALARM",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ]
+        .filter(Boolean)
+        .join("\r\n");
 
-      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${appt.title.replace(/\s+/g, '_')}.ics"`);
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${appt.title.replace(/\s+/g, "_")}.ics"`,
+      );
       return res.send(ics);
     } catch (error) {
       console.error("Error generating ICS:", error);
-      return res.status(500).json({ error: "Failed to generate calendar file" });
+      return res
+        .status(500)
+        .json({ error: "Failed to generate calendar file" });
     }
   });
 
@@ -1499,12 +1886,12 @@ PATIENT CONTEXT:
       const appointments_list = await storage.listAppointments(userId);
       const today = new Date().toISOString().split("T")[0];
       const upcoming = appointments_list
-        .filter(a => a.date >= today)
+        .filter((a) => a.date >= today)
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 5);
 
       const programs = await storage.listTreatmentPrograms(userId);
-      const activePrograms = programs.filter(p => p.status === "active");
+      const activePrograms = programs.filter((p) => p.status === "active");
 
       const scanData = await storage.listScanResults(userId);
 
@@ -1517,12 +1904,12 @@ GOALS: ${user.goals || "Not specified"}
 NEXT SCAN: ${user.nextScanDate || "Not scheduled"}
 DIETARY PREFERENCES: ${user.dietaryPreferences || "Not specified"}
 SCAN SUMMARY: ${user.scanSummary || "No scan data"}
-ACTIVE PROGRAMS: ${activePrograms.map(p => `${p.name} (${p.completedSessions}/${p.totalSessions} sessions)`).join(", ") || "None"}
-UPCOMING APPOINTMENTS: ${upcoming.map(a => `${a.title} on ${a.date}`).join(", ") || "None upcoming"}
-TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Sydney' })}
+ACTIVE PROGRAMS: ${activePrograms.map((p) => `${p.name} (${p.completedSessions}/${p.totalSessions} sessions)`).join(", ") || "None"}
+UPCOMING APPOINTMENTS: ${upcoming.map((a) => `${a.title} on ${a.date}`).join(", ") || "None upcoming"}
+TODAY'S DATE: ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" })}
 `;
 
-      const { getHealthAdvice } = await import("./openai");
+      const { getHealthAdvice } = await import("./ai");
 
       const formatTypes = [
         "a famous quote (with attribution) that resonates with resilience, healing, or courage",
@@ -1534,7 +1921,8 @@ TODAY'S DATE: ${new Date().toLocaleDateString('en-AU', { weekday: 'long', day: '
         "a gentle, wise proverb or saying about endurance or inner strength",
         "a brief poetic reflection (2-3 lines) on what it means to keep going",
       ];
-      const todayFormat = formatTypes[Math.floor(Math.random() * formatTypes.length)];
+      const todayFormat =
+        formatTypes[Math.floor(Math.random() * formatTypes.length)];
 
       const briefPrompt = `Write ${todayFormat} for this cancer patient. This appears at the top of their daily dashboard.
 
@@ -1560,24 +1948,27 @@ RULES:
       let brief = await getHealthAdvice(briefPrompt, userContext);
       if (brief.includes("trouble connecting") || brief.includes("try again")) {
         const fallbacks = [
-          "\"It is not the mountain we conquer, but ourselves.\" — Edmund Hillary",
-          "🎵 \"I'm still standing, better than I ever did\" — Elton John",
+          '"It is not the mountain we conquer, but ourselves." — Edmund Hillary',
+          '🎵 "I\'m still standing, better than I ever did" — Elton John',
           "petals fall softly / but the roots hold firm below / spring will come again",
           "\"Courage doesn't always roar. Sometimes it's the quiet voice saying, 'I will try again tomorrow.'\" — Mary Anne Radmacher",
-          "\"The wound is the place where the Light enters you.\" — Rumi",
-          "🎵 \"Here comes the sun, and I say it's all right\" — The Beatles",
-          "\"You are braver than you believe, stronger than you seem, and smarter than you think.\" — A.A. Milne",
+          '"The wound is the place where the Light enters you." — Rumi',
+          '🎵 "Here comes the sun, and I say it\'s all right" — The Beatles',
+          '"You are braver than you believe, stronger than you seem, and smarter than you think." — A.A. Milne',
           "storm clouds may gather / but you've weathered worse before / sunshine knows your name",
-          "\"She stood in the storm, and when the wind did not blow her way, she adjusted her sails.\" — Elizabeth Edwards",
-          "🎵 \"Ain't no mountain high enough\" — Marvin Gaye & Tammi Terrell",
-          "\"In the middle of difficulty lies opportunity.\" — Albert Einstein",
+          '"She stood in the storm, and when the wind did not blow her way, she adjusted her sails." — Elizabeth Edwards',
+          '🎵 "Ain\'t no mountain high enough" — Marvin Gaye & Tammi Terrell',
+          '"In the middle of difficulty lies opportunity." — Albert Einstein',
           "the oak fought the wind / the willow simply bent low / both survived the storm",
         ];
         brief = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       }
       brief = brief.replace(/^["'](.*)["']$/s, "$1").trim();
       if (brief.length > 250) brief = brief.substring(0, 247) + "...";
-      return res.json({ content: brief, generatedAt: new Date().toISOString() });
+      return res.json({
+        content: brief,
+        generatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error("Error generating daily brief:", error);
       return res.status(500).json({ error: "Failed to generate daily brief" });
@@ -1598,7 +1989,9 @@ RULES:
       }
       return res.json({ imagePath: null, caption: null, date: null });
     } catch (error) {
-      return res.status(500).json({ error: "Failed to fetch latest nano banana" });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch latest nano banana" });
     }
   });
 
@@ -1607,26 +2000,40 @@ RULES:
       const userId = req.body.userId || 1;
       const wallItems = await storage.listMotivationalWallItems(userId);
       const imageItems = wallItems
-        .filter(i => (i.type === "image" || i.type === "video") && i.imageUrl)
+        .filter((i) => (i.type === "image" || i.type === "video") && i.imageUrl)
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);
       const textItems = wallItems
-        .filter(i => i.content && i.content.trim())
-        .map(i => i.content!)
+        .filter((i) => i.content && i.content.trim())
+        .map((i) => i.content!)
         .slice(0, 3);
 
       const imagePaths: string[] = imageItems
-        .map(i => {
-          const filePath = path.join(process.cwd(), i.imageUrl!.startsWith("/") ? i.imageUrl!.substring(1) : i.imageUrl!);
+        .map((i) => {
+          const filePath = path.join(
+            process.cwd(),
+            i.imageUrl!.startsWith("/")
+              ? i.imageUrl!.substring(1)
+              : i.imageUrl!,
+          );
           return fs.existsSync(filePath) ? filePath : null;
         })
         .filter(Boolean) as string[];
 
-      const creativity = typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
-      const { generateNanoBananaImage } = await import("./openai");
-      const result = await generateNanoBananaImage(imagePaths, textItems, creativity);
+      const creativity =
+        typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
+      const { generateNanoBananaImage } = await import("./ai");
+      const result = await generateNanoBananaImage(
+        imagePaths,
+        textItems,
+        creativity,
+      );
 
-      const todayStr = new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' }).split('/').reverse().join('-');
+      const todayStr = new Date()
+        .toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })
+        .split("/")
+        .reverse()
+        .join("-");
       await storage.updateUser(userId, {
         nanoBananaImage: result.imagePath,
         nanoBananaCaption: result.caption,
@@ -1637,26 +2044,37 @@ RULES:
       return res.json(result);
     } catch (error: any) {
       console.error("Error generating nano banana image:", error);
-      return res.status(503).json({ error: error?.message || "Image generation unavailable" });
+      return res
+        .status(503)
+        .json({ error: error?.message || "Image generation unavailable" });
     }
   });
 
-  app.patch("/api/users/:id/creativity", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (!requestingUser) return res.status(401).json({ error: "Not authenticated" });
-      const isOwner = req.user!.id === id;
-      const isMirror = requestingUser.role === "admin" && requestingUser.mirrorUserId === id;
-      if (!isOwner && !isMirror) return res.status(403).json({ error: "Not authorized" });
-      const creativity = typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
-      await storage.updateUser(id, { nanoBananaCreativity: creativity });
-      return res.json({ success: true });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to save creativity" });
-    }
-  });
+  app.patch(
+    "/api/users/:id/creativity",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id))
+          return res.status(400).json({ error: "Invalid user ID" });
+        const requestingUser = await storage.getUser(req.user!.id);
+        if (!requestingUser)
+          return res.status(401).json({ error: "Not authenticated" });
+        const isOwner = req.user!.id === id;
+        const isMirror =
+          requestingUser.role === "admin" && requestingUser.mirrorUserId === id;
+        if (!isOwner && !isMirror)
+          return res.status(403).json({ error: "Not authorized" });
+        const creativity =
+          typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
+        await storage.updateUser(id, { nanoBananaCreativity: creativity });
+        return res.json({ success: true });
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to save creativity" });
+      }
+    },
+  );
 
   // AI Treatment Suggestions
   app.post("/api/ai/treatment-suggestions", async (req, res) => {
@@ -1667,7 +2085,7 @@ RULES:
 
       const programs = await storage.listTreatmentPrograms(userId);
 
-      const { getHealthAdvice } = await import("./openai");
+      const { getHealthAdvice } = await import("./ai");
       const prompt = `Based on this patient's profile, suggest 4-6 complementary therapy programs they could consider adding to their healing journey. For each suggestion, provide:
 - name: therapy name
 - type: category (e.g., "physical", "mind-body", "nutrition", "integrative")
@@ -1675,7 +2093,7 @@ RULES:
 - frequency: suggested frequency (e.g., "weekly", "twice weekly")
 - evidence: brief note on evidence base for cancer patients
 
-Current programs: ${programs.map(p => p.name).join(", ") || "None"}
+Current programs: ${programs.map((p) => p.name).join(", ") || "None"}
 
 Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"...", "description":"...", "frequency":"...", "evidence":"..."}]`;
 
@@ -1683,7 +2101,10 @@ Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"..."
       const response = await getHealthAdvice(prompt, userContext);
 
       try {
-        const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const cleaned = response
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
         const suggestions = JSON.parse(cleaned);
         return res.json({ suggestions });
       } catch {
@@ -1735,13 +2156,19 @@ Return ONLY valid JSON array, no markdown. Example: [{"name":"...", "type":"..."
       const userId = req.body.userId || 1;
       const entries = await storage.listJournalEntries(userId);
       if (entries.length < 2) {
-        return res.json({ analysis: "Keep journaling! After a few more entries, I'll spot patterns and share insights." });
+        return res.json({
+          analysis:
+            "Keep journaling! After a few more entries, I'll spot patterns and share insights.",
+        });
       }
-      const { getHealthAdvice } = await import("./openai");
+      const { getHealthAdvice } = await import("./ai");
       const entriesText = entries
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-14)
-        .map(e => `${e.date} | Mood: ${e.mood || '?'}/5 | Energy: ${e.energy || '?'}/5 | "${e.content}"`)
+        .map(
+          (e) =>
+            `${e.date} | Mood: ${e.mood || "?"}/5 | Energy: ${e.energy || "?"}/5 | "${e.content}"`,
+        )
         .join("\n");
       const prompt = `Analyse these recent gut-check journal entries from a cancer patient. Look for:
 1. Mood/energy patterns (improving, declining, fluctuating?)
@@ -1792,28 +2219,37 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
     }
   });
 
-  app.post("/api/motivational-wall/upload", wallUpload.single("file"), async (req: any, res) => {
-    try {
-      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-      const fileUrl = `/uploads/${req.file.filename}`;
-      const isVideo = /\.(mp4|mov|webm)$/i.test(req.file.originalname);
-      const type = isVideo ? "video" : "image";
-      const userId = parseInt(req.body.userId) || 1;
-      const content = req.body.content || "";
-      const color = req.body.color || "amber";
-      const item = await storage.createMotivationalWallItem({
-        userId,
-        type,
-        content,
-        imageUrl: fileUrl,
-        color,
-      });
-      return res.json(item);
-    } catch (error) {
-      console.error("Error uploading wall media:", error);
-      return res.status(500).json({ error: "Failed to upload media" });
-    }
-  });
+  app.post(
+    "/api/motivational-wall/upload",
+    wallUpload.single("file"),
+    async (req: any, res) => {
+      try {
+        if (!req.file)
+          return res.status(400).json({ error: "No file uploaded" });
+        const fileUrl = await uploadToR2(
+          req.file.path,
+          `wall/${req.file.filename}`,
+          req.file.mimetype || "application/octet-stream",
+        );
+        const isVideo = /\.(mp4|mov|webm)$/i.test(req.file.originalname);
+        const type = isVideo ? "video" : "image";
+        const userId = parseInt(req.body.userId) || 1;
+        const content = req.body.content || "";
+        const color = req.body.color || "amber";
+        const item = await storage.createMotivationalWallItem({
+          userId,
+          type,
+          content,
+          imageUrl: fileUrl,
+          color,
+        });
+        return res.json(item);
+      } catch (error) {
+        console.error("Error uploading wall media:", error);
+        return res.status(500).json({ error: "Failed to upload media" });
+      }
+    },
+  );
 
   app.patch("/api/motivational-wall/:id", async (req, res) => {
     try {
@@ -1835,7 +2271,8 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
   app.post("/api/treatment-sessions/bulk", async (req, res) => {
     try {
       const { programId, userId, sessions } = req.body;
-      if (!Array.isArray(sessions)) return res.status(400).json({ error: "sessions must be an array" });
+      if (!Array.isArray(sessions))
+        return res.status(400).json({ error: "sessions must be an array" });
       const created = [];
       for (const s of sessions) {
         const session = await storage.createTreatmentSession({
@@ -1854,8 +2291,12 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
         const program = await storage.getTreatmentProgram(programId);
         if (program) {
           const allSessions = await storage.listTreatmentSessions(programId);
-          const completedCount = allSessions.filter(s => s.status === "completed").length;
-          await storage.updateTreatmentProgram(programId, { completedSessions: completedCount });
+          const completedCount = allSessions.filter(
+            (s) => s.status === "completed",
+          ).length;
+          await storage.updateTreatmentProgram(programId, {
+            completedSessions: completedCount,
+          });
         }
       }
       return res.json({ created: created.length, sessions: created });
@@ -1876,29 +2317,71 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
       const allSessions = await storage.listAllTreatmentSessions(userId);
 
       const totalMeals = meals.length;
-      const greenItems = meals.filter(m => m.description.toLowerCase().match(/green|salad|spinach|kale|broccoli|juice|smoothie/)).length;
-      const totalExerciseMin = exercises.reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
-      const totalMindBodyMin = mindBody.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
-      const hbotSessions = allSessions.filter(s => {
-        const prog = programs.find(p => p.id === s.programId);
+      const greenItems = meals.filter((m) =>
+        m.description
+          .toLowerCase()
+          .match(/green|salad|spinach|kale|broccoli|juice|smoothie/),
+      ).length;
+      const totalExerciseMin = exercises.reduce(
+        (sum, e) => sum + (e.durationMinutes || 0),
+        0,
+      );
+      const totalMindBodyMin = mindBody.reduce(
+        (sum, a) => sum + (a.durationMinutes || 0),
+        0,
+      );
+      const hbotSessions = allSessions.filter((s) => {
+        const prog = programs.find((p) => p.id === s.programId);
         return prog && prog.name.toLowerCase().includes("hyperbaric");
       }).length;
-      const totalWellnessActivities = meals.length + exercises.length + mindBody.length;
-      const sugarFreeMeals = meals.filter(m => !m.description.toLowerCase().match(/sugar|cake|chocolate|candy|cookie|ice cream/)).length;
-      const meditationSessions = mindBody.filter(a => a.activityType.toLowerCase().match(/meditation|meditat|mindful/)).length;
-      const yogaSessions = exercises.filter(e => e.exerciseType.toLowerCase().includes("yoga")).length + mindBody.filter(a => a.activityType.toLowerCase().includes("yoga")).length;
+      const totalWellnessActivities =
+        meals.length + exercises.length + mindBody.length;
+      const sugarFreeMeals = meals.filter(
+        (m) =>
+          !m.description
+            .toLowerCase()
+            .match(/sugar|cake|chocolate|candy|cookie|ice cream/),
+      ).length;
+      const meditationSessions = mindBody.filter((a) =>
+        a.activityType.toLowerCase().match(/meditation|meditat|mindful/),
+      ).length;
+      const yogaSessions =
+        exercises.filter((e) => e.exerciseType.toLowerCase().includes("yoga"))
+          .length +
+        mindBody.filter((a) => a.activityType.toLowerCase().includes("yoga"))
+          .length;
 
       const facts = [
-        totalMeals > 0 ? `${totalMeals} nourishing meals logged — your body thanks you! 🥗` : null,
-        greenItems > 0 ? `${greenItems} green meals this year — hello, plant power! 🌿` : null,
-        hbotSessions > 0 ? `${hbotSessions} hyperbaric sessions — ${Math.round(hbotSessions * 1.5)} hours of pure oxygen therapy! 💨` : null,
-        totalExerciseMin > 0 ? `${totalExerciseMin} minutes of movement — that's ${Math.round(totalExerciseMin / 60)} hours of healing in motion! 🏃‍♀️` : null,
-        totalMindBodyMin > 0 ? `${totalMindBodyMin} minutes of mindfulness — your inner peace game is strong! 🧘` : null,
-        sugarFreeMeals > 5 ? `~${Math.round(sugarFreeMeals * 0.15)}kg of sugar you didn't consume! Your cells are cheering 🎉` : null,
-        totalWellnessActivities > 0 ? `${totalWellnessActivities} wellness activities logged — that's dedication! ⭐` : null,
-        meditationSessions > 0 ? `${meditationSessions} meditation sessions — zen master in the making! 🧘‍♀️` : null,
-        yogaSessions > 0 ? `${yogaSessions} yoga sessions — flexibility queen! 🧘` : null,
-        hbotSessions >= 100 ? `100 hyperbaric sessions! That's over 150 hours in the chamber. Legend! 🏆` : null,
+        totalMeals > 0
+          ? `${totalMeals} nourishing meals logged — your body thanks you! 🥗`
+          : null,
+        greenItems > 0
+          ? `${greenItems} green meals this year — hello, plant power! 🌿`
+          : null,
+        hbotSessions > 0
+          ? `${hbotSessions} hyperbaric sessions — ${Math.round(hbotSessions * 1.5)} hours of pure oxygen therapy! 💨`
+          : null,
+        totalExerciseMin > 0
+          ? `${totalExerciseMin} minutes of movement — that's ${Math.round(totalExerciseMin / 60)} hours of healing in motion! 🏃‍♀️`
+          : null,
+        totalMindBodyMin > 0
+          ? `${totalMindBodyMin} minutes of mindfulness — your inner peace game is strong! 🧘`
+          : null,
+        sugarFreeMeals > 5
+          ? `~${Math.round(sugarFreeMeals * 0.15)}kg of sugar you didn't consume! Your cells are cheering 🎉`
+          : null,
+        totalWellnessActivities > 0
+          ? `${totalWellnessActivities} wellness activities logged — that's dedication! ⭐`
+          : null,
+        meditationSessions > 0
+          ? `${meditationSessions} meditation sessions — zen master in the making! 🧘‍♀️`
+          : null,
+        yogaSessions > 0
+          ? `${yogaSessions} yoga sessions — flexibility queen! 🧘`
+          : null,
+        hbotSessions >= 100
+          ? `100 hyperbaric sessions! That's over 150 hours in the chamber. Legend! 🏆`
+          : null,
         `${new Date().getFullYear() - 2025 > 0 ? Math.round((Date.now() - new Date("2025-04-28").getTime()) / 86400000) : Math.round((Date.now() - new Date("2025-04-28").getTime()) / 86400000)} days of fighting — and counting! 💪`,
       ].filter(Boolean);
 
@@ -1913,13 +2396,18 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
   app.get("/api/community/threads", async (req, res) => {
     try {
       const threads = await storage.listCommunityThreads();
-      const uniqueUserIds = [...new Set(threads.map(t => t.userId))];
+      const uniqueUserIds = [...new Set(threads.map((t) => t.userId))];
       const userRoles: Record<number, string> = {};
       for (const uid of uniqueUserIds) {
         const u = await storage.getUser(uid);
         if (u) userRoles[uid] = u.role || "user";
       }
-      return res.json(threads.map(t => ({ ...t, authorRole: userRoles[t.userId] || "user" })));
+      return res.json(
+        threads.map((t) => ({
+          ...t,
+          authorRole: userRoles[t.userId] || "user",
+        })),
+      );
     } catch (error) {
       console.error("Error fetching threads:", error);
       return res.status(500).json({ error: "Failed to fetch threads" });
@@ -1948,7 +2436,10 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
 
   app.patch("/api/community/threads/:id", async (req, res) => {
     try {
-      const thread = await storage.updateCommunityThread(parseInt(req.params.id), req.body);
+      const thread = await storage.updateCommunityThread(
+        parseInt(req.params.id),
+        req.body,
+      );
       return res.json(thread);
     } catch (error) {
       return res.status(500).json({ error: "Failed to update thread" });
@@ -1967,14 +2458,21 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
   // Community Replies
   app.get("/api/community/threads/:id/replies", async (req, res) => {
     try {
-      const replies = await storage.listCommunityReplies(parseInt(req.params.id));
-      const uniqueUserIds = [...new Set(replies.map(r => r.userId))];
+      const replies = await storage.listCommunityReplies(
+        parseInt(req.params.id),
+      );
+      const uniqueUserIds = [...new Set(replies.map((r) => r.userId))];
       const userRoles: Record<number, string> = {};
       for (const uid of uniqueUserIds) {
         const u = await storage.getUser(uid);
         if (u) userRoles[uid] = u.role || "user";
       }
-      return res.json(replies.map(r => ({ ...r, authorRole: userRoles[r.userId] || "user" })));
+      return res.json(
+        replies.map((r) => ({
+          ...r,
+          authorRole: userRoles[r.userId] || "user",
+        })),
+      );
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch replies" });
     }
@@ -2023,7 +2521,10 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
 
   app.patch("/api/medical-documents/:id", async (req, res) => {
     try {
-      const doc = await storage.updateMedicalDocument(parseInt(req.params.id), req.body);
+      const doc = await storage.updateMedicalDocument(
+        parseInt(req.params.id),
+        req.body,
+      );
       return res.json(doc);
     } catch (error) {
       return res.status(500).json({ error: "Failed to update document" });
@@ -2051,21 +2552,29 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
       const documents = await storage.listMedicalDocuments(userId);
 
       const tumourGroups: Record<string, any[]> = {};
-      scanData.forEach(r => {
+      scanData.forEach((r) => {
         if (!tumourGroups[r.tumourLabel]) tumourGroups[r.tumourLabel] = [];
         tumourGroups[r.tumourLabel].push(r);
       });
 
-      const tumourSummaries = Object.entries(tumourGroups).map(([label, scans]) => {
-        const sorted = [...scans].sort((a: any, b: any) => new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime());
-        const baseline = sorted[0];
-        const latest = sorted[sorted.length - 1];
-        const baseArea = baseline.sizeX * baseline.sizeY;
-        const latArea = latest.sizeX * latest.sizeY;
-        const isResolved = latArea === 0;
-        const reduction = baseArea > 0 ? ((baseArea - latArea) / baseArea * 100).toFixed(0) : "0";
-        return `${label}: ${isResolved ? "RESOLVED (gone)" : `${reduction}% smaller, SUV ${latest.suvMax ?? "no uptake"}`}`;
-      });
+      const tumourSummaries = Object.entries(tumourGroups).map(
+        ([label, scans]) => {
+          const sorted = [...scans].sort(
+            (a: any, b: any) =>
+              new Date(a.scanDate).getTime() - new Date(b.scanDate).getTime(),
+          );
+          const baseline = sorted[0];
+          const latest = sorted[sorted.length - 1];
+          const baseArea = baseline.sizeX * baseline.sizeY;
+          const latArea = latest.sizeX * latest.sizeY;
+          const isResolved = latArea === 0;
+          const reduction =
+            baseArea > 0
+              ? (((baseArea - latArea) / baseArea) * 100).toFixed(0)
+              : "0";
+          return `${label}: ${isResolved ? "RESOLVED (gone)" : `${reduction}% smaller, SUV ${latest.suvMax ?? "no uptake"}`}`;
+        },
+      );
 
       const userContext = `
 PATIENT: ${user.displayName}
@@ -2076,11 +2585,16 @@ ADVERSE EVENTS: ${user.adverseEventHistory || "None"}
 SCAN SUMMARY: ${user.scanSummary || "No data"}
 NEXT SCAN: ${user.nextScanDate || "Not scheduled"}
 TUMOUR STATUS: ${tumourSummaries.join("; ")}
-ACTIVE PROGRAMS: ${programs.filter(p => p.status === "active").map(p => p.name).join(", ") || "None"}
+ACTIVE PROGRAMS: ${
+        programs
+          .filter((p) => p.status === "active")
+          .map((p) => p.name)
+          .join(", ") || "None"
+      }
 DOCUMENTS ON FILE: ${documents.length} documents
 `;
 
-      const { getHealthAdvice } = await import("./openai");
+      const { getHealthAdvice } = await import("./ai");
       const prompt = `Write a brief, easy-to-read medical situation summary for this cancer patient. This is for the patient herself (not a doctor). Be warm but factual. Structure as:
 
 1. **Where you're at** - 2-3 sentences about current status
@@ -2119,7 +2633,9 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
 
   app.get("/api/survivors/:id/availability", async (req, res) => {
     try {
-      const slots = await storage.listSurvivorAvailability(parseInt(req.params.id));
+      const slots = await storage.listSurvivorAvailability(
+        parseInt(req.params.id),
+      );
       return res.json(slots);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch availability" });
@@ -2132,7 +2648,9 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
       return res.json(booking);
     } catch (error: any) {
       const msg = error?.message || "Failed to create booking";
-      return res.status(msg.includes("no longer available") ? 409 : 500).json({ error: msg });
+      return res
+        .status(msg.includes("no longer available") ? 409 : 500)
+        .json({ error: msg });
     }
   });
 
@@ -2166,7 +2684,9 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
 
   app.get("/api/survivor-talks/:id/rsvps", async (req, res) => {
     try {
-      const rsvps = await storage.listSurvivorTalkRsvps(parseInt(req.params.id));
+      const rsvps = await storage.listSurvivorTalkRsvps(
+        parseInt(req.params.id),
+      );
       return res.json(rsvps);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch RSVPs" });
@@ -2225,7 +2745,10 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
 
   app.patch("/api/sleep/:id", async (req, res) => {
     try {
-      const entry = await storage.updateSleepEntry(parseInt(req.params.id), req.body);
+      const entry = await storage.updateSleepEntry(
+        parseInt(req.params.id),
+        req.body,
+      );
       return res.json(entry);
     } catch (error) {
       return res.status(500).json({ error: "Failed to update sleep entry" });
@@ -2241,40 +2764,44 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     }
   });
 
-  app.get("/api/users/:id/public-profile", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const user = await storage.getUser(parseInt(req.params.id));
-      if (!user) return res.status(404).json({ error: "User not found" });
-      const requestingUser = await storage.getUser(req.user!.id);
-      const isAdmin = requestingUser?.role === "admin";
-      const baseProfile: any = {
-        id: user.id,
-        displayName: user.displayName,
-        cancerType: user.cancerType,
-        cancerStage: user.cancerStage,
-        treatmentStatus: user.treatmentStatus,
-        bio: user.bio,
-        diagnosis_date: user.diagnosis_date,
-        role: user.role,
-      };
-      if (isAdmin) {
-        baseProfile.treatmentHistory = user.treatmentHistory;
-        baseProfile.currentMedications = user.currentMedications;
-        baseProfile.adverseEventHistory = user.adverseEventHistory;
-        baseProfile.oncologist = user.oncologist;
-        baseProfile.goals = user.goals;
-        baseProfile.medicalNotes = user.medicalNotes;
-        baseProfile.scanSummary = user.scanSummary;
-        baseProfile.nextScanDate = user.nextScanDate;
-        baseProfile.dietaryPreferences = user.dietaryPreferences;
-        baseProfile.profilePhoto = user.profilePhoto;
-        baseProfile.nanoBananaCreativity = user.nanoBananaCreativity;
+  app.get(
+    "/api/users/:id/public-profile",
+    authenticateToken,
+    async (req: AuthRequest, res) => {
+      try {
+        const user = await storage.getUser(parseInt(req.params.id));
+        if (!user) return res.status(404).json({ error: "User not found" });
+        const requestingUser = await storage.getUser(req.user!.id);
+        const isAdmin = requestingUser?.role === "admin";
+        const baseProfile: any = {
+          id: user.id,
+          displayName: user.displayName,
+          cancerType: user.cancerType,
+          cancerStage: user.cancerStage,
+          treatmentStatus: user.treatmentStatus,
+          bio: user.bio,
+          diagnosis_date: user.diagnosis_date,
+          role: user.role,
+        };
+        if (isAdmin) {
+          baseProfile.treatmentHistory = user.treatmentHistory;
+          baseProfile.currentMedications = user.currentMedications;
+          baseProfile.adverseEventHistory = user.adverseEventHistory;
+          baseProfile.oncologist = user.oncologist;
+          baseProfile.goals = user.goals;
+          baseProfile.medicalNotes = user.medicalNotes;
+          baseProfile.scanSummary = user.scanSummary;
+          baseProfile.nextScanDate = user.nextScanDate;
+          baseProfile.dietaryPreferences = user.dietaryPreferences;
+          baseProfile.profilePhoto = user.profilePhoto;
+          baseProfile.nanoBananaCreativity = user.nanoBananaCreativity;
+        }
+        return res.json(baseProfile);
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to fetch user profile" });
       }
-      return res.json(baseProfile);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to fetch user profile" });
-    }
-  });
+    },
+  );
 
   app.get("/api/community/groups", async (_req, res) => {
     try {
@@ -2348,13 +2875,16 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
   app.get("/api/community/groups/:id/posts", async (req, res) => {
     try {
       const posts = await storage.listGroupPosts(parseInt(req.params.id));
-      const userIds = [...new Set(posts.map(p => p.userId))];
+      const userIds = [...new Set(posts.map((p) => p.userId))];
       const userRoles: Record<number, string> = {};
       for (const uid of userIds) {
         const u = await storage.getUser(uid);
         if (u) userRoles[uid] = u.role;
       }
-      const postsWithRole = posts.map(p => ({ ...p, authorRole: userRoles[p.userId] || "user" }));
+      const postsWithRole = posts.map((p) => ({
+        ...p,
+        authorRole: userRoles[p.userId] || "user",
+      }));
       return res.json(postsWithRole);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch posts" });
@@ -2369,8 +2899,10 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
       const isAdmin = postUser?.role === "admin";
       if (!isAdmin) {
         const members = await storage.listGroupMembers(groupId);
-        if (!members.some(m => m.userId === userId)) {
-          return res.status(403).json({ error: "You must be a member to post in this group" });
+        if (!members.some((m) => m.userId === userId)) {
+          return res
+            .status(403)
+            .json({ error: "You must be a member to post in this group" });
         }
       }
       const post = await storage.createGroupPost({ ...req.body, groupId });
@@ -2382,7 +2914,10 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
 
   app.patch("/api/community/group-posts/:id", async (req, res) => {
     try {
-      const post = await storage.updateGroupPost(parseInt(req.params.id), req.body);
+      const post = await storage.updateGroupPost(
+        parseInt(req.params.id),
+        req.body,
+      );
       return res.json(post);
     } catch (error) {
       return res.status(500).json({ error: "Failed to update post" });
@@ -2400,14 +2935,19 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
 
   app.get("/api/community/group-posts/:id/replies", async (req, res) => {
     try {
-      const replies = await storage.listGroupPostReplies(parseInt(req.params.id));
-      const userIds = [...new Set(replies.map(r => r.userId))];
+      const replies = await storage.listGroupPostReplies(
+        parseInt(req.params.id),
+      );
+      const userIds = [...new Set(replies.map((r) => r.userId))];
       const userRoles: Record<number, string> = {};
       for (const uid of userIds) {
         const u = await storage.getUser(uid);
         if (u) userRoles[uid] = u.role;
       }
-      const repliesWithRole = replies.map(r => ({ ...r, authorRole: userRoles[r.userId] || "user" }));
+      const repliesWithRole = replies.map((r) => ({
+        ...r,
+        authorRole: userRoles[r.userId] || "user",
+      }));
       return res.json(repliesWithRole);
     } catch (error) {
       return res.status(500).json({ error: "Failed to fetch replies" });
@@ -2421,11 +2961,16 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
       const replyUser = await storage.getUser(userId);
       const isAdmin = replyUser?.role === "admin";
       if (!isAdmin) {
-        const [post] = await db.select().from(communityGroupPosts).where(eq(communityGroupPosts.id, postId));
+        const [post] = await db
+          .select()
+          .from(communityGroupPosts)
+          .where(eq(communityGroupPosts.id, postId));
         if (post) {
           const members = await storage.listGroupMembers(post.groupId);
-          if (!members.some(m => m.userId === userId)) {
-            return res.status(403).json({ error: "You must be a member to reply in this group" });
+          if (!members.some((m) => m.userId === userId)) {
+            return res
+              .status(403)
+              .json({ error: "You must be a member to reply in this group" });
           }
         }
       }
