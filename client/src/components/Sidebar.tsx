@@ -33,12 +33,12 @@ export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: Sideb
   }
 
   const sidebarClasses = cn(
-    "w-64 h-full flex-shrink-0 z-30 transition-all duration-300",
+    "w-64 flex-shrink-0 z-30 transition-all duration-300",
     "bg-white border-r border-border",
     {
-      "fixed translate-x-0": isMobile && isOpen,
-      "fixed -translate-x-full": isMobile && !isOpen,
-      "relative": !isMobile,
+      "fixed inset-y-0 left-0 translate-x-0": isMobile && isOpen,
+      "fixed inset-y-0 left-0 -translate-x-full": isMobile && !isOpen,
+      "relative h-full": !isMobile,
     }
   );
 
