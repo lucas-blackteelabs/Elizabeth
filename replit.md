@@ -33,11 +33,13 @@ The application is built with a React, Vite, TypeScript, and Tailwind CSS fronte
 - **Nano Banana:** Utilizes multimodal AI to generate personalized motivational captions from user-uploaded images and personal notes.
 - **Community - Verified Survivors:** Tabbed community section (Threads, Survivors, Talks). Verified survivors have distinct visual treatment (amber badges, gradient avatars). Users can book 1-on-1 video sessions via available time slots. Survivors host periodic talks/events with RSVP system. Includes double-booking prevention and duplicate RSVP guards.
 - **Sleep Tracker:** Dashboard widget for tracking sleep hours and quality (1-5 stars). Manual entry with hours slider, quality picker, and optional notes. 7-day bar chart visualization, today's sleep stats, and weekly averages. Future-proofed with `source` field for wearable integrations (Whoop, etc.).
+- **Stripe Subscription:** New users must subscribe to access the app. Two plans: Monthly ($9.95/month) and Annual ($7.99/month, billed $95.88/year). Registration flow: Register -> auto-login -> redirect to /subscribe pricing page -> Stripe Checkout -> verify session -> access granted. Grandfathered users (Liz, Lucas) and admins bypass subscription requirement. Webhook handler syncs subscription status (active/canceled/past_due) from Stripe events to users table. Stripe integration uses stripe-replit-sync for schema management and data sync, with webhook route registered before express.json() middleware.
 
 ## External Dependencies
 - **Database:** PostgreSQL (Neon)
 - **AI:** Google Gemini API (gemini-2.5-flash)
 - **Image Generation:** Google Imagen (for AI-generated images, when billing is available)
+- **Payments:** Stripe (via stripe-replit-sync connector) - subscription billing for membership plans
 - **Frontend Libraries:** React, Vite, Tailwind CSS, shadcn/ui, TanStack React Query, wouter
-- **Backend Libraries:** Express.js, Drizzle ORM
+- **Backend Libraries:** Express.js, Drizzle ORM, stripe, stripe-replit-sync
 - **Other Services:** Google Fonts (via CDN)
