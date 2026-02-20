@@ -697,3 +697,27 @@ export const insertCommunityGroupPostReplySchema = createInsertSchema(communityG
 
 export type CommunityGroupPostReply = typeof communityGroupPostReplies.$inferSelect;
 export type InsertCommunityGroupPostReply = z.infer<typeof insertCommunityGroupPostReplySchema>;
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull().default("general"),
+  title: text("title").notNull(),
+  body: text("body"),
+  linkUrl: text("link_url"),
+  relatedId: integer("related_id"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  type: true,
+  title: true,
+  body: true,
+  linkUrl: true,
+  relatedId: true,
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

@@ -32,10 +32,12 @@ import {
   type CommunityGroupMember, type InsertCommunityGroupMember,
   type CommunityGroupPost, type InsertCommunityGroupPost,
   type CommunityGroupPostReply, type InsertCommunityGroupPostReply,
+  notifications,
+  type Notification, type InsertNotification,
 } from "@shared/schema";
 import { updateUserSchema } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, isNull, desc, sql, count } from "drizzle-orm";
 import { z } from "zod";
 
 export interface IStorage {
@@ -165,6 +167,13 @@ export interface IStorage {
   listGroupPostReplies(postId: number): Promise<CommunityGroupPostReply[]>;
   createGroupPostReply(data: InsertCommunityGroupPostReply): Promise<CommunityGroupPostReply>;
   deleteGroupPostReply(id: number): Promise<void>;
+
+  listNotifications(userId: number): Promise<Notification[]>;
+  getUnreadNotificationCount(userId: number): Promise<number>;
+  createNotification(data: InsertNotification): Promise<Notification>;
+  markNotificationRead(id: number, userId: number): Promise<void>;
+  markAllNotificationsRead(userId: number): Promise<void>;
+  createBroadcastNotification(data: Omit<InsertNotification, "userId">): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -735,6 +744,44 @@ export class DatabaseStorage implements IStorage {
     if (reply) {
       const replies = await this.listGroupPostReplies(reply.postId);
       await db.update(communityGroupPosts).set({ repliesCount: replies.length }).where(eq(communityGroupPosts.id, reply.postId));
+    }
+  }
+
+  async listNotifications(userId: number): Promise<Notification[]> {
+    return db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
+  }
+
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    const [result] = await db.select({ count: count() }).from(notifications)
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    return result?.count || 0;
+  }
+
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const [notif] = await db.insert(notifications).values(data).returning();
+    return notif;
+  }
+
+  async markNotificationRead(id: number, userId: number): Promise<void> {
+    await db.update(notifications)
+      .set({ readAt: new Date() })
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  }
+
+  async markAllNotificationsRead(userId: number): Promise<void> {
+    await db.update(notifications)
+      .set({ readAt: new Date() })
+      .where(eq(notifications.userId, userId));
+  }
+
+  async createBroadcastNotification(data: Omit<InsertNotification, "userId">): Promise<void> {
+    const allUsers = await db.select({ id: users.id }).from(users);
+    const values = allUsers.map(u => ({ ...data, userId: u.id }));
+    if (values.length > 0) {
+      await db.insert(notifications).values(values);
     }
   }
 }

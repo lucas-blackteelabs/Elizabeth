@@ -2207,6 +2207,32 @@ Keep analysis warm, supportive, 2-3 sentences max. Reference specific patterns y
         ...req.body,
         threadId: parseInt(req.params.id),
       });
+
+      try {
+        const mentions = (req.body.content || '').match(/@([a-zA-Z0-9_]+)/g);
+        if (mentions) {
+          const threadId = parseInt(req.params.id);
+          const authorName = req.body.authorName || 'Someone';
+          const uniqueUsernames = [...new Set(mentions.map((m: string) => m.slice(1).toLowerCase()))];
+          const allUsers = await db.select({ id: users.id, username: users.username }).from(users);
+          const userMap = new Map(allUsers.map(u => [u.username.toLowerCase(), u]));
+          for (const username of uniqueUsernames) {
+            const mentionedUser = userMap.get(username);
+            if (mentionedUser && mentionedUser.id !== req.body.userId) {
+              await storage.createNotification({
+                userId: mentionedUser.id,
+                type: 'mention',
+                title: `${authorName} mentioned you`,
+                body: (req.body.content || '').substring(0, 120),
+                linkUrl: `/community?thread=${threadId}`,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Mention notification error:", e);
+      }
+
       return res.json(reply);
     } catch (error) {
       return res.status(500).json({ error: "Failed to create reply" });
@@ -2937,6 +2963,69 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     } catch (error) {
       console.error("Portal session error:", error);
       res.status(500).json({ error: "Failed to create portal session" });
+    }
+  });
+
+  app.get("/api/notifications", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const notifs = await storage.listNotifications(userId);
+      return res.json(notifs);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread-count", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const count = await storage.getUnreadNotificationCount(userId);
+      return res.json({ count });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to fetch unread count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      await storage.markNotificationRead(parseInt(req.params.id), userId);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to mark notification read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      await storage.markAllNotificationsRead(userId);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to mark all notifications read" });
+    }
+  });
+
+  app.post("/api/admin/broadcast", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { title, body, linkUrl } = req.body;
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      await storage.createBroadcastNotification({
+        type: "admin_broadcast",
+        title,
+        body: body || null,
+        linkUrl: linkUrl || null,
+      });
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to send broadcast" });
     }
   });
 

@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import Sidebar from "./Sidebar";
 import Disclaimer from "./Disclaimer";
 import MobileBottomNav from "./MobileBottomNav";
+import NotificationBell from "./NotificationBell";
 import { Menu, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile as useMobile } from "@/hooks/use-mobile";
@@ -56,12 +57,12 @@ export default function Layout({ children }: LayoutProps) {
               <Menu className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-heading text-foreground flex-1 text-center">Elizabeth</h1>
-            <div className="w-10" />
+            <NotificationBell />
           </div>
         )}
 
         {!isMobile && desktopCollapsed && (
-          <div className="sticky top-0 z-20 flex items-center bg-white/80 backdrop-blur-lg border-b border-border px-4 py-2">
+          <div className="sticky top-0 z-20 flex items-center justify-between bg-white/80 backdrop-blur-lg border-b border-border px-4 py-2">
             <Button
               variant="ghost"
               size="icon"
@@ -71,6 +72,13 @@ export default function Layout({ children }: LayoutProps) {
             >
               <PanelLeft className="h-5 w-5" />
             </Button>
+            <NotificationBell />
+          </div>
+        )}
+
+        {!isMobile && !desktopCollapsed && (
+          <div className="sticky top-0 z-20 flex items-center justify-end bg-white/80 backdrop-blur-lg border-b border-border px-4 py-2">
+            <NotificationBell />
           </div>
         )}
 

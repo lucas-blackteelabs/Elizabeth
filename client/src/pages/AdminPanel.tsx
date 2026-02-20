@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, MessageSquare, Trash2, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Shield, Users, MessageSquare, Trash2, Mail, Phone, MapPin, Clock, Megaphone, Send, Loader2 } from "lucide-react";
 import { Redirect } from "wouter";
 
 interface AdminUser {
@@ -47,6 +49,9 @@ export default function AdminPanel() {
   const { user } = useUser();
   const { toast } = useToast();
   const [selectedThread, setSelectedThread] = useState<number | null>(null);
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastBody, setBroadcastBody] = useState("");
+  const [broadcastLink, setBroadcastLink] = useState("");
 
   if (!user || user.role !== "admin") {
     return <Redirect to="/dashboard" />;
@@ -99,6 +104,29 @@ export default function AdminPanel() {
     },
   });
 
+  const broadcastMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/admin/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: broadcastTitle,
+          body: broadcastBody || null,
+          linkUrl: broadcastLink || null,
+        }),
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Broadcast sent", description: "All users have been notified." });
+      setBroadcastTitle("");
+      setBroadcastBody("");
+      setBroadcastLink("");
+    },
+    onError: () => {
+      toast({ title: "Failed to send broadcast", variant: "destructive" });
+    },
+  });
+
   const nonAdminUsers = allUsers.filter(u => u.role !== "admin");
 
   return (
@@ -120,6 +148,9 @@ export default function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="moderation" className="rounded-xl font-body data-[state=active]:bg-white">
             <MessageSquare className="h-4 w-4 mr-2" /> Community ({threads.length})
+          </TabsTrigger>
+          <TabsTrigger value="broadcast" className="rounded-xl font-body data-[state=active]:bg-white">
+            <Megaphone className="h-4 w-4 mr-2" /> Broadcast
           </TabsTrigger>
         </TabsList>
 
@@ -230,6 +261,61 @@ export default function AdminPanel() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="broadcast" className="space-y-3">
+          <Card className="bg-white rounded-2xl border-border">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Megaphone className="h-5 w-5 text-primary" />
+                <h3 className="font-heading text-foreground text-lg">Send Notification to All Users</h3>
+              </div>
+              <p className="text-sm text-muted-foreground font-body">
+                Send a notification that will appear in every user's notification bell. Use this for important announcements, new features, or upcoming events.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-body font-medium text-foreground mb-1 block">Title</label>
+                  <Input
+                    value={broadcastTitle}
+                    onChange={(e) => setBroadcastTitle(e.target.value)}
+                    placeholder="e.g. New Survivor Talk This Week!"
+                    className="rounded-xl font-body"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-body font-medium text-foreground mb-1 block">Message (optional)</label>
+                  <Textarea
+                    value={broadcastBody}
+                    onChange={(e) => setBroadcastBody(e.target.value)}
+                    placeholder="Add more details about the announcement..."
+                    className="rounded-xl font-body min-h-[80px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-body font-medium text-foreground mb-1 block">Link (optional)</label>
+                  <Input
+                    value={broadcastLink}
+                    onChange={(e) => setBroadcastLink(e.target.value)}
+                    placeholder="e.g. /community or /calendar"
+                    className="rounded-xl font-body"
+                  />
+                  <p className="text-[10px] text-muted-foreground font-body mt-1">Users will be taken to this page when they tap the notification</p>
+                </div>
+                <Button
+                  onClick={() => broadcastMutation.mutate()}
+                  disabled={!broadcastTitle.trim() || broadcastMutation.isPending}
+                  className="bg-primary text-white hover:bg-primary/90 rounded-xl font-body w-full"
+                >
+                  {broadcastMutation.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Sending...</>
+                  ) : (
+                    <><Send className="h-4 w-4 mr-2" /> Send Broadcast</>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
