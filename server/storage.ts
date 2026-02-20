@@ -139,6 +139,8 @@ export interface IStorage {
 
   listSurvivorTalks(): Promise<SurvivorTalk[]>;
   createSurvivorTalk(data: InsertSurvivorTalk): Promise<SurvivorTalk>;
+  updateSurvivorTalk(id: number, data: Partial<InsertSurvivorTalk>): Promise<SurvivorTalk | undefined>;
+  deleteSurvivorTalk(id: number): Promise<void>;
 
   listSurvivorTalkRsvps(talkId: number): Promise<SurvivorTalkRsvp[]>;
   listUserRsvps(userId: number): Promise<SurvivorTalkRsvp[]>;
@@ -608,6 +610,16 @@ export class DatabaseStorage implements IStorage {
   async createSurvivorTalk(data: InsertSurvivorTalk): Promise<SurvivorTalk> {
     const [talk] = await db.insert(survivorTalks).values(data).returning();
     return talk;
+  }
+
+  async updateSurvivorTalk(id: number, data: Partial<InsertSurvivorTalk>): Promise<SurvivorTalk | undefined> {
+    const [talk] = await db.update(survivorTalks).set(data).where(eq(survivorTalks.id, id)).returning();
+    return talk;
+  }
+
+  async deleteSurvivorTalk(id: number): Promise<void> {
+    await db.delete(survivorTalkRsvps).where(eq(survivorTalkRsvps.talkId, id));
+    await db.delete(survivorTalks).where(eq(survivorTalks.id, id));
   }
 
   async listSurvivorTalkRsvps(talkId: number): Promise<SurvivorTalkRsvp[]> {

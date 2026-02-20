@@ -3029,6 +3029,91 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
     }
   });
 
+  app.post("/api/admin/talks", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { survivorId, title, description, scheduledAt, durationMinutes, location, meetingLink, capacity, category } = req.body;
+      if (!survivorId || !title || !description || !scheduledAt) {
+        return res.status(400).json({ error: "survivorId, title, description, and scheduledAt are required" });
+      }
+      const parsedDate = new Date(scheduledAt);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format for scheduledAt" });
+      }
+      const talk = await storage.createSurvivorTalk({
+        survivorId: parseInt(survivorId),
+        title: String(title),
+        description: String(description),
+        scheduledAt: parsedDate,
+        durationMinutes: parseInt(durationMinutes) || 60,
+        location: location || null,
+        meetingLink: meetingLink || null,
+        capacity: capacity ? parseInt(capacity) : null,
+        category: category || "general",
+      });
+      return res.json(talk);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to create talk" });
+    }
+  });
+
+  app.patch("/api/admin/talks/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const talkId = parseInt(req.params.id);
+      if (isNaN(talkId)) {
+        return res.status(400).json({ error: "Invalid talk ID" });
+      }
+      const updates: any = {};
+      const { title, description, scheduledAt, durationMinutes, location, meetingLink, capacity, category, survivorId } = req.body;
+      if (title !== undefined) updates.title = String(title);
+      if (description !== undefined) updates.description = String(description);
+      if (scheduledAt !== undefined) {
+        const parsedDate = new Date(scheduledAt);
+        if (isNaN(parsedDate.getTime())) {
+          return res.status(400).json({ error: "Invalid date format for scheduledAt" });
+        }
+        updates.scheduledAt = parsedDate;
+      }
+      if (durationMinutes !== undefined) updates.durationMinutes = parseInt(durationMinutes) || 60;
+      if (location !== undefined) updates.location = location || null;
+      if (meetingLink !== undefined) updates.meetingLink = meetingLink || null;
+      if (capacity !== undefined) updates.capacity = capacity ? parseInt(capacity) : null;
+      if (category !== undefined) updates.category = category;
+      if (survivorId !== undefined) updates.survivorId = parseInt(survivorId);
+      const talk = await storage.updateSurvivorTalk(talkId, updates);
+      if (!talk) {
+        return res.status(404).json({ error: "Talk not found" });
+      }
+      return res.json(talk);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update talk" });
+    }
+  });
+
+  app.delete("/api/admin/talks/:id", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user!.id;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const talkId = parseInt(req.params.id);
+      await storage.deleteSurvivorTalk(talkId);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to delete talk" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
