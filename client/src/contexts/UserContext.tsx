@@ -27,6 +27,9 @@ interface User {
   profilePhoto: string | null;
   nanoBananaCreativity: number | null;
   mirrorUserId: number | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  subscriptionStatus: string | null;
 }
 
 interface UserContextType {
@@ -35,10 +38,13 @@ interface UserContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   dataUserId: number;
+  hasActiveSubscription: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
 }
+
+const GRANDFATHERED_USERNAMES = ['liz', 'lucas'];
 
 const initialContextValue: UserContextType = {
   user: null,
@@ -46,6 +52,7 @@ const initialContextValue: UserContextType = {
   isAuthenticated: false,
   isLoading: true,
   dataUserId: 1,
+  hasActiveSubscription: false,
   login: async () => {},
   register: async () => {},
   logout: async () => {}
@@ -124,12 +131,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
   
   const dataUserId = user?.mirrorUserId || user?.id || 1;
 
+  const isGrandfathered = user ? GRANDFATHERED_USERNAMES.includes(user.username.toLowerCase()) : false;
+  const hasActiveSubscription = isGrandfathered || 
+    user?.subscriptionStatus === 'active' || 
+    user?.subscriptionStatus === 'trialing' ||
+    user?.role === 'admin';
+
   const value = {
     user,
     setUser,
     isAuthenticated: !!user,
     isLoading,
     dataUserId,
+    hasActiveSubscription,
     login,
     register,
     logout

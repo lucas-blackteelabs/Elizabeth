@@ -80,12 +80,12 @@ export default function Register() {
       });
       
       toast({
-        title: 'Registration successful',
-        description: 'Welcome to Elizabeth! Your account has been created.',
+        title: 'Account created',
+        description: 'Now choose a membership plan to get started.',
         variant: 'default',
       });
       
-      setLocation('/');
+      setLocation('/subscribe');
     } catch (error) {
       console.error('Registration error:', error);
       toast({
