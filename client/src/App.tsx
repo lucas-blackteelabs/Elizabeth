@@ -23,7 +23,6 @@ import Subscribe from "@/pages/Subscribe";
 import SubscribeSuccess from "@/pages/SubscribeSuccess";
 import { UserProvider, useUser } from "@/contexts/UserContext";
 import { Redirect } from "wouter";
-import InstallPrompt from "@/components/InstallPrompt";
 import AIChatButton from "@/components/AIChatButton";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -212,7 +211,6 @@ function App() {
       <UserProvider>
         <TooltipProvider>
           <Toaster />
-          <InstallPrompt />
           <AppRouter />
           <AuthenticatedAIChatButton />
         </TooltipProvider>
