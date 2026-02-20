@@ -38,7 +38,7 @@ export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: Sideb
     {
       "fixed inset-y-0 left-0 translate-x-0": isMobile && isOpen,
       "fixed inset-y-0 left-0 -translate-x-full": isMobile && !isOpen,
-      "relative h-full": !isMobile,
+      "sticky top-0 h-screen": !isMobile,
     }
   );
 
