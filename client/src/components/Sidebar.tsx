@@ -118,17 +118,17 @@ export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: Sideb
                   </Link>
                 );
               })}
+
+              <div className="pt-2 mt-2 border-t border-border">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-sm font-body text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+                >
+                  <LogOut className="w-[18px] h-[18px]" />
+                  <span>Log out</span>
+                </button>
+              </div>
             </nav>
-          </div>
-          
-          <div className="flex-shrink-0 p-3 border-t border-border bg-white">
-            <button 
-              onClick={handleLogout}
-              className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-sm font-body text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all duration-200"
-            >
-              <LogOut className="w-[18px] h-[18px]" />
-              <span>Log out</span>
-            </button>
           </div>
         </div>
       </aside>
