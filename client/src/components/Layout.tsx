@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 import Disclaimer from "./Disclaimer";
 import MobileBottomNav from "./MobileBottomNav";
 import { useLocation } from "wouter";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile as useMobile } from "@/hooks/use-mobile";
 import { useUser } from "@/contexts/UserContext";
@@ -14,6 +14,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const isMobile = useMobile();
   const [location] = useLocation();
   const { user, logout } = useUser();
@@ -39,11 +40,22 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        onClose={closeSidebarIfMobile} 
-        isMobile={isMobile} 
-      />
+      {!isMobile && !desktopCollapsed && (
+        <Sidebar 
+          isOpen={true} 
+          onClose={() => {}} 
+          isMobile={false}
+          onCollapse={() => setDesktopCollapsed(true)}
+        />
+      )}
+
+      {isMobile && (
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          onClose={closeSidebarIfMobile} 
+          isMobile={true} 
+        />
+      )}
 
       <main className="flex-1 overflow-y-auto pb-20">
         {isMobile && (
@@ -65,6 +77,20 @@ export default function Layout({ children }: LayoutProps) {
               title="Log out"
             >
               <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+
+        {!isMobile && desktopCollapsed && (
+          <div className="sticky top-0 z-20 flex items-center bg-white/80 backdrop-blur-lg border-b border-border px-4 py-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDesktopCollapsed(false)}
+              className="text-muted-foreground hover:text-primary rounded-xl"
+              title="Open sidebar"
+            >
+              <PanelLeft className="h-5 w-5" />
             </Button>
           </div>
         )}

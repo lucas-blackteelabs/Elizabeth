@@ -1,15 +1,17 @@
 import { Link, useLocation } from "wouter";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
-import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, Wine, BookOpen, Sparkles, Pill, Users, Shield } from "lucide-react";
+import { Heart, Home, Bot, FileText, Apple, Calendar, LogOut, Wine, BookOpen, Sparkles, Pill, Users, Shield, PanelLeftClose } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isMobile: boolean;
+  onCollapse?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: SidebarProps) {
   const [location] = useLocation();
   const { user, logout } = useUser();
 
@@ -60,11 +62,24 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-5 border-b border-border flex items-center space-x-3">
-          <div className="bg-primary text-white p-2 rounded-xl">
-            <Heart className="h-5 w-5" />
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="bg-primary text-white p-2 rounded-xl">
+              <Heart className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl font-heading text-foreground">Elizabeth</h1>
           </div>
-          <h1 className="text-xl font-heading text-foreground">Elizabeth</h1>
+          {!isMobile && onCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapse}
+              className="text-muted-foreground hover:text-primary rounded-xl h-8 w-8"
+              title="Close sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
         <div className="p-3 overflow-y-auto" style={{ height: 'calc(100% - 130px)' }}>
