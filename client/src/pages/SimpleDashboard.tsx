@@ -1735,8 +1735,8 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
           generateNanoBananaAuto();
         }
       } catch {
-        setNanoBananaImage("/nano-banana/default-1.png");
-        setNanoBananaCaption("You've got this, warrior 🍌");
+        setNanoBananaImage(null);
+        setNanoBananaCaption(null);
       } finally {
         setInitialLoadDone(true);
       }
@@ -1755,10 +1755,6 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
         setNanoBananaImage(data.imagePath);
         setNanoBananaCaption(data.caption || "You've got this 🍌");
       } catch {
-        if (!nanoBananaImage) {
-          setNanoBananaImage("/nano-banana/default-1.png");
-          setNanoBananaCaption("You've got this, warrior 🍌");
-        }
       } finally {
         setGenerating(false);
       }
@@ -1861,12 +1857,36 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
         {/* Nano Banana Image Section */}
         <button
           onClick={() => nanoBananaImage ? setWallOpen(true) : generateNanoBanana()}
-          disabled={generating}
+          disabled={generating || !initialLoadDone}
           className="w-full text-left relative"
         >
-          {nanoBananaImage ? (
+          {(!initialLoadDone || generating) && !nanoBananaImage ? (
+            <div className="p-4 pb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
+                  <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="space-y-1.5">
+                    <div className="h-3 bg-amber-100 rounded-full w-3/4 animate-pulse" />
+                    <p className="text-xs text-amber-500/70 font-body">{generating ? "Creating your image..." : "Loading..."}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : nanoBananaImage ? (
             <div className="relative">
-              <img src={nanoBananaImage} alt="Nano Banana" className="w-full aspect-[4/3] object-cover" />
+              <img
+                src={nanoBananaImage}
+                alt="Nano Banana"
+                className="w-full aspect-[4/3] object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              {generating && (
+                <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-3">
                 <p className="text-lg font-heading text-white leading-snug drop-shadow-md">{nanoBananaCaption}</p>
@@ -1883,17 +1903,10 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
             <div className="p-4 pb-2">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-200/60 to-amber-200/60 flex items-center justify-center flex-shrink-0">
-                  {generating ? <Loader2 className="h-5 w-5 text-amber-600 animate-spin" /> : <Zap className="h-5 w-5 text-amber-600" />}
+                  <Zap className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  {generating ? (
-                    <div className="space-y-1.5">
-                      <div className="h-3 bg-amber-100 rounded-full w-3/4 animate-pulse" />
-                      <p className="text-xs text-amber-500/70 font-body">Creating your image...</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm font-body text-muted-foreground">Tap to generate a Nano Banana 🍌</p>
-                  )}
+                  <p className="text-sm font-body text-muted-foreground">Tap to generate a Nano Banana 🍌</p>
                 </div>
               </div>
             </div>
@@ -1952,7 +1965,12 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
           {/* Nano Banana hero in dialog */}
           {nanoBananaImage && (
             <div className="relative">
-              <img src={nanoBananaImage} alt="Nano Banana" className="w-full aspect-[4/3] object-cover" />
+              <img
+                src={nanoBananaImage}
+                alt="Nano Banana"
+                className="w-full aspect-[4/3] object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <p className="text-lg font-heading text-white leading-snug drop-shadow-lg">{nanoBananaCaption}</p>
