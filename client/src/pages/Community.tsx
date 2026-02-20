@@ -11,7 +11,7 @@ import {
   Plus, MessageCircle, Heart, ArrowLeft, Send, Users, Sparkles,
   Loader2, Pin, Trash2, Flame, Leaf, Brain, HelpCircle, ShieldCheck,
   Calendar, Clock, Video, Star, ChevronRight, CalendarCheck, X, Mic,
-  Shield, Apple, Sun, Dumbbell, LogOut, UserPlus
+  Shield, Apple, Sun, Dumbbell, LogOut, UserPlus, Download
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -456,23 +456,34 @@ function TalkCard({ talk, survivor, isRsvpd, onRsvp, onCancelRsvp, isPending }: 
           </div>
         )}
         {isFuture && (
-          <div className="flex items-center gap-2">
-            {isRsvpd ? (
-              <>
-                <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 text-primary rounded-xl text-xs font-body">
-                  <CalendarCheck className="h-3.5 w-3.5" /> You're attending
-                </div>
-                <Button variant="ghost" size="sm" onClick={onCancelRsvp} disabled={isPending}
-                  className="text-muted-foreground hover:text-red-500 text-xs h-8 px-2">
-                  {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              {isRsvpd ? (
+                <>
+                  <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 text-primary rounded-xl text-xs font-body">
+                    <CalendarCheck className="h-3.5 w-3.5" /> You're attending
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={onCancelRsvp} disabled={isPending}
+                    className="text-muted-foreground hover:text-red-500 text-xs h-8 px-2">
+                    {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={onRsvp} disabled={isPending || (spotsLeft !== null && spotsLeft <= 0)}
+                  className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9 flex-1">
+                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CalendarCheck className="h-3.5 w-3.5 mr-1.5" />}
+                  {spotsLeft !== null && spotsLeft <= 0 ? "Full" : "RSVP to Attend"}
                 </Button>
-              </>
-            ) : (
-              <Button onClick={onRsvp} disabled={isPending || (spotsLeft !== null && spotsLeft <= 0)}
-                className="bg-primary text-white hover:bg-primary/90 font-body rounded-xl text-xs h-9 flex-1">
-                {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CalendarCheck className="h-3.5 w-3.5 mr-1.5" />}
-                {spotsLeft !== null && spotsLeft <= 0 ? "Full" : "RSVP to Attend"}
-              </Button>
+              )}
+            </div>
+            {isRsvpd && (
+              <a
+                href={`/api/survivor-talks/${talk.id}/calendar`}
+                download
+                className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl text-xs font-body transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" /> Download Calendar Invite
+              </a>
             )}
           </div>
         )}
@@ -1191,10 +1202,16 @@ export default function Community() {
         body: JSON.stringify({ talkId, userId }),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, talkId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/survivor-talk-rsvps", userId] });
       queryClient.invalidateQueries({ queryKey: ["/api/survivor-talks"] });
-      toast({ title: "You're in!", description: "You've been added to this talk." });
+      toast({ title: "You're in!", description: "Calendar invite downloading now." });
+      const link = document.createElement('a');
+      link.href = `/api/survivor-talks/${talkId}/calendar`;
+      link.download = '';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     },
   });
 

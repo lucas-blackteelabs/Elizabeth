@@ -514,6 +514,58 @@ async function seedLucasAdmin() {
   console.log("Seeded Lucas admin account (mirroring Liz)");
 }
 
+async function seedGiselleTalk() {
+  const allSurvivors = await storage.listSurvivors();
+  const giselle = allSurvivors.find(s => s.name === 'Giselle');
+  
+  if (!giselle) {
+    const newSurvivor = await storage.createSurvivor({
+      name: 'Giselle',
+      bio: 'Melanoma survivor and passionate advocate for holistic healing approaches. Giselle combines her personal experience with evidence-based practices to help others navigate their cancer journey with hope and resilience.',
+      cancerType: 'Melanoma',
+      yearsSurvivor: 3,
+      expertise: ['Holistic Healing', 'Resilience', 'Immunotherapy', 'Mindfulness'],
+      verified: true,
+      featured: true,
+      sessionMode: 'video',
+    });
+    
+    const talks = await storage.listSurvivorTalks();
+    const existingTalk = talks.find(t => t.survivorId === newSurvivor.id);
+    if (!existingTalk) {
+      await storage.createSurvivorTalk({
+        survivorId: newSurvivor.id,
+        title: 'Healing Beyond the Diagnosis: A Conversation with Giselle',
+        description: 'Join Giselle for an intimate and empowering conversation about navigating life after a melanoma diagnosis. She will share her personal journey, practical strategies for building resilience, and how holistic approaches complemented her treatment. A safe space to ask questions and connect.',
+        scheduledAt: new Date('2026-03-31T10:00:00Z'),
+        durationMinutes: 60,
+        location: 'Online (Microsoft Teams)',
+        meetingLink: 'https://teams.microsoft.com/l/meetup-join/elizabeth-survivor-talk-giselle',
+        capacity: 30,
+        category: 'support',
+      });
+      console.log('Seeded Giselle survivor talk');
+    }
+  } else {
+    const talks = await storage.listSurvivorTalks();
+    const existingTalk = talks.find(t => t.survivorId === giselle.id);
+    if (!existingTalk) {
+      await storage.createSurvivorTalk({
+        survivorId: giselle.id,
+        title: 'Healing Beyond the Diagnosis: A Conversation with Giselle',
+        description: 'Join Giselle for an intimate and empowering conversation about navigating life after a melanoma diagnosis. She will share her personal journey, practical strategies for building resilience, and how holistic approaches complemented her treatment. A safe space to ask questions and connect.',
+        scheduledAt: new Date('2026-03-31T10:00:00Z'),
+        durationMinutes: 60,
+        location: 'Online (Microsoft Teams)',
+        meetingLink: 'https://teams.microsoft.com/l/meetup-join/elizabeth-survivor-talk-giselle',
+        capacity: 30,
+        category: 'support',
+      });
+      console.log('Seeded Giselle survivor talk');
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/auth", authRoutes);
   app.use("/uploads", express.static(uploadDir));
@@ -524,6 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   await seedLizAccount();
   await seedLucasAdmin();
+  await seedGiselleTalk();
 
   app.post(
     "/api/users/:id/photo",
@@ -2389,6 +2442,73 @@ Keep it concise (max 150 words total). Use plain language. Be encouraging but ho
       return res.json({ success: true });
     } catch (error) {
       return res.status(500).json({ error: "Failed to cancel RSVP" });
+    }
+  });
+
+  app.get("/api/survivor-talks/:id/calendar", async (req, res) => {
+    try {
+      const talkId = parseInt(req.params.id);
+      const talks = await storage.listSurvivorTalks();
+      const talk = talks.find(t => t.id === talkId);
+      if (!talk) {
+        return res.status(404).json({ error: "Talk not found" });
+      }
+
+      const survivors = await storage.listSurvivors();
+      const survivor = survivors.find(s => s.id === talk.survivorId);
+
+      const start = new Date(talk.scheduledAt);
+      const end = new Date(start.getTime() + (talk.durationMinutes || 60) * 60000);
+
+      const formatICSDate = (d: Date) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+      };
+
+      const escapeICS = (text: string) => {
+        return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+      };
+
+      const uid = `elizabeth-talk-${talk.id}@elizabeth.app`;
+      const now = formatICSDate(new Date());
+      const meetingLink = talk.meetingLink || '';
+      const organizer = escapeICS(survivor?.name || 'Elizabeth Community');
+      const description = escapeICS(`${talk.description}\n\nJoin via Microsoft Teams:\n${meetingLink}`);
+      const summary = escapeICS(talk.title);
+      const location = escapeICS(talk.location || 'Online (Microsoft Teams)');
+
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Elizabeth//Survivor Talks//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${now}`,
+        `DTSTART:${formatICSDate(start)}`,
+        `DTEND:${formatICSDate(end)}`,
+        `SUMMARY:${summary}`,
+        `DESCRIPTION:${description}`,
+        `LOCATION:${location}`,
+        `URL:${meetingLink}`,
+        `ORGANIZER;CN=${organizer}:mailto:hello@elizabeth.app`,
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT15M',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:Reminder: ${escapeICS(talk.title)} starts in 15 minutes`,
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${talk.title.replace(/[^a-zA-Z0-9 ]/g, '')}.ics"`);
+      return res.send(ics);
+    } catch (error) {
+      console.error("Calendar generation error:", error);
+      return res.status(500).json({ error: "Failed to generate calendar invite" });
     }
   });
 
