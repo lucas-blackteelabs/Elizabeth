@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Home, Apple, Sparkles, Calendar, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -12,6 +13,9 @@ const navItems = [
 
 export default function MobileBottomNav() {
   const [location] = useLocation();
+  const isMobile = useIsMobile();
+
+  if (!isMobile) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-xl border-t border-border safe-area-bottom shadow-[0_-2px_20px_rgba(0,0,0,0.06)]">
