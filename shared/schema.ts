@@ -32,6 +32,9 @@ export const users = pgTable("users", {
   nanoBananaDate: text("nano_banana_date"),
   nanoBananaCreativity: real("nano_banana_creativity").default(0.3),
   mirrorUserId: integer("mirror_user_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

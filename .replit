@@ -40,3 +40,6 @@ waitForPort = 5000
 
 [userenv.shared]
 TZ = "Australia/Sydney"
+
+[agent]
+integrations = ["stripe:2.0.0"]
