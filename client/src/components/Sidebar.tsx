@@ -86,9 +86,13 @@ export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: Sideb
           <div className="p-3 overflow-y-auto flex-1 min-h-0">
             <Link href="/profile" onClick={onClose}>
               <div className="flex items-center space-x-3 p-3 bg-muted/60 rounded-xl mb-4 cursor-pointer hover:bg-muted transition-colors">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-semibold text-lg">
-                  {user?.displayName?.charAt(0) || 'U'}
-                </div>
+                {user?.profilePhoto ? (
+                  <img src={user.profilePhoto} alt={user.displayName || ''} className="w-10 h-10 rounded-full object-cover border-2 border-primary/20" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-semibold text-lg">
+                    {user?.displayName?.charAt(0) || 'U'}
+                  </div>
+                )}
                 <div>
                   <p className="font-medium text-foreground font-body text-sm">{user?.displayName || 'User'}</p>
                   <p className="text-xs text-muted-foreground font-body">
