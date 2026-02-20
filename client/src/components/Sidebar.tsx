@@ -62,72 +62,74 @@ export default function Sidebar({ isOpen, onClose, isMobile, onCollapse }: Sideb
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-primary text-white p-2 rounded-xl">
-              <Heart className="h-5 w-5" />
+        <div className="flex flex-col h-full">
+          <div className="p-5 border-b border-border flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center space-x-3">
+              <div className="bg-primary text-white p-2 rounded-xl">
+                <Heart className="h-5 w-5" />
+              </div>
+              <h1 className="text-xl font-heading text-foreground">Elizabeth</h1>
             </div>
-            <h1 className="text-xl font-heading text-foreground">Elizabeth</h1>
+            {!isMobile && onCollapse && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCollapse}
+                className="text-muted-foreground hover:text-primary rounded-xl h-8 w-8"
+                title="Close sidebar"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-          {!isMobile && onCollapse && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCollapse}
-              className="text-muted-foreground hover:text-primary rounded-xl h-8 w-8"
-              title="Close sidebar"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        
-        <div className="p-3 overflow-y-auto" style={{ height: 'calc(100% - 130px)' }}>
-          <Link href="/profile" onClick={onClose}>
-            <div className="flex items-center space-x-3 p-3 bg-muted/60 rounded-xl mb-4 cursor-pointer hover:bg-muted transition-colors">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-semibold text-lg">
-                {user?.displayName?.charAt(0) || 'U'}
-              </div>
-              <div>
-                <p className="font-medium text-foreground font-body text-sm">{user?.displayName || 'User'}</p>
-                <p className="text-xs text-muted-foreground font-body">
-                  {user?.cancerType || 'Not specified'} — {user?.cancerStage || 'Not specified'}
-                </p>
-              </div>
-            </div>
-          </Link>
           
-          <nav className="space-y-0.5">
-            {sidebarLinks.map((link) => {
-              const isActive = location === link.href || (link.href === "/dashboard" && location === "/");
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={onClose}
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-body",
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  {link.icon}
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-        
-        <div className="absolute bottom-0 w-full p-3 border-t border-border">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-sm font-body text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all duration-200"
-          >
-            <LogOut className="w-[18px] h-[18px]" />
-            <span>Log out</span>
-          </button>
+          <div className="p-3 overflow-y-auto flex-1 min-h-0">
+            <Link href="/profile" onClick={onClose}>
+              <div className="flex items-center space-x-3 p-3 bg-muted/60 rounded-xl mb-4 cursor-pointer hover:bg-muted transition-colors">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-semibold text-lg">
+                  {user?.displayName?.charAt(0) || 'U'}
+                </div>
+                <div>
+                  <p className="font-medium text-foreground font-body text-sm">{user?.displayName || 'User'}</p>
+                  <p className="text-xs text-muted-foreground font-body">
+                    {user?.cancerType || 'Not specified'} — {user?.cancerStage || 'Not specified'}
+                  </p>
+                </div>
+              </div>
+            </Link>
+            
+            <nav className="space-y-0.5">
+              {sidebarLinks.map((link) => {
+                const isActive = location === link.href || (link.href === "/dashboard" && location === "/");
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-body",
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {link.icon}
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+          
+          <div className="flex-shrink-0 p-3 border-t border-border bg-white">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center space-x-3 w-full px-3 py-2.5 rounded-xl text-sm font-body text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+            >
+              <LogOut className="w-[18px] h-[18px]" />
+              <span>Log out</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>
