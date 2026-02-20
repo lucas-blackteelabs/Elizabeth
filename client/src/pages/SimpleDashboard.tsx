@@ -1961,7 +1961,14 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
 
       {/* Full Wall Dialog */}
       <Dialog open={wallOpen} onOpenChange={setWallOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto p-0 rounded-2xl">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto p-0 rounded-2xl [&>button:last-child]:hidden">
+          {/* Custom close button visible over image */}
+          <button
+            onClick={() => setWallOpen(false)}
+            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors"
+          >
+            <X className="h-4 w-4 text-white" />
+          </button>
           {/* Nano Banana hero in dialog */}
           {nanoBananaImage && (
             <div className="relative">
@@ -1978,7 +1985,7 @@ function WorthFightingForWidget({ userId, savedCreativity }: { userId: number; s
               <button
                 onClick={generateNanoBanana}
                 disabled={generating}
-                className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/30 backdrop-blur-sm text-white rounded-full text-xs font-body hover:bg-black/50 transition-colors disabled:opacity-50"
+                className="absolute top-3 right-12 flex items-center gap-1.5 px-3 py-1.5 bg-black/30 backdrop-blur-sm text-white rounded-full text-xs font-body hover:bg-black/50 transition-colors disabled:opacity-50"
               >
                 {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                 {generating ? "Creating..." : "New 🍌"}
