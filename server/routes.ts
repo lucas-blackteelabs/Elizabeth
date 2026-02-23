@@ -1722,26 +1722,37 @@ RULES:
     try {
       const userId = req.body.userId || 1;
       const wallItems = await storage.listMotivationalWallItems(userId);
-      const imageItems = wallItems
-        .filter((i) => (i.type === "image" || i.type === "video") && i.imageUrl)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
+      const allImageItems = wallItems
+        .filter((i) => (i.type === "image" || i.type === "video") && i.imageUrl);
+      // Need minimum 3 images for a good result
+      const imageItems = allImageItems.length >= 3
+        ? allImageItems.sort(() => Math.random() - 0.5).slice(0, Math.min(5, allImageItems.length))
+        : allImageItems.sort(() => Math.random() - 0.5);
       const textItems = wallItems
         .filter((i) => i.content && i.content.trim())
         .map((i) => i.content!)
         .slice(0, 3);
 
-      const imagePaths: string[] = imageItems
-        .map((i) => {
-          const filePath = path.join(
-            process.cwd(),
-            i.imageUrl!.startsWith("/")
-              ? i.imageUrl!.substring(1)
-              : i.imageUrl!,
-          );
-          return fs.existsSync(filePath) ? filePath : null;
-        })
-        .filter(Boolean) as string[];
+      // Download R2 images to temp files, or use local paths
+      const imagePaths: string[] = [];
+      for (const item of imageItems) {
+        const url = item.imageUrl!;
+        if (url.startsWith("http")) {
+          // R2 or remote URL — download to temp file
+          try {
+            const resp = await fetch(url);
+            if (resp.ok) {
+              const buffer = Buffer.from(await resp.arrayBuffer());
+              const tmpPath = path.join(process.cwd(), "uploads", `nb-tmp-${Date.now()}-${Math.random().toString(36).slice(2,6)}.jpg`);
+              fs.writeFileSync(tmpPath, buffer);
+              imagePaths.push(tmpPath);
+            }
+          } catch (e) { console.error("Failed to download R2 image for Nano Banana:", url); }
+        } else {
+          const filePath = path.join(process.cwd(), url.startsWith("/") ? url.substring(1) : url);
+          if (fs.existsSync(filePath)) imagePaths.push(filePath);
+        }
+      }
 
       const creativity =
         typeof req.body.creativity === "number" ? req.body.creativity : 0.3;
@@ -1751,6 +1762,11 @@ RULES:
         textItems,
         creativity,
       );
+
+      // Clean up temp downloaded R2 files
+      for (const p of imagePaths) {
+        if (p.includes("nb-tmp-")) { try { fs.unlinkSync(p); } catch {} }
+      }
 
       const todayStr = new Date()
         .toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })

@@ -827,22 +827,41 @@ export async function generateNanoBananaImage(userImagePaths: string[] = [], tex
   let styleGuide: string;
   let captionTone: string;
   if (clampedCreativity < 0.25) {
-    styleGuide = `Create a gentle, faithful enhancement of the user's personal photos. Stay very close to the original subjects and setting. Use soft, warm lighting and a clean photographic style. Keep it realistic, heartfelt, and grounded — like a beautifully edited version of a real moment.`;
-    captionTone = `Be warm, sincere, and heartfelt. Keep it grounded and real.`;
+    styleGuide = `STYLE: Beautiful Memory
+Create one gorgeous, cinematic scene that brings the people from ALL the provided photos together into a single beautiful moment. Place them in a recognisable location from one of the photos. Use warm golden hour lighting, soft depth of field, and cinematic composition. Faces and features must be accurate to the originals. This should look like a professional photograph of a real moment that happened.`;
+    captionTone = `Be warm, sincere, and heartfelt. Reference specific people or places from the photos.`;
   } else if (clampedCreativity < 0.5) {
-    styleGuide = `Create a beautiful, warm, uplifting image inspired by what you see in their personal photos. Make it feel personal, loving, and joyful — like a visual hug. The style should be whimsical and lightly artistic but still recognisable as the people and things in the photos.`;
-    captionTone = `Be warm and playful with a touch of humour.`;
+    styleGuide = `STYLE: Animated Adventure
+Create a single animated scene (think Pixar or Studio Ghibli quality) that puts the people from ALL the provided photos into a fun scenario together. Invent a scene that combines their world — if there are beach photos and city photos, put them all on a rooftop overlooking the ocean. The people should be recognisable but rendered in a warm animated art style. Make them doing something together — laughing, exploring, celebrating. This must feel like a frame from an animated film, not a collage.`;
+    captionTone = `Be warm and playful with a touch of humour. Reference what you see in the photos. Australian English.`;
   } else if (clampedCreativity < 0.75) {
-    styleGuide = `Create an imaginative, playful image that remixes and mashes up elements from the user's photos in creative ways. Think whimsical illustration meets photo collage — blend the subjects together in fun, unexpected compositions. Use vibrant colours, dreamy textures, and a sense of magic and wonder.`;
-    captionTone = `Be playful, cheeky, and fun. Use Australian slang if it fits.`;
+    styleGuide = `STYLE: Fantasy Remix
+Create a single vibrant, imaginative scene that transports the people from ALL the provided photos into an unexpected, fantastical scenario together. Combine locations and activities from different photos into one creative new world. If they have beach photos and food photos and city photos, maybe they're having a floating feast above a neon city by the sea. Bold colours, dynamic composition, sense of wonder and adventure. People should be recognisable and properly proportioned, just in an amazing new context. Think movie poster for the greatest adventure of their lives.`;
+    captionTone = `Be playful, cheeky, and fun. Use Australian slang if it fits. Reference specific things from the photos.`;
   } else {
-    styleGuide = `Go wild! Create a totally bonkers, joyful, over-the-top mash-up of the user's photos. Smash all the subjects together into one chaotic, colourful, surreal celebration. Think pop art meets fever dream meets pure love. Crazy compositions, wild colour palettes, unexpected combinations — the more outrageous and fun the better. Make it a visual party that screams "LIFE IS WORTH LIVING!"`;
-    captionTone = `Be bold, badass, and absolutely unhinged with joy. Maximum hype energy. Australian slang encouraged.`;
+    styleGuide = `STYLE: Epic Celebration
+Create one spectacular, maximalist scene that explodes with joy. Take the people from ALL the provided photos and put them centre stage in the most epic, over-the-top celebration imaginable. Combine every element from their photos into one glorious scene — the places they've been, the food they love, their pets, their adventures — all swirling together in a vibrant, pop-art-meets-festival-poster composition. Think Takashi Murakami meets a family album. Fireworks, flowers, cosmic elements, neon colours. The people must be recognisable and doing something triumphant (dancing, arms raised, surfing a wave of flowers). This is pure visual joy turned up to 11.`;
+    captionTone = `Be bold, badass, and absolutely unhinged with joy. Maximum hype energy. Australian slang encouraged. Reference what you see.`;
   }
 
-  const imageGenPrompt = `Use the selection of images I have provided you to generate a motivational image for a user of an app called Elizabeth. The purpose of the image I want you to create is to use these "Worth Fighting For" images (which have been uploaded by the user to remind them why they are fighting so hard to beat cancer) to create a fun and playful way to remind them they have so much to live for and to keep going.${notesContext}
+  const imageGenPrompt = `You are creating a personalised motivational artwork for a cancer patient's "Worth Fighting For" wall in the Remission app.
 
-${styleGuide} DO NOT include any text or words in the generated image.`;
+I'm providing ${imageParts.length} personal photos. Study ALL of them carefully — identify every person, their faces, clothing, the locations, activities, pets, and meaningful objects.
+
+YOUR TASK: Create ONE brand new scene that combines the people and elements from ALL ${imageParts.length} photos together. Do NOT just recreate or enhance a single photo. The magic is in the COMBINATION — bringing people and places from different moments together into one new image that never existed before.${notesContext}
+
+ABSOLUTE RULES:
+- Use elements from ALL provided photos, not just 1 or 2
+- Create a SINGLE cohesive scene — NOT a collage, NOT a grid, NOT photos side by side
+- All people must be recognisable with accurate faces and proportions
+- Everyone must be naturally positioned (standing upright, proper scale, interacting)
+- Shared lighting, perspective, and art style across the entire image
+- NO text, words, letters, or numbers anywhere
+- NO sideways, upside-down, or floating people
+- NO cut-out edges or collage borders
+- The mood must be joyful, hopeful, and full of life
+
+${styleGuide}`;
 
   const captionPrompt = `Look at these personal "Worth Fighting For" photos from a cancer patient. They uploaded these to remind themselves why they're fighting.${notesContext}
 
