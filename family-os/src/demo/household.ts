@@ -1,0 +1,141 @@
+import type { Household } from "../core/types.ts";
+
+/**
+ * The Mahoney household, Inner West Sydney. Two parents, three children, one
+ * co-parent residence for the eldest. Every field here is something the
+ * platform would learn from the family's digital footprint over time; the
+ * one-time setup only confirms it.
+ */
+export function seedHousehold(): Household {
+  return {
+    id: "hh_mahoney",
+    name: "The Mahoneys",
+    homeSuburb: "Leichhardt",
+    timezone: "Australia/Sydney",
+    values: ["resilience", "creativity", "unstructured outdoor time", "keeping the co-parent relationship calm"],
+    preferences: {
+      brands: ["Kathmandu", "Cotton On Kids"],
+      giftIdeas: ["LEGO", "books", "art supplies"],
+      shops: ["Coles", "school uniform shop"],
+    },
+    people: [
+      {
+        id: "p_priya",
+        name: "Priya",
+        role: "parent",
+        householdId: "hh_mahoney",
+        canDrive: true,
+        email: "priya@example.com",
+        unavailable: [
+          { day: 1, start: "08:30", end: "17:30", label: "Work (office)" },
+          { day: 2, start: "08:30", end: "17:30", label: "Work (office)" },
+          { day: 3, start: "09:00", end: "15:00", label: "Work (from home)", flexible: true },
+          { day: 4, start: "08:30", end: "17:30", label: "Work (office)" },
+          { day: 5, start: "08:30", end: "15:00", label: "Work (from home)", flexible: true },
+        ],
+      },
+      {
+        id: "p_tom",
+        name: "Tom",
+        role: "parent",
+        householdId: "hh_mahoney",
+        canDrive: true,
+        email: "tom@example.com",
+        unavailable: [
+          { day: 1, start: "07:30", end: "18:00", label: "Work" },
+          { day: 2, start: "07:30", end: "18:00", label: "Work" },
+          { day: 3, start: "07:30", end: "18:00", label: "Work" },
+          { day: 4, start: "07:30", end: "18:00", label: "Work" },
+          { day: 5, start: "07:30", end: "18:00", label: "Work" },
+          { day: 6, start: "07:00", end: "08:30", label: "Gym", flexible: true },
+        ],
+      },
+      {
+        id: "p_daniel",
+        name: "Daniel",
+        role: "coparent",
+        householdId: "hh_daniel",
+        canDrive: true,
+        phone: "0412 000 111",
+        custodyPattern: "Ava with Daniel alternate weekends, Friday 6pm to Sunday 5pm. Next: Fri 4 Sep.",
+      },
+      {
+        id: "c_ava",
+        name: "Ava",
+        role: "child",
+        householdId: "hh_mahoney",
+        age: 11,
+        birthDate: "2015-03-14",
+        yearLevel: "Year 6",
+        school: "Leichhardt Public School",
+        interests: ["piano", "netball", "drawing"],
+        sizes: { "school uniform": { size: "12", recordedOn: "2026-02-01" } },
+      },
+      {
+        id: "c_leo",
+        name: "Leo",
+        role: "child",
+        householdId: "hh_mahoney",
+        age: 8,
+        birthDate: "2018-06-22",
+        yearLevel: "Year 3",
+        school: "Leichhardt Public School",
+        allergies: ["tree nuts", "peanuts"],
+        interests: ["football", "cricket", "LEGO", "dinosaurs"],
+        sizes: {
+          "school uniform": { size: "8", recordedOn: "2026-02-01" },
+          "football boots": { size: "US 2", recordedOn: "2026-04-10" },
+        },
+      },
+      {
+        id: "c_maya",
+        name: "Maya",
+        role: "child",
+        householdId: "hh_mahoney",
+        age: 4,
+        birthDate: "2022-01-30",
+        yearLevel: "Preschool",
+        school: "Little Wonders Preschool",
+        interests: ["swimming", "painting", "dancing"],
+        sizes: { "school uniform": { size: "4", recordedOn: "2026-02-01" } },
+      },
+    ],
+    places: [
+      { id: "pl_home", name: "Home", suburb: "Leichhardt", travelMinutesFromHome: 0 },
+      { id: "pl_lps", name: "Leichhardt Public School", aliases: ["LPS"], suburb: "Leichhardt", travelMinutesFromHome: 6, verifiedPayee: true },
+      { id: "pl_preschool", name: "Little Wonders Preschool", suburb: "Lilyfield", travelMinutesFromHome: 8, verifiedPayee: true },
+      { id: "pl_jubilee", name: "Jubilee Oval", aliases: ["Jubilee"], suburb: "Glebe", travelMinutesFromHome: 12 },
+      { id: "pl_pool", name: "Ashfield Aquatic Centre", aliases: ["Ashfield pool", "the pool"], suburb: "Ashfield", travelMinutesFromHome: 14, verifiedPayee: true },
+      { id: "pl_piano", name: "Inner West Music Studio", suburb: "Petersham", travelMinutesFromHome: 10, verifiedPayee: true },
+      { id: "pl_netball", name: "Balmain Netball Courts", suburb: "Balmain", travelMinutesFromHome: 12 },
+      { id: "pl_clinic", name: "Balmain Paediatrics", aliases: ["Dr Chen"], suburb: "Balmain", travelMinutesFromHome: 13 },
+      { id: "pl_flipout", name: "Flip Out Trampoline Park", aliases: ["Flip Out"], suburb: "Castle Hill", travelMinutesFromHome: 45 },
+      { id: "pl_zoo", name: "Taronga Zoo", suburb: "Mosman", travelMinutesFromHome: 40 },
+      { id: "pl_daniel", name: "Daniel's place", aliases: ["Daniel's", "mine"], suburb: "Marrickville", travelMinutesFromHome: 15 },
+      { id: "pl_cricket", name: "Petersham Oval", suburb: "Petersham", travelMinutesFromHome: 9 },
+    ],
+    vehicles: [
+      { id: "v_1", name: "Kia Carnival", seats: 7 },
+      { id: "v_2", name: "Corolla", seats: 5 },
+    ],
+    standing: [
+      { id: "s_footy", personId: "c_leo", title: "U8s football", category: "sport", day: 6, start: "09:00", end: "10:00", placeId: "pl_jubilee", season: { from: "2026-04-01", to: "2026-09-13" }, costPerTerm: 140, usualDriverId: "p_priya" },
+      { id: "s_swim", personId: "c_maya", title: "Swimming lesson", category: "sport", day: 6, start: "10:30", end: "11:00", placeId: "pl_pool", costPerTerm: 190, usualDriverId: "p_priya" },
+      { id: "s_piano", personId: "c_ava", title: "Piano lesson", category: "creative", day: 5, start: "16:30", end: "17:15", placeId: "pl_piano", costPerTerm: 420, usualDriverId: "p_priya" },
+      { id: "s_netball", personId: "c_ava", title: "Netball training", category: "sport", day: 3, start: "16:30", end: "17:30", placeId: "pl_netball", season: { from: "2026-04-01", to: "2026-09-13" }, costPerTerm: 160, usualDriverId: "p_priya" },
+      { id: "s_art", personId: "c_leo", title: "Art club", category: "creative", day: 4, start: "15:30", end: "16:30", placeId: "pl_lps", costPerTerm: 90 },
+    ],
+    policies: [
+      { id: "pol_radius", kind: "transit_radius", title: "Weekend activities within 30 minutes", description: "Recurring weekend programs must be within a 30-minute drive of home.", params: { maxMinutes: 30, appliesTo: "recurring" }, enabled: true },
+      { id: "pol_evening", kind: "evening_cutoff", title: "Under-6s home by 6:30pm on school nights", description: "No commitments for children under 6 that end after 6:30pm Sunday to Thursday.", params: { maxAge: 5, cutoff: "18:30" }, enabled: true },
+      { id: "pol_nuts", kind: "allergen", title: "Nut allergy is non-negotiable", description: "Any food-adjacent event for Leo must carry an allergy note; the RSVP must state it.", params: { childId: "c_leo", allergens: ["tree nuts", "peanuts"] }, enabled: true },
+      { id: "pol_max", kind: "max_activities", title: "At most two structured activities per child per season", description: "Protects unstructured time.", params: { max: 2 }, enabled: true },
+      { id: "pol_creative", kind: "one_per_category", title: "One creative program per child per term", description: "Each child has at least one creative activity each term.", params: { category: "creative", min: 1 }, enabled: true },
+      { id: "pol_budget", kind: "budget", title: "Activities budget $600 per month", description: "Registrations and fees across the household.", params: { monthly: 600 }, enabled: true },
+      { id: "pol_autopay", kind: "auto_pay_cap", title: "Auto-pay verified payees under $50", description: "School, club and clinic fees under the cap are paid without asking.", params: { maxAmount: 50 }, enabled: true },
+      { id: "pol_gift", kind: "gift_cap", title: "Birthday gifts up to $30", description: "Default gift budget for children's parties.", params: { maxAmount: 30 }, enabled: true },
+      { id: "pol_sunday", kind: "quiet_block", title: "Sunday mornings unplugged", description: "Keep Sunday before noon free of scheduled commitments where possible.", params: { day: 0, until: "12:00" }, enabled: true },
+      { id: "pol_custody", kind: "custody", title: "Ava's custody schedule", description: "Ava is with Daniel alternate weekends from Friday 6pm. Handover changes need both parents' agreement and go through the ledger.", params: { childId: "c_ava", coparentId: "p_daniel", handoverDay: 5, handoverTime: "18:00", nextHandover: "2026-09-04" }, enabled: true },
+    ],
+  };
+}

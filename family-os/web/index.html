@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Family OS · Command Center</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <div class="brand-mark">◐</div>
+        <div>
+          <div class="brand-name">Family OS</div>
+          <div class="brand-sub" id="household-name">…</div>
+        </div>
+      </div>
+      <nav id="nav">
+        <button data-view="brief" class="active">Tonight's brief</button>
+        <button data-view="inbox">Inbox</button>
+        <button data-view="week">Next two weeks</button>
+        <button data-view="ledger">Ledger</button>
+        <button data-view="household">Household &amp; policies</button>
+        <button data-view="trust">Trust ladder</button>
+        <button data-view="trace">Agent trace</button>
+      </nav>
+      <div class="side-foot">
+        <div id="clock" class="muted"></div>
+        <div id="llm" class="muted"></div>
+        <button id="reset" class="ghost">Reset demo</button>
+      </div>
+    </aside>
+    <main class="main" id="main"></main>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
