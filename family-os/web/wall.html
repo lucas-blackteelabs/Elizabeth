@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Family OS · Wall</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app.css" />
+  <style>
+    html, body { height: 100%; overflow: hidden; }
+    body { background: #0B1016; color: #EEF2F6; cursor: none; }
+    .wall { display: grid; grid-template-columns: 1.1fr 1.3fr 1fr; gap: 40px; height: 100vh; padding: 48px 56px; }
+    .clock { font-family: var(--display); font-size: clamp(72px, 9vw, 132px); font-weight: 700; line-height: .95; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .today { font-size: 26px; color: #98A4B5; margin-top: 8px; }
+    .needs { margin-top: 36px; font-size: 22px; line-height: 1.4; max-width: 30ch; }
+    .needs b { color: #F0B64A; }
+    .one { margin-top: 28px; padding: 18px 20px; background: #141B24; border-radius: 20px; font-size: 19px; line-height: 1.4; color: #C9D2DD; }
+    .col h2 { font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: #98A4B5; font-weight: 700; margin: 0 0 14px; }
+    .wev { display: grid; grid-template-columns: 96px 1fr auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #1E2733; font-size: 20px; }
+    .wev .t { color: #98A4B5; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .wev .n { font-weight: 600; }
+    .wev .s { color: #98A4B5; font-size: 15px; }
+    .wev .drv { font-size: 14px; color: #98A4B5; background: #1A2330; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+    .wev.rem .n { color: #9FAEE6; font-weight: 500; }
+    .tmr { margin-top: 32px; }
+    .kidcol { display: grid; gap: 22px; align-content: start; }
+    .kwrap { background: #141B24; border-radius: 24px; padding: 18px 20px; }
+    .khead { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .khead .avatar { width: 42px; height: 42px; font-size: 18px; }
+    .khead .kn { font-family: var(--display); font-size: 24px; font-weight: 700; }
+    .khead .kp { margin-left: auto; font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--c); }
+    .kchore { display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: center; padding: 10px 0; font-size: 18px; }
+    .kchore .box { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2A3644; background: transparent; padding: 0; color: #fff; display: grid; place-items: center; }
+    .kchore .box svg { width: 18px; height: 18px; opacity: 0; }
+    .kchore.done .box { background: var(--c); border-color: var(--c); }
+    .kchore.done .box svg { opacity: 1; }
+    .kchore.done .ct { color: #66738A; text-decoration: line-through; }
+    .kchore .cp { color: var(--c); font-weight: 700; font-family: var(--display); }
+    .streak { font-size: 14px; color: #98A4B5; }
+    .empty { color: #66738A; font-size: 18px; padding: 12px 0; text-align: left; }
+    @media (max-width: 1100px) { .wall { grid-template-columns: 1fr 1fr; } .kidcol { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } html, body { overflow: auto; } }
+  </style>
+</head>
+<body>
+  <div class="wall" id="wall"></div>
+  <script src="/wall.js"></script>
+</body>
+</html>

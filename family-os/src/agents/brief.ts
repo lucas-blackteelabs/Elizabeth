@@ -1,6 +1,7 @@
 import type { Brief, BriefItem, LedgerEntry, Proposal } from "../core/types.ts";
 import type { State } from "../core/state.ts";
 import { fmtDay, relativeDays } from "../core/time.ts";
+import { narrate, headline as narrateHeadline } from "./narrate.ts";
 
 /** One notification a day. Everything else is a tap away. */
 export function composeBrief(state: State): Brief {
@@ -11,9 +12,7 @@ export function composeBrief(state: State): Brief {
   const later = items.filter((i) => i.entry.state === "scheduled" || i.entry.state === "snoozed").sort(byDue);
   const fyi = items.filter((i) => i.entry.state === "noted" || i.entry.state === "declined");
   const automated = state.ledger.reduce((n, e) => n + e.dispositions.filter((d) => d.disposition === "executed").length, 0);
-  const headline = decide.length === 0
-    ? `Nothing needs you tonight. ${automated} things handled quietly.`
-    : `${decide.length} decision${decide.length === 1 ? "" : "s"} tonight, ${automated} things already handled${later.length ? `, ${later.length} parked for later` : ""}.`;
+  const headline = narrateHeadline(decide.length, automated, later.length);
   return {
     generatedAt: now,
     headline,
@@ -31,12 +30,14 @@ function toItem(state: State, e: LedgerEntry): Item {
   const p = state.proposals.find((p) => p.id === e.proposalId)!;
   const now = state.clock.now();
   const due = e.dueAt ? relativeDays(now, e.dueAt) : undefined;
-  return {
+  const base: Omit<Item, "narrative"> = {
     entry: e,
     ledgerId: e.id,
     signalId: e.signalId,
     title: e.title,
     summary: p.summary,
+    kind: e.kind,
+    state: e.state,
     children: e.childIds.map((id) => state.household.people.find((x) => x.id === id)?.name ?? id),
     dueLabel: e.dueAt ? (due === 0 ? "today" : due === 1 ? "tomorrow" : due !== undefined && due < 0 ? "overdue" : `by ${fmtDay(e.dueAt)}`) : undefined,
     actions: p.actions.map((a) => ({ id: a.id, cls: a.cls, title: a.title, detail: a.detail, amount: a.amount, disposition: e.dispositions.find((d) => d.actionId === a.id)?.disposition ?? "suggested" })),
@@ -44,6 +45,7 @@ function toItem(state: State, e: LedgerEntry): Item {
     flags: p.flags,
     why: p.rationale,
   };
+  return { ...base, narrative: narrate({ ...base, narrative: "" }) };
 }
 
 function strip(i: Item): BriefItem {

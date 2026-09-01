@@ -2,20 +2,29 @@
 
 *Prototype and design thesis. Working name; the product name is not decided.*
 
-Parents are not short of apps. They are short of an executor. Every school email, coach WhatsApp, clinic SMS, uniform notice and co-parent text is a small job that lands on one adult's head and stays there until they type it into something. The trackers, shared calendars and forums all ask that adult to do the typing. That is the failure mode. This prototype is built on the opposite premise: **user input is a bug**. Anything that arrives by any channel is read, placed, checked against the family's own rules, and either done or reduced to one tap.
+Parents are not short of apps. They are short of an executor. Every school email, coach WhatsApp, clinic SMS, uniform notice and co-parent text is a small job that lands on one adult's head and stays there until they type it into something. This prototype is built on the opposite premise: **user input is a bug**. Anything that arrives, by any channel, is read, placed, checked against the family's own rules, and either done or reduced to one tap.
 
-This directory is a runnable, zero-dependency implementation of the core loop, plus the thinking behind it.
+## Run it on your own family
 
 ```
 cd family-os
-npm run demo          # one Tuesday evening, eight inputs, printed as the Evening Brief
-npm run demo -- --trace   # same, with every agent step
-npm run dev           # command center on http://localhost:5100
-npm test              # 23 tests, node's built-in runner
-npm run check         # typecheck
+GOOGLE_API_KEY=your-gemini-key npm run dev      # http://localhost:5100
 ```
 
-Requires Node 22.18 or later (TypeScript runs natively, no build). No runtime dependencies. No API key is needed: the intake parser is rule-based and inspectable. Set `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY` and the intake agent additionally uses a model for messy inputs, with the rules parser as the floor.
+Requires Node 22.18 or later. No build step, no runtime dependencies. The first visit opens onboarding: describe your family in a paragraph, glance at what was understood, confirm the house rules, pick how much to hand over. You can also paste the key in Settings instead of the environment. Without a key the rules-based reader still handles tidy school emails; with it, Gemini reads anything (voice notes, screenshots typed out, long newsletters) and can speak the brief.
+
+Everything persists to `data/` (git-ignored). `npm run demo` prints the seeded family's brief; `npm test` runs 32 tests; `npm run check` typechecks.
+
+| Surface | Where |
+|---|---|
+| Phone app (add to home screen; it is a PWA) | `/` |
+| Onboarding | `/welcome` |
+| Always-on wall display for a tablet or TV | `/wall` |
+| Spoken brief | "Listen to tonight's brief" on the home screen |
+
+**Connecting Gmail and Google Calendar** needs a Google Cloud OAuth client (type "Web application") with redirect URI `http://localhost:5100/oauth/google/callback` and the Gmail and Calendar APIs enabled. Put the client id and secret in Settings (or `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`), tap Connect, then "Read mail now" on the Send screen. New calendar events the agents create are written to your primary Google Calendar. **Any calendar link** (Compass, Sentral, TeamApp, PlayHQ, Google, Outlook, `webcal://`) can be added on the Send screen without OAuth.
+
+If you run this inside a sandbox where Node's `fetch` must use a proxy, add `NODE_USE_ENV_PROXY=1`.
 
 ---
 
@@ -117,7 +126,33 @@ Approve the RSVP in the command center and the ledger records it, the message is
 
 ---
 
-## 4. Where this goes next
+## 4. Straight answers to the hard questions
+
+**How easily can it ingest everything?** Unevenly, and the architecture is built around that. Every source ends up as the same `RawMessage`, so the pipeline never cares where a thing came from. What differs is how much friction each source has today:
+
+| Source | Reality | What the prototype does |
+|---|---|---|
+| Gmail, Outlook | Proper APIs with OAuth. Best signal-to-noise of anything. | Gmail read via REST, dedupe, HTML flattened. Calendar write-back. |
+| Google, Apple, Outlook calendars | APIs, plus every one of them publishes iCal links. | iCal import with recurrence expansion. Google Calendar writes. |
+| School platforms (Compass, Sentral, Seesaw, ClassDojo, Skoolbag, SchoolStream) | Mostly no public API. Nearly all of them email every notice and most publish an iCal feed. Scraping portals is fragile and often against terms. | Email path and calendar links work today. The real fix is the institution API in the thesis: schools publish structured notices because it ends their chasing. |
+| Sports (PlayHQ, TeamApp, Heja, Spond, GameDay) | Emails, push notifications, iCal feeds; a few have APIs for clubs, not parents. | Email and calendar links. Coach chat comes through WhatsApp. |
+| WhatsApp | The hard one. There is no API for a personal account. Options: a WhatsApp Business number the family adds as a contact and forwards to (official Cloud API), the phone's share sheet into the app, or on-device notification reading on Android. | Share-sheet and paste. A business number is the production path. |
+| SMS | iOS exposes nothing; Android allows a default-SMS-app or notification listener. | Paste and share. |
+| Photos of flyers, PDFs, voice notes | Vision and speech models handle these well now. | Gemini adapter takes the text; wiring images and audio through it is the next step. |
+| School-holiday programs, camps, activities | No feed. This is a search-and-rank agent, not an ingestion problem. | Not built. Fits as a specialist that proposes enrolments through the same trust gate. |
+| Health and wellbeing advice, lunchbox ideas | Knowledge, not data. An advisory agent grounded on trusted sources (Raising Children Network, the child's allergies and ages). | Not built. Would appear in the brief as a suggestion, never an action. |
+
+**Privacy.** This is children's data, custody data and money. The stance in the prototype: one household, one data file, on the family's own machine; the co-parent sees only their child's ledger; every action the agents take is in an append-only ledger a parent can read; nothing is sent to a model except the message being read plus the minimum household context needed to read it (names, ages, places). For production: per-household encryption keys, the Gemini paid tier (which does not train on your data), on-device parsing for anything that can be parsed on-device, explicit consent for every connected account with the scope shown in plain words, deletion that actually deletes, and no advertising anywhere near it. Australian Privacy Act obligations apply; the ledger's immutability is a feature for custody disputes and a liability if it leaks, so it is the thing to protect first.
+
+**Is it trying to do too much?** As a product, yes, if it ships as "nanny, adviser, logistics expert and housemaid" on day one. As an architecture, no: every one of those roles is a specialist agent proposing into one loop, checked by one guardian, gated by one trust ladder, surfaced in one brief. The discipline is to ship one wedge (school communications), let the household graph and the ledger fill up, and add a specialist only when the graph already has what that specialist needs. Holiday-program search is useless until the graph knows the children's ages, the family's radius and budget; by then it is a two-week build. Users should never feel the roles. They should feel one calm assistant.
+
+**The podcast.** Built: the brief becomes a script (template, polished by Gemini when a key is present) and Gemini's speech model reads it; without a key the browser's voice reads the same script. It is under two minutes, which is the right length. A thirty-minute version is a different product: a produced show with the week ahead, what changed, one parenting idea grounded in your kids' ages, and it would be the thing people tell friends about. The script generator is the seed of it.
+
+**Hardware on the wall.** Built as software first: `/wall` is an always-on display for any tablet or TV browser, with a clock, today and tomorrow, who is driving, what is waiting for a parent, and a chores board the kids tap. It keeps the screen awake and hides the cursor. Dedicated hardware makes sense once the software proves the wall is where families look; a tablet in a frame is the cheap way to find out.
+
+**Chores and points.** Built. Age-appropriate defaults per child, daily and weekly cadences, points, streaks, a rewards shelf with parent approval. The agents add one-off chores from real life (pack your own excursion bag) so the board stays connected to what is actually happening rather than being another list to maintain.
+
+## 5. Where this goes next
 
 The prototype deliberately keeps the intelligence legible. The production path:
 

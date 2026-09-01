@@ -240,7 +240,7 @@ export interface CalendarEvent {
   placeId?: Id;
   locationText?: string;
   driverId?: Id;
-  source: "standing" | "signal";
+  source: "standing" | "signal" | "ics";
   sourceId?: Id;
   notes?: string[];
 }
@@ -289,6 +289,9 @@ export interface BriefItem {
   signalId: Id;
   title: string;
   summary: string;
+  narrative: string;
+  kind: SignalKind;
+  state: LedgerState;
   children: string[];
   dueLabel?: string;
   actions: { id: Id; cls: ActionClass; title: string; detail: string; disposition: Disposition; amount?: number }[];

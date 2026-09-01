@@ -402,8 +402,10 @@ function makeTitle(kind: SignalKind, raw: RawMessage, children: Person[], h: Hou
   switch (kind) {
     case "permission_request":
       return subject ? `${who}: ${subject}` : `${who}: permission needed`;
-    case "schedule_change":
-      return `${who}: ${tags[0] ?? "activity"} time changed`;
+    case "schedule_change": {
+      const noun = tags[0] ?? /\b(game|match|practice|training|lesson|rehearsal|class|session)\b/i.exec(raw.body)?.[1]?.toLowerCase() ?? "activity";
+      return `${who}: ${noun} time changed`;
+    }
     case "invitation":
       return `${who}: party invitation${location ? ` at ${location}` : ""}`;
     case "appointment":

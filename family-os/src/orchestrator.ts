@@ -14,6 +14,13 @@ import { merge, type AgentOutput } from "./agents/shared.ts";
 import { dispose, recordApproval, recordOverride, CLASS_LABELS } from "./core/trust.ts";
 import { openEntry, transition } from "./core/ledger.ts";
 import { fmtTime, fmtWhen } from "./core/time.ts";
+import { proposeChore } from "./agents/chores.ts";
+
+/** Called after every executed action; the server uses it for calendar write-back. */
+let executeHook: ((state: State, action: Action, signalId: string) => void) | null = null;
+export function setExecuteHook(fn: typeof executeHook): void {
+  executeHook = fn;
+}
 
 export interface IngestResult {
   signal: Signal;
@@ -69,6 +76,7 @@ export async function ingest(state: State, raw: RawMessage, opts: { useLlm?: boo
 
   const entry = openEntry(state.clock, signal, proposal, dispositions);
   state.ledger.push(entry);
+  if (signal.kind !== "fyi") proposeChore(state, signal);
   trace(state, signal.id, "ledger", entry.state, entry.history[entry.history.length - 1].note);
   return { signal, proposal, entry, executed };
 }
@@ -77,6 +85,7 @@ async function refineWithLlm(state: State, signal: Signal): Promise<void> {
   const r = await llmExtract(signal.raw, state.household, state.clock.now());
   if (!r) return;
   const ex = signal.extracted;
+  const before = JSON.stringify({ kind: signal.kind, c: ex.childIds, w: ex.when, d: ex.deadline, a: ex.amount });
   if (r.kind) signal.kind = r.kind;
   if (r.title) ex.title = r.title;
   if (r.childNames?.length) {
@@ -90,8 +99,21 @@ async function refineWithLlm(state: State, signal: Signal): Promise<void> {
   if (r.items?.length) ex.items = r.items;
   if (r.requires?.length) ex.requires = r.requires;
   if (r.summary) ex.notes.push(r.summary);
+  if (r.location && !ex.placeId) {
+    const place = state.household.places.find((p) => r.location!.toLowerCase().includes(p.name.toLowerCase()));
+    ex.locationText = place?.name ?? r.location;
+    if (place) {
+      ex.placeId = place.id;
+      ex.travelMinutes = place.travelMinutesFromHome;
+    }
+  }
+  if (signal.kind === "coparent_message" && r.facts?.length) {
+    ex.tone = { hostile: r.hostile ?? ex.tone?.hostile ?? false, score: ex.tone?.score ?? 0, facts: r.facts, neutralised: r.facts.join(" ") };
+  }
   signal.parser = "llm";
   signal.confidence = Math.max(signal.confidence, 0.9);
+  const after = JSON.stringify({ kind: signal.kind, c: ex.childIds, w: ex.when, d: ex.deadline, a: ex.amount });
+  trace(state, signal.id, "gemini", "refine", before === after ? "Agreed with the rules parser." : `Refined: ${r.summary ?? "fields updated"}`);
 }
 
 /** Apply an action to household state. Everything here is reversible from the ledger. */
@@ -135,6 +157,7 @@ export function execute(state: State, a: Action, signalId: string): void {
     case "sign_form":
       break;
   }
+  executeHook?.(state, a, signalId);
 }
 
 export type DecisionKind = "approve" | "decline" | "snooze";

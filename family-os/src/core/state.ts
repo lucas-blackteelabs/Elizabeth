@@ -2,6 +2,7 @@ import type { CalendarEvent, Household, LedgerEntry, Proposal, Reminder, Signal,
 import type { Clock } from "./time.ts";
 import { expandStanding } from "./calendar.ts";
 import { defaultTrust } from "./trust.ts";
+import { defaultBoard, type ChoreBoard } from "./chores.ts";
 
 export interface Draft {
   id: string;
@@ -32,6 +33,17 @@ export interface State {
   drafts: Draft[];
   spend: Spend[];
   promotionsOffered: string[];
+  chores: ChoreBoard;
+  connections: Connections;
+}
+
+export interface Connections {
+  gmail?: { email: string; lastSync?: string; processedIds: string[] };
+  gcal?: { calendarId: string; lastWrite?: string };
+  ics?: { url: string; label: string; childId?: string; lastSync?: string; events: number }[];
+  whatsapp?: { number: string };
+  onboarded?: boolean;
+  demo?: boolean;
 }
 
 export function createState(household: Household, clock: Clock): State {
@@ -48,6 +60,8 @@ export function createState(household: Household, clock: Clock): State {
     drafts: [],
     spend: [],
     promotionsOffered: [],
+    chores: defaultBoard(household),
+    connections: {},
   };
 }
 

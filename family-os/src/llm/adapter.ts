@@ -1,10 +1,10 @@
 import type { Extracted, Household, RawMessage, SignalKind } from "../core/types.ts";
+import { generateJson, geminiReady, type Schema } from "./gemini.ts";
 
 /**
- * Optional LLM refinement of the rules parser. The platform runs without it;
- * with a key it gets better recall on messy inputs (scanned PDFs, long
- * newsletters, voice notes). Configure with ANTHROPIC_API_KEY or GOOGLE_API_KEY.
- * Returned fields are merged over the rules output; the rules output is the floor.
+ * Model-backed refinement of the rules parser. The rules output is always the
+ * floor; this fills what the rules miss (scanned PDFs, long newsletters, voice
+ * notes, odd phrasing) and can correct the kind and the children.
  */
 
 export interface LlmExtraction {
@@ -19,69 +19,44 @@ export interface LlmExtraction {
   items?: string[];
   requires?: Extracted["requires"];
   summary?: string;
+  hostile?: boolean;
+  facts?: string[];
 }
 
-export function llmConfigured(): "anthropic" | "gemini" | null {
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-  if (process.env.GOOGLE_API_KEY) return "gemini";
-  return null;
+export function llmConfigured(): "gemini" | null {
+  return geminiReady() ? "gemini" : null;
 }
 
-function prompt(raw: RawMessage, h: Household, now: string): string {
-  const kids = h.people.filter((p) => p.role === "child").map((c) => `${c.name} (${c.age}, ${c.yearLevel}, ${c.school})`).join("; ");
-  const places = h.places.map((p) => p.name).join("; ");
-  return `You are the intake agent for a family logistics system. Today is ${now} (${h.timezone}).
-Household children: ${kids}. Known places: ${places}. Co-parent: ${h.people.find((p) => p.role === "coparent")?.name ?? "none"}.
-
-Extract structured logistics from the message below. Return ONLY JSON with keys:
-kind (one of permission_request|schedule_change|invitation|appointment|purchase_need|registration|coparent_message|fyi),
-title, childNames[], when{start,end,allDay} as local ISO "YYYY-MM-DDTHH:mm", previousWhen (if a time moved), deadline (local ISO date),
-location, amount (number), items[] (things to bring or buy), requires[] (signature|payment|rsvp|reply|purchase|transport|item|decision), summary.
-
-Channel: ${raw.channel}
-From: ${raw.from}
-Subject: ${raw.subject ?? ""}
-Body:
-${raw.body}`;
-}
+const SCHEMA: Schema = {
+  type: "OBJECT",
+  properties: {
+    kind: { type: "STRING", enum: ["permission_request", "schedule_change", "invitation", "appointment", "purchase_need", "registration", "coparent_message", "event", "fyi"] },
+    title: { type: "STRING", description: "Short, parent-facing, starts with the child's name if known" },
+    childNames: { type: "ARRAY", items: { type: "STRING" } },
+    when: { type: "OBJECT", nullable: true, properties: { start: { type: "STRING", description: "Local ISO YYYY-MM-DDTHH:mm" }, end: { type: "STRING", nullable: true }, allDay: { type: "BOOLEAN", nullable: true } }, required: ["start"] },
+    previousWhen: { type: "OBJECT", nullable: true, properties: { start: { type: "STRING" }, end: { type: "STRING", nullable: true } }, required: ["start"] },
+    deadline: { type: "STRING", nullable: true, description: "Local ISO date YYYY-MM-DD by which the parent must act" },
+    location: { type: "STRING", nullable: true },
+    amount: { type: "NUMBER", nullable: true },
+    items: { type: "ARRAY", items: { type: "STRING" }, description: "Things to bring or buy" },
+    requires: { type: "ARRAY", items: { type: "STRING", enum: ["signature", "payment", "rsvp", "reply", "purchase", "transport", "item", "decision"] } },
+    summary: { type: "STRING", description: "One calm sentence for a parent" },
+    hostile: { type: "BOOLEAN", nullable: true },
+    facts: { type: "ARRAY", items: { type: "STRING" }, description: "For co-parent messages: the logistics facts only, neutrally phrased" },
+  },
+  required: ["kind", "childNames", "items", "requires", "summary"],
+};
 
 export async function llmExtract(raw: RawMessage, h: Household, now: string): Promise<LlmExtraction | null> {
-  const provider = llmConfigured();
-  if (!provider) return null;
-  const text = prompt(raw, h, now);
+  if (!geminiReady()) return null;
+  const kids = h.people.filter((p) => p.role === "child").map((c) => `${c.name} (${c.age ?? "?"}, ${c.yearLevel ?? ""}${c.school ? `, ${c.school}` : ""})`).join("; ");
+  const coparent = h.people.find((p) => p.role === "coparent");
+  const system = `You are the intake agent of a family logistics assistant in ${h.timezone}. Today is ${now}. Extract structured logistics; never invent dates. Resolve relative dates ("this Saturday") against today. Children: ${kids || "unknown"}. Known places: ${h.places.map((p) => p.name).join("; ")}. Co-parent: ${coparent?.name ?? "none"}. "Year 6", "U8s", age ranges and school names identify children.`;
+  const prompt = `Channel: ${raw.channel}\nFrom: ${raw.from}\nSubject: ${raw.subject ?? ""}\n\n${raw.body}`;
   try {
-    if (provider === "anthropic") {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: process.env.FAMILY_OS_MODEL ?? "claude-sonnet-5", max_tokens: 800, messages: [{ role: "user", content: text }] }),
-      });
-      if (!res.ok) throw new Error(`Anthropic ${res.status}`);
-      const data = (await res.json()) as { content: { type: string; text?: string }[] };
-      const out = data.content.find((c) => c.type === "text")?.text ?? "";
-      return parseJson(out);
-    }
-    const model = process.env.FAMILY_OS_MODEL ?? "gemini-2.5-flash";
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GOOGLE_API_KEY}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text }] }], generationConfig: { responseMimeType: "application/json" } }),
-    });
-    if (!res.ok) throw new Error(`Gemini ${res.status}`);
-    const data = (await res.json()) as { candidates: { content: { parts: { text: string }[] } }[] };
-    return parseJson(data.candidates?.[0]?.content?.parts?.[0]?.text ?? "");
+    return await generateJson<LlmExtraction>(prompt, SCHEMA, { system });
   } catch (err) {
-    console.warn(`[llm] extraction failed, using rules parser: ${(err as Error).message}`);
-    return null;
-  }
-}
-
-function parseJson(s: string): LlmExtraction | null {
-  const m = /\{[\s\S]*\}/.exec(s);
-  if (!m) return null;
-  try {
-    return JSON.parse(m[0]) as LlmExtraction;
-  } catch {
+    console.warn(`[gemini] extraction failed, rules parser only: ${(err as Error).message}`);
     return null;
   }
 }
