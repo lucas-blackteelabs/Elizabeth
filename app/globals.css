@@ -1,26 +1,56 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-display: 'Bricolage Grotesque', 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --color-ground: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-soft: #edf1f5;
+  --color-ink: #172033;
+  --color-muted: #66738a;
+  --color-line: #e2e7ed;
+  --color-accent: #1e2f55;
+  --color-accent-ink: #ffffff;
+  --color-need: #d9971f;
+  --color-need-soft: #fff4db;
+  --color-done: #2e9e6b;
+  --color-done-soft: #e2f5ea;
+  --color-later: #5b6b9e;
+  --color-later-soft: #e9ecf7;
+  --color-danger: #c64a3a;
+  --color-danger-soft: #fbe7e4;
+  --radius-card: 22px;
+  --radius-inner: 14px;
+  --shadow-card: 0 14px 34px -22px rgba(23, 32, 51, 0.45);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --color-ground: #0f1419;
+  --color-surface: #1a2028;
+  --color-soft: #232b35;
+  --color-ink: #eef2f6;
+  --color-muted: #98a4b5;
+  --color-line: #2a333f;
+  --color-accent: #e8eef8;
+  --color-accent-ink: #14202f;
+  --color-need: #f0b64a;
+  --color-need-soft: #3a2d12;
+  --color-done: #5fcb93;
+  --color-done-soft: #143324;
+  --color-later: #9faee6;
+  --color-later-soft: #1f2538;
+  --color-danger: #f08a7b;
+  --color-danger-soft: #3d1a15;
+  --shadow-card: 0 14px 34px -22px rgba(0, 0, 0, 0.8);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
+
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacing: -0.01em; }

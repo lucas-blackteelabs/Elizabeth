@@ -1,0 +1,1 @@
+{ "name": "Family OS", "short_name": "Family", "start_url": "/tonight/", "display": "standalone", "background_color": "#f4f6f8", "theme_color": "#f4f6f8", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }

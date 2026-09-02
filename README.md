@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Family OS Portal
 
-## Getting Started
+Web app and always-on wall display for Family OS. Same stack and layout as `bondai-portal-deploy`: Next.js 16 (app router), React 19, Tailwind 4, Radix primitives, TanStack Query, Phosphor icons, Axios.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env     # NEXT_PUBLIC_API_URL=/api, FAMILY_OS_API_ORIGIN=http://localhost:8080/api
+npm run dev              # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The browser calls `/api/*` on this origin; `next.config.ts` proxies to the service (`FAMILY_OS_API_ORIGIN`), so no CORS setup is needed. Point `FAMILY_OS_API_ORIGIN` at the deployed service in production.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | What |
+|---|---|
+| `/login`, `/signup` | Auth (JWT + refresh, same contract as BondAI) |
+| `/welcome` | Onboarding: describe the family, review, house rules, trust preset |
+| `/tonight` | The Evening Brief: decide, handled, later, good to know. Listen button reads the script aloud |
+| `/week` | Next two weeks, who's driving, reminders |
+| `/kids` | Chores, points, streaks, rewards |
+| `/send` | Paste anything; connect calendar links |
+| `/settings` | Trust ladder, house rules, demo, sign out |
+| `/wall` | Always-on display for a tablet or TV |
 
-## Learn More
+## Structure
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+├── (auth)/ (protected)/ (wall)/   route groups
+├── components/ui | layout | brief | kids | providers
+├── config/        apiEndpoints, appRoutes, queryKeys
+├── contexts/      AuthContext
+├── hooks/         *.hooks.ts (TanStack Query over services)
+├── lib/           types, utils (auth storage, jwt, time, cn), constants
+└── services/      apiClient (axios + refresh), generic.service, *.service.ts
+```
