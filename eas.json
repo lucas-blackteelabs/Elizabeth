@@ -1,0 +1,9 @@
+{
+  "cli": { "version": ">= 12.5.4", "appVersionSource": "remote" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal", "ios": { "simulator": true }, "env": { "EXPO_PUBLIC_BASE_URL": "https://dev.familyos.app" } },
+    "preview": { "distribution": "internal", "env": { "EXPO_PUBLIC_BASE_URL": "https://staging.familyos.app" } },
+    "production": { "autoIncrement": true, "env": { "EXPO_PUBLIC_BASE_URL": "https://www.familyos.app" } }
+  },
+  "submit": { "production": {} }
+}
