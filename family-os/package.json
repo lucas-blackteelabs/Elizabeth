@@ -4,16 +4,19 @@
   "private": true,
   "type": "module",
   "description": "Prototype of an agentic household operating system: zero-input ingestion, a household graph, a commitment ledger, a policy engine, and a trust ladder that lets agents earn autonomy.",
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "dev": "node src/server.ts",
-    "start": "node src/server.ts",
-    "demo": "node src/cli.ts",
-    "test": "node --test test/*.test.ts",
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts",
+    "demo": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts",
     "check": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.8.0"
   }
 }

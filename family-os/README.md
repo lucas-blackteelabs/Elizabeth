@@ -8,10 +8,15 @@ Parents are not short of apps. They are short of an executor. Every school email
 
 ```
 cd family-os
-GOOGLE_API_KEY=your-gemini-key npm run dev      # http://localhost:5100
+npm install                                     # once: pulls tsx and typescript, nothing else
+GOOGLE_API_KEY=your-gemini-key npm run dev      # then open http://localhost:5100
 ```
 
-Requires Node 22.18 or later. No build step, no runtime dependencies. The first visit opens onboarding: describe your family in a paragraph, glance at what was understood, confirm the house rules, pick how much to hand over. You can also paste the key in Settings instead of the environment. Without a key the rules-based reader still handles tidy school emails; with it, Gemini reads anything (voice notes, screenshots typed out, long newsletters) and can speak the brief.
+From the repo root, `npm run family` does the same. Node 20 or later. No build step, no runtime dependencies.
+
+**On Replit:** the "Family OS" workflow starts it on port 5100, which is mapped in `.replit`; open it from the Ports panel (it is the second webview, not the Elizabeth app on 5000). Add `GOOGLE_API_KEY` to Replit Secrets, or paste the key in Settings inside the app. For Google OAuth on Replit set `FAMILY_OS_BASE_URL` to the public URL of port 5100 so the redirect matches.
+
+**If you cannot see it on 5100:** the server has to be running on the machine whose browser you are using. Check the terminal shows `family-os on http://localhost:5100`. If it says `Unknown file extension ".ts"`, run `npm install` inside `family-os` first (that installs tsx). The first visit opens onboarding: describe your family in a paragraph, glance at what was understood, confirm the house rules, pick how much to hand over. You can also paste the key in Settings instead of the environment. Without a key the rules-based reader still handles tidy school emails; with it, Gemini reads anything (voice notes, screenshots typed out, long newsletters) and can speak the brief.
 
 Everything persists to `data/` (git-ignored). `npm run demo` prints the seeded family's brief; `npm test` runs 32 tests; `npm run check` typechecks.
 
