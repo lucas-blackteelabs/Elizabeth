@@ -1,0 +1,10 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+/src/main/resources/application-local.yml
+.idea
+*.iml
+out/
+bin/
+.vscode/

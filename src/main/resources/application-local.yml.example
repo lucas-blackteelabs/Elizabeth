@@ -1,0 +1,9 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/familyos
+  ai:
+    openai:
+      api-key: your-gemini-key
+server:
+  port: 8080
